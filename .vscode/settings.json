@@ -1,0 +1,21 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "files.eol": "\n",
+    "python.linting.mypyEnabled": true,
+    "python.linting.mypyArgs": [
+        "--follow-imports=silent",
+        "--show-column-numbers"
+    ],
+    "files.associations": {
+        "*.vpy": "python",
+        "*.sip": "cpp",
+        "*.pyi": "python"
+    },
+    "files.encoding": "utf8",
+    "python.linting.pep8Path": "pycodestyle",
+    "python.linting.pep8Enabled": true,
+    "python.linting.pep8Args": [
+        "--config=.pycodestyle"
+    ]
+}

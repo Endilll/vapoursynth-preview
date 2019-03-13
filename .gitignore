@@ -102,3 +102,14 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+misc/
+
+tests/*
+!tests/script.vpy
+!tests/script.yml
+
+!tests/candy_boy_05_tfm.txt
+!tests/chapters.txt
+!tests/EP01.qp
+!tests/test.ass

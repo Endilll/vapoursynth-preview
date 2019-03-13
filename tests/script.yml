@@ -1,0 +1,34 @@
+# VSPreview storage for C:\Projects\vapoursynth-preview\tests\script.vpy
+!MainWindow
+toolbars: !Toolbars
+    bookmarks: {}
+    main:
+        current_output_index: 0
+        outputs: !Outputs
+            '0': !Output
+                bookmarks: !Bookmarks
+                    items: []
+                    max_value: !Frame '2231'
+                last_showed_frame: !Frame '1274'
+                name: Output 0
+                play_fps: 23.976023976023978
+                scening_lists: !SceningLists
+                    items: []
+                    max_value: !Frame '2231'
+            '10': !Output
+                bookmarks: !Bookmarks
+                    items: []
+                    max_value: !Frame '7198'
+                last_showed_frame: !Frame '932'
+                name: Output 10
+                play_fps: 30.0
+                scening_lists: !SceningLists
+                    items: []
+                    max_value: !Frame '7198'
+    misc:
+        autosave_enabled: true
+        save_file_name_template: '{script_name}_{frame}'
+    playback:
+        seek_interval_frame: 5
+    scening:
+        scening_export_template: ''
