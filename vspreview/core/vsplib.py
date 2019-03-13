@@ -180,7 +180,7 @@ class Output(YAMLObject):
     )
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
-        'formats', 'total_frames', 'duration', 'graphics_scene_item'
+        'format', 'total_frames', 'duration', 'graphics_scene_item'
     )
 
     yaml_tag = '!Output'
