@@ -398,9 +398,9 @@ class SceningToolbar(AbstractToolbar):
         self.export_multiline_button     .setEnabled(False)
         self.remove_last_from_list_button.setEnabled(False)
 
-        if (len(self.current_list) > 0
-                and self.current_list_index is not None
-                and self.current_list_index != -1):
+        if (self.current_list_index is not None
+                and self.current_list_index != -1
+                and len(self.current_list) > 0):
             self.export_single_line_button.setEnabled(True)
             self.remove_last_from_list_button.setEnabled(True)
 
