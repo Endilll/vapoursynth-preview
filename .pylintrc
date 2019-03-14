@@ -58,6 +58,7 @@ disable=
     c-extension-no-member,
     unused-argument,
     logging-fstring-interpolation,
+    logging-format-interpolation,
     unused-import
 
 [REPORTS]
