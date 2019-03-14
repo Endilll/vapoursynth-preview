@@ -6,7 +6,12 @@
         {
             "label": "Run VSPreview",
             "type": "shell",
-            "command": "python run.py tests/script.vpy",
+            "windows": {
+                "command": "python run.py tests/script.vpy",
+            },
+            "linux": {
+                "command": "python3 run.py tests/script.vpy",
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
