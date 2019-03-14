@@ -436,7 +436,7 @@ class MainWindow(AbstractMainWindow):
         storage_path = self.script_path.with_suffix('.yml')
         if storage_path.exists():
             try:
-                yaml.load(storage_path.open(), Loader=yaml.UnsafeLoader)
+                yaml.load(storage_path.open(), Loader=yaml.Loader)
             except yaml.YAMLError as exc:
                 if hasattr(exc, 'problem_mark'):
                     mark = exc.problem_mark
