@@ -391,9 +391,16 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
 class AbstractToolbar(Qt.QWidget, QABC):
     __slots__ = ('main')
 
+    if not TYPE_CHECKING:
+        timelineMarksChanged = Qt.pyqtSignal(object)
+    else:
+        timelineMarksChanged = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable
+
     def __init__(self, main_window: AbstractMainWindow) -> None:
         self.main = main_window
         super().__init__(self.main.central_widget)
+
+        self.timelineMarksChanged.connect(self.main.timeline.updateTimelineMarks)
 
     @abstractmethod
     def on_toggle(self, new_state: bool) -> None:
