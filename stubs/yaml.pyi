@@ -13,11 +13,19 @@ class Dumper:
 class Loader:
     def construct_scalar(self, node: Node) -> Any: ...
 
+class Mark:
+    line: int
+    column: int
+
 class YAMLError(Exception):
     pass
 
+class MarkedYAMLError(YAMLError):
+    problem_mark: Mark
+
+
 def dump(data: Any, stream: Optional[IO[Any]] = None, Dumper: Dumper = Dumper(), **kwds: Any) -> Any: ...
-def load(stream: IO[Any], Loader: Optional[Loader] = Loader()) -> Any: ...
+def load(stream: IO[Any], Loader: Optional[Type] = Loader) -> Any: ...
 
 class YAMLObjectMetaclass(type):
     def __init__(cls: Type[T], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> None: ...
