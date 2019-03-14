@@ -438,10 +438,11 @@ class MainWindow(AbstractMainWindow):
             try:
                 yaml.load(storage_path.open(), Loader=yaml.Loader)
             except yaml.YAMLError as exc:
-                if hasattr(exc, 'problem_mark'):
-                    mark = exc.problem_mark
-                    print("Error position: (%s:%s)" % (mark.line+1, mark.column+1))
-                logging.warning('Storage parsing failed. Using defaults.')
+                if isinstance(exc, yaml.MarkedYAMLError):
+                    logging.warning('Storage parsing failed on line {} column {}. Using defaults.'
+                                    .format(exc.problem_mark.line + 1, exc.problem_mark.column + 1))  # pylint: disable=no-member
+                else:
+                    logging.warning('Storage parsing failed. Using defaults.')
                 # logging.getLogger().setLevel(logging.ERROR)
         else:
             logging.info('No storage found. Using defaults.')
