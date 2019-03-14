@@ -27,7 +27,7 @@ class TimelineMark:
         self.color = color
         self.label = label
 
-        self.notch: Optional[Notch] = None
+        self.notch = Notch(Qt.QLineF(), timedelta(0))
 
 
 class TimelineMarks:
