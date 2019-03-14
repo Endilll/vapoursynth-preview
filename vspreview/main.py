@@ -286,9 +286,7 @@ class MainWindow(AbstractMainWindow):
         'toolbars'
     ]
     __slots__ = storable_attrs + [
-        'app',
-        'schedule_gui_update', 'gui_update_timer',
-        'opengl_widget',
+        'app', 'opengl_widget',
         'main_layout', 'main_toolbar_widget', 'main_toolbar_layout',
         'graphics_view', 'script_error_dialog'
         'outputs_combobox', 'frame_spinbox', 'copy_frame_button',
@@ -438,8 +436,11 @@ class MainWindow(AbstractMainWindow):
         storage_path = self.script_path.with_suffix('.yml')
         if storage_path.exists():
             try:
-                yaml.load(storage_path.open())
-            except yaml.YAMLError:
+                yaml.load(storage_path.open(), Loader=yaml.UnsafeLoader)
+            except yaml.YAMLError as exc:
+                if hasattr(exc, 'problem_mark'):
+                    mark = exc.problem_mark
+                    print("Error position: (%s:%s)" % (mark.line+1, mark.column+1))
                 logging.warning('Storage parsing failed. Using defaults.')
                 # logging.getLogger().setLevel(logging.ERROR)
         else:
