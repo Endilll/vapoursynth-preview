@@ -34,25 +34,26 @@ class TimelineMarks:
     allowed_types = (Frame, Scene, timedelta)
 
     def __init__(self, other: Optional[TimelineMarks] = None) -> None:
-        self.data: List[TimelineMark] = []
+        self.items: List[TimelineMark] = []
 
         if other is None:
             return
         if isinstance(other, TimelineMarks):
-            self.data = other.data
+            self.items = other.items
         else:
             raise TypeError
 
     def add(self, data: Union[Frame, Scene, timedelta, TimelineMark], color: Qt.QColor, label: str = '') -> None:
         if isinstance(data, TimelineMark):
-            self.data.append(data)
+            self.items.append(data)
         if isinstance(data, Scene):
             if label == '':
                 label = data.label
-            self.data.append(TimelineMark(data.start, color, label))
-            self.data.append(TimelineMark(data.end  , color, label))
+            self.items.append(TimelineMark(data.start, color, label))
+            if data.end != data.start:
+                self.items.append(TimelineMark(data.end, color, label))
         elif isinstance(data, (Frame, timedelta)):
-            self.data.append(TimelineMark(data      , color, label))
+            self.items.append(TimelineMark(data, color, label))
         else:
             raise TypeError
 
