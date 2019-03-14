@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # import logging
+from typing import Optional
 
 from PyQt5 import Qt  # , sip
 
@@ -16,7 +17,7 @@ class GraphicsView(Qt.QGraphicsView):
 
     wheelScrolled = Qt.pyqtSignal(int)
 
-    def __init__(self, parent: Qt.QWidget) -> None:
+    def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
         super().__init__(parent)
 
         self.app = Qt.QApplication.instance()

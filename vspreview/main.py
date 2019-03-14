@@ -264,7 +264,7 @@ class Toolbars(AbstractToolbars):
 class MainWindow(AbstractMainWindow):
     # those are defaults that can be overriden in runtime or used as fallbacks
     AUTOSAVE_ENABLED          =  True
-    AUTOSAVE_INTERVAL         =    30 * 1000  # ms
+    AUTOSAVE_INTERVAL         =    30 * 1000  # s
     BASE_PPI                  =    96  # PPI
     DARK_THEME                =  True
     FPS_REFRESH_INTERVAL      =  1000  # ms
@@ -275,7 +275,7 @@ class MainWindow(AbstractMainWindow):
     PNG_COMPRESSION_LEVEL     =    80  # 0 - 100
     SAVE_TEMPLATE             = '{script_name}_{frame}'
     SEEK_STEP                 =     1  # frames
-    STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # ms
+    STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # s
 
     DEBUG_LOG_FPS                     = False
     DEBUG_RUN_GET_FRAME_TEST          = False

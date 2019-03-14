@@ -80,7 +80,7 @@ class Scene(YAMLObject):
         else:
             return self.end   > other.end
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Scene) -> bool:  # type: ignore
         if not isinstance(other, Scene):
             raise TypeError
         return self.start == other.start and self.end == other.end
