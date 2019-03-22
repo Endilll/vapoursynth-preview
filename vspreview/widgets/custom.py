@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-# import logging
-from typing import Optional
+import logging
+from   typing import Optional
 
-from PyQt5 import Qt  # , sip
+from PyQt5 import Qt
 
-# import debug
+from vspreview.utils import debug
 
 
 class GraphicsView(Qt.QGraphicsView):
@@ -52,42 +52,15 @@ class GraphicsView(Qt.QGraphicsView):
         event.ignore()
 
 
-# class DebugMeta(sip.wrappertype):
-#     def __new__(cls, name, bases, dct) -> type:
-#         from functools import partialmethod
+class ComboBox(Qt.QComboBox):
+    indexChanged = Qt.pyqtSignal(int, int)
 
-#         base = bases[0]
-#         # attr_list = ['activePanel', 'activeWindow', 'addEllipse', 'addItem', 'addLine', 'addPath', 'addPixmap', 'addPolygon', 'addRect', 'addSimpleText', 'addText', 'addWidget', 'backgroundBrush', 'bspTreeDepth', 'clearFocus', 'collidingItems', 'createItemGroup', 'destroyItemGroup', 'focusItem', 'font', 'foregroundBrush', 'hasFocus', 'height', 'inputMethodQuery', 'invalidate', 'isActive', 'itemAt', 'itemIndexMethod', 'items', 'itemsBoundingRect', 'minimumRenderSize', 'mouseGrabberItem', 'palette', 'removeItem', 'render', 'sceneRect', 'selectedItems', 'selectionArea', 'sendEvent', 'setActivePanel', 'setActiveWindow','setBackgroundBrush', 'setBspTreeDepth', 'setFocus', 'setFocusItem', 'setFont', 'setForegroundBrush', 'setItemIndexMethod', 'setMinimumRenderSize', 'setPalette', 'setSceneRect', 'setSelectionArea', 'setStickyFocus', 'setStyle', 'stickyFocus', 'style', 'update', 'views', 'width']
-#         for attr in dir(base):
-#             if not attr.endswith('__') and callable(getattr(base, attr)):
-#                 dct[attr] = partialmethod(DebugMeta.dummy_method, attr)
-#         subcls = super(DebugMeta, cls).__new__(cls, name, bases, dct)
-#         return subcls
+    def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
+        super().__init__(parent)
 
-#     def dummy_method(self, name, *args, **kwargs):
-#         from debug import measure_exec_time
-#         method = getattr(super(GraphicsScene, GraphicsScene), name)
-#         method = measure_exec_time(method)
-#         return method(self, *args, **kwargs)
+        self.prevIndex = self.currentIndex()
+        self.currentIndexChanged.connect(self._indexChanged)
 
-
-# class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # pylint: disable=invalid-metaclass
-#     pass
-    # def event(self, event: Qt.QEvent) -> bool:
-    #     from time import perf_counter_ns
-
-    #     t0 = perf_counter_ns()
-    #     ret = super().event(event)
-    #     t1 = perf_counter_ns()
-    #     interval = t1 - t0
-    #     if interval > 5000000:
-    #         print(self.__class__.__name__ + '.event()')
-    #         print(f'{interval / 1000000}: {event.type()}')
-
-    #     return ret
-
-    # def __getattribute__(self, name):
-    #     from debug import measure_exec_time
-    #     attr = super().__getattribute__(name)
-    #     if callable(attr):
-    #         return measure_exec_time(attr)
+    def _indexChanged(self, nextIndex: int) -> None:
+        self.indexChanged.emit(nextIndex, self.prevIndex)
+        self.prevIndex = nextIndex

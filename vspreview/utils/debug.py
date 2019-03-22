@@ -107,3 +107,39 @@ def print_perf_timepoints(*args: int) -> None:
         raise ValueError('At least 2 timepoints required')
     for i in range(1, len(args)):
         logging.debug(f'{i}: {args[i] - args[i-1]} ns')
+
+
+class DebugMeta(sip.wrappertype):  # type: ignore
+    def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> type:
+        from functools import partialmethod
+
+        base = bases[0]
+        # attr_list = ['activePanel', 'activeWindow', 'addEllipse', 'addItem', 'addLine', 'addPath', 'addPixmap', 'addPolygon', 'addRect', 'addSimpleText', 'addText', 'addWidget', 'backgroundBrush', 'bspTreeDepth', 'clearFocus', 'collidingItems', 'createItemGroup', 'destroyItemGroup', 'focusItem', 'font', 'foregroundBrush', 'hasFocus', 'height', 'inputMethodQuery', 'invalidate', 'isActive', 'itemAt', 'itemIndexMethod', 'items', 'itemsBoundingRect', 'minimumRenderSize', 'mouseGrabberItem', 'palette', 'removeItem', 'render', 'sceneRect', 'selectedItems', 'selectionArea', 'sendEvent', 'setActivePanel', 'setActiveWindow','setBackgroundBrush', 'setBspTreeDepth', 'setFocus', 'setFocusItem', 'setFont', 'setForegroundBrush', 'setItemIndexMethod', 'setMinimumRenderSize', 'setPalette', 'setSceneRect', 'setSelectionArea', 'setStickyFocus', 'setStyle', 'stickyFocus', 'style', 'update', 'views', 'width']
+        for attr in dir(base):
+            if not attr.endswith('__') and callable(getattr(base, attr)):
+                dct[attr] = partialmethod(DebugMeta.dummy_method, attr)
+        subcls = super(DebugMeta, cls).__new__(cls, name, bases, dct)
+        return cast(type, subcls)
+
+    def dummy_method(self, name: str, *args: Any, **kwargs: Any) -> Any:
+        method = getattr(super(GraphicsScene, GraphicsScene), name)
+        method = measure_exec_time(method)
+        return method(self, *args, **kwargs)
+
+
+class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # pylint: disable=invalid-metaclass
+    def event(self, event: Qt.QEvent) -> bool:
+        t0 = perf_counter_ns()
+        ret = super().event(event)
+        t1 = perf_counter_ns()
+        interval = t1 - t0
+        if interval > 5000000:
+            print(self.__class__.__name__ + '.event()')
+            print(f'{interval / 1000000}: {event.type()}')
+
+        return ret
+
+    def __getattribute__(self, name: str) -> Any:
+        attr = super().__getattribute__(name)
+        if callable(attr):
+            return measure_exec_time(attr)
