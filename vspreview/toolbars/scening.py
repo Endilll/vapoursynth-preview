@@ -49,12 +49,13 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
         return self.items[i]
 
     def add(self, start: Frame, end: Optional[Frame] = None) -> None:
+    def add(self, start: Frame, end: Optional[Frame] = None, label: str = '') -> Scene:
         from bisect import bisect_right
 
-        scene = Scene(start, end)
+        scene = Scene(start, end, label)
 
         if scene in self.items:
-            return
+            return scene
 
         if scene.end > self.max_value:
             raise ValueError('New Scene is out of bounds of output')
@@ -64,10 +65,12 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
         self.items.insert(index, scene)
         self.endInsertRows()
 
-    def remove(self, item: Scene) -> None:
-        self.remove_by_index(self.items.index(item))
+        return scene
 
-    def remove_by_index(self, i: int) -> None:
+    def remove(self, i: Union[int, Scene]) -> None:
+        if isinstance(i, Scene):
+            i = self.items.index(i)
+
         if i >= 0 and i < len(self.items):
             self.beginRemoveRows(Qt.QModelIndex(), i, i)
             del(self.items[i])
