@@ -89,6 +89,8 @@ class MiscToolbar(AbstractToolbar):
     def save(self, path: Optional[Path] = None, manually: bool = False) -> None:
         import yaml
 
+        yaml.Dumper.ignore_aliases = lambda *args: True
+
         if path is None:
             path = self.main.script_path.with_suffix('.yml')
 
