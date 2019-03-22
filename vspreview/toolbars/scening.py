@@ -141,7 +141,10 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     yaml_tag = '!SceningLists'
 
     def __init__(self, items: Optional[List[SceningList]] = None) -> None:
+        from vspreview.utils import main_window
+
         super().__init__()
+        self.main = main_window()
         self.items = items if items is not None else []
 
     def __getitem__(self, i: int) -> SceningList:
