@@ -19,7 +19,7 @@ class MiscToolbar(AbstractToolbar):
         'autosave_timer', 'reload_script_button',
         'save_button', 'autosave_checkbox',
         'keep_on_top_checkbox', 'save_template_lineedit',
-        'switch_button'
+        'toggle_button'
     ]
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
@@ -41,11 +41,6 @@ class MiscToolbar(AbstractToolbar):
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_script_button.click)
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_S, self.         save_button.click)
-
-    def on_toggle(self, new_state: bool) -> None:
-        # invoking order matters
-        self.setVisible(new_state)
-        self.resize_main_window(new_state)
 
     def setup_ui(self) -> None:
         self.setVisible(False)
@@ -86,15 +81,7 @@ class MiscToolbar(AbstractToolbar):
 
         # switch button for main layout
 
-        self.switch_button = Qt.QPushButton(self.main.central_widget)
-        self.switch_button.setText('Misc')
-        self.switch_button.setCheckable(True)
-
-    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
-        pass
-
-    def on_current_output_changed(self, index: int) -> None:
-        pass
+        self.toggle_button.setText('Misc')
 
 
     @fire_and_forget

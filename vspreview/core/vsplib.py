@@ -5,39 +5,211 @@ from   datetime  import timedelta
 from   functools import total_ordering
 import logging
 from   pathlib   import Path
-from   typing    import Any, cast, Dict, Iterator, Mapping, no_type_check, Optional, Type, TypeVar, TYPE_CHECKING, Tuple, Union
+from   typing    import Any, cast, Dict, Iterator, Mapping, no_type_check, Optional, overload, Type, TypeVar, TYPE_CHECKING, Tuple, Union
 
-from PyQt5       import Qt, sip  # type: ignore
+from PyQt5       import Qt, sip
 from yaml        import add_constructor, add_representer, Dumper, Loader, Node, YAMLObject, YAMLObjectMetaclass
 from vapoursynth import Format, VideoNode
 
 from .better_abc  import ABCMeta, abstract_attribute
 # project modules couldn't be imported at top level since it'll cause cyclic import
 
+# pylint: disable=pointless-statement, function-redefined
 
-class Frame(int):
+
+class FrameInterval(YAMLObject):
+    __slots__ = (
+        'value',
+    )
+
+    yaml_tag = '!FrameInterval'
+
+    def __init__(self, value: Union[FrameInterval, int]) -> None:
+        if isinstance(value, int):
+            self.value = value
+        elif isinstance(value, FrameInterval):
+            self.value = value.value
+        else:
+            raise TypeError
+
+    def __add__(self, other: Any) -> FrameInterval:
+        return FrameInterval(self.value + other)
+
+    def __iadd__(self, other: Any) -> None:
+        self.value += other
+
+    def __sub__(self, other: Any) -> FrameInterval:
+        return FrameInterval(self.value - other)
+
+    def __isub__(self, other: Any) -> None:
+        self.value -= other
+
+    def __mul__(self, other: Any) -> FrameInterval:
+        return FrameInterval(self.value * other)
+
+    def __imul__(self, other: Any) -> None:
+        self.value *= other
+
+    def __floordiv__(self, other: Any) -> FrameInterval:
+        return FrameInterval(self.value / other)
+
+    def __ifloordiv__(self, other: Any) -> None:
+        self.value //= other
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __index__(self) -> int:
+        return int(self)
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __repr__(self) -> str:
+        return f'FrameInterval({self.value})'
+
+    def __eq__(self, other: Union[FrameInterval, int]) -> bool:  # type: ignore
+        if isinstance(other, int):
+            return self.value == other
+        if isinstance(other, FrameInterval):
+            return self.value == other.value
+        return TypeError
+
+    def __ne__(self, other: Union[FrameInterval, int]) -> bool:  # type: ignore
+        if isinstance(other, int):
+            return self.value != other
+        if isinstance(other, FrameInterval):
+            return self.value != other.value
+        return TypeError
+
+    def __le__(self, other: Union[FrameInterval, int]) -> bool:
+        if isinstance(other, int):
+            return self.value <= other
+        if isinstance(other, FrameInterval):
+            return self.value <= other.value
+        return TypeError
+
+    def __ge__(self, other: Union[FrameInterval, int]) -> bool:
+        if isinstance(other, int):
+            return self.value >= other
+        if isinstance(other, FrameInterval):
+            return self.value >= other.value
+        return TypeError
+
+    def __lt__(self, other: Union[FrameInterval, int]) -> bool:
+        if isinstance(other, int):
+            return self.value < other
+        if isinstance(other, FrameInterval):
+            return self.value < other.value
+        return TypeError
+
+    def __gt__(self, other: Union[FrameInterval, int]) -> bool:
+        if isinstance(other, int):
+            return self.value > other
+        if isinstance(other, FrameInterval):
+            return self.value > other.value
+        return TypeError
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try:
+            value = state['value']
+            if not isinstance(value, int):
+                raise TypeError('Value of FrameInterval isn\'t an integer. It\'s most probably corrupted.')
+        except KeyError:
+            raise KeyError('FrameInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+
+        self.__init__(value)  # type: ignore
+
+
+class Frame(YAMLObject):
+    __slots__ = (
+        'value',
+    )
+
     yaml_tag = '!Frame'
 
-    def __radd__(self, other: Any) -> Frame:
-        return Frame(super().__radd__(other))
+    def __init__(self, value: Union[Frame, int]) -> None:
+        if isinstance(value, int):
+            if value < 0:
+                raise ValueError
+            self.value = value
+        elif isinstance(value, Frame):
+            self.value = value.value
+        else:
+            raise TypeError
 
-    def __add__(self, other: Any) -> Frame:
-        return Frame(super().__add__(other))
+    def __add__(self, other: FrameInterval) -> Frame:
+        return Frame(self.value + other.value)
 
-    def __sub__(self, other: Any) -> Frame:
-        return Frame(super().__sub__(other))
+    def __iadd__(self, other: FrameInterval) -> None:
+        self.value += other.value
 
-    @classmethod
-    def from_yaml(cls: Any, loader: Loader, node: Node) -> Frame:
-        return Frame(loader.construct_scalar(node))
+    @overload
+    def __sub__(self, other: FrameInterval) -> Frame: ...
+    @overload
+    def __sub__(self, other: Frame) -> FrameInterval: ...
 
-    @classmethod
-    def to_yaml(cls: Any, dumper: Dumper, instance: Frame) -> Node:
-        return dumper.represent_scalar(cls.yaml_tag, str(instance))
+    def __sub__(self, other):  # type: ignore
+        if isinstance(other, Frame):
+            return FrameInterval(self.value - other.value)
+        if isinstance(other, FrameInterval):
+            return Frame(self.value - other.value)
+        raise TypeError
 
+    def __isub__(self, other: FrameInterval) -> None:  # type: ignore
+        self.value -= other.value
 
-add_constructor(Frame.yaml_tag, Frame.from_yaml)
-add_representer(Frame,          Frame.  to_yaml)
+    def __int__(self) -> int:
+        return self.value
+
+    def __index__(self) -> int:
+        return int(self)
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __repr__(self) -> str:
+        return f'Frame({self.value})'
+
+    def __eq__(self, other: Frame) -> bool:  # type: ignore
+        return self.value == other.value
+
+    def __ne__(self, other: Frame) -> bool:  # type: ignore
+        return self.value != other.value
+
+    def __le__(self, other: Frame) -> bool:
+        return self.value <= other.value
+
+    def __ge__(self, other: Frame) -> bool:
+        return self.value >= other.value
+
+    def __lt__(self, other: Frame) -> bool:
+        return self.value < other.value
+
+    def __gt__(self, other: Frame) -> bool:
+        return self.value > other.value
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try:
+            value = state['value']
+            if not isinstance(value, int):
+                raise TypeError('Value of Frame isn\'t an integer. It\'s most probably corrupted.')
+        except KeyError:
+            raise KeyError('Frame lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+
+        self.__init__(value)  # type: ignore
 
 
 @total_ordering
@@ -62,17 +234,20 @@ class Scene(YAMLObject):
         self.label = label
 
     def __str__(self) -> str:
+        result = ''
+
         if self.start == self.end:
-            part_1 = f'{self.start}'
+            result = f'{self.start}'
         else:
-            part_1 = f'{self.start} - {self.end}'
+            result = f'{self.start} - {self.end}'
 
-        if self.label == '':
-            part_2 = f': {self.label}'
-        else:
-            part_2 = ''
+        if self.label != '':
+            result += f': {self.label}'
 
-        return part_1 + part_2
+        return result
+
+    def __repr__(self) -> str:
+        return 'Scene({}, {}, \'{}\')'.format(self.start, self.end, self.label)
 
     def __gt__(self, other: Scene) -> bool:
         if self.start != other.start:
@@ -85,7 +260,7 @@ class Scene(YAMLObject):
             raise TypeError
         return self.start == other.start and self.end == other.end
 
-    def duration(self) -> int:
+    def duration(self) -> FrameInterval:
         return self.end - self.start
 
     def __contains__(self, frame: Frame) -> bool:
@@ -106,20 +281,6 @@ class Scene(YAMLObject):
             end = state['end']
             if not isinstance(end, Frame):
                 raise TypeError('End frame of Scene is not a Frame. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('Scene lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
-
-        self.__init__(start, end)  # type: ignore
-
-    # @classmethod
-    # def from_yaml(cls: Any, loader: Loader, node: Node) -> Scene:
-    #     string = loader.construct_scalar(node)
-    #     start, end = map(Frame, string.split(' - '))
-    #     return Scene(start, end)  # type: ignore
-
-    # @classmethod
-    # def to_yaml(cls: Any, dumper: Dumper, instance: Scene) -> Node:
-    #     return dumper.represent_scalar(cls.yaml_tag, str(instance))  # type: ignore
 
             label = state['label']
             if not isinstance(label, str):
@@ -127,7 +288,7 @@ class Scene(YAMLObject):
         except KeyError:
             raise KeyError('Scene lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
 
-        self.__init__(frame, label)  # type: ignore
+        self.__init__(start, end, label)  # type: ignore
 
 
 class Output(YAMLObject):
@@ -154,7 +315,7 @@ class Output(YAMLObject):
         self.fps_den      = self.vs_output.fps.denominator
         self.format       = pixel_format
         self.total_frames = Frame(self.vs_output.num_frames)
-        self.duration     = timedelta(seconds=(self.total_frames / (self.fps_num / self.fps_den)))
+        self.duration     = timedelta(seconds=(int(self.total_frames) / (self.fps_num / self.fps_den)))
 
         # set by load_script() when it prepares graphics scene item based on last showed frame
 
@@ -168,7 +329,7 @@ class Output(YAMLObject):
                 or self.last_showed_frame >= self.total_frames):
             self.last_showed_frame: Frame = Frame(0)
         if not hasattr(self, 'scening_lists'):
-            self.scening_lists: SceningLists = SceningLists(self.total_frames - 1)
+            self.scening_lists: SceningLists = SceningLists()
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
 
@@ -348,25 +509,33 @@ class AbstractToolbar(Qt.QWidget, QABC):
         notchesChanged = Qt.pyqtSignal(object)
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
+        super().__init__(main_window.central_widget)
         self.main = main_window
-        super().__init__(self.main.central_widget)
+
+        self.setFocusPolicy(Qt.Qt.ClickFocus)
+
         self.notchesChanged.connect(self.main.timeline.updateNotches)
 
         self.toggle_button = Qt.QPushButton(self)
+        self.toggle_button.setCheckable(True)
 
-    @abstractmethod
     def on_toggle(self, new_state: bool) -> None:
-        raise NotImplementedError()
+        # invoking order matters
+        self.setVisible(new_state)
+        self.resize_main_window(new_state)
 
-    @abstractmethod
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
-        raise NotImplementedError()
+        pass
+
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
+        pass
+
+
     def get_notches(self) -> Notches:
         from vspreview.widgets import Notches
 
         return Notches()
-    def on_current_output_changed(self, index: int) -> None:
+
     def is_notches_visible(self) -> bool:
         return self.isVisible()
 

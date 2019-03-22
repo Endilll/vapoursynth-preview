@@ -6,7 +6,7 @@ from   typing   import Any, Deque, Mapping, Optional, Union
 
 from PyQt5 import Qt
 
-from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame
+from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval
 from vspreview.utils import add_shortcut, debug, qt_silent_call, qtime_to_timedelta, timedelta_to_qtime
 
 
@@ -16,7 +16,7 @@ class PlaybackToolbar(AbstractToolbar):
         'seek_n_frames_b_button', 'seek_to_prev_button', 'play_pause_button',
         'seek_to_next_button', 'seek_n_frames_f_button',
         'seek_frame_spinbox', 'seek_time_spinbox', 'fps_spinbox', 'fps_unlimited_checkbox',
-        'play_buffer', 'switch_button'
+        'play_buffer', 'toggle_button'
     )
 
     yaml_tag = '!PlaybackToolbar'
@@ -41,7 +41,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.fps_timer.setTimerType(Qt.Qt.PreciseTimer)
         self.fps_timer.timeout.connect(self.update_fps_counter)
 
-        self.switch_button              .clicked.connect(self.on_toggle)
+        self.toggle_button              .clicked.connect(self.on_toggle)
         self.play_pause_button          .clicked.connect(self.on_play_pause_clicked)
         self.seek_to_prev_button        .clicked.connect(self.seek_to_prev)
         self.seek_to_next_button        .clicked.connect(self.seek_to_next)
@@ -112,26 +112,16 @@ class PlaybackToolbar(AbstractToolbar):
 
         # switch button for main toolbar
 
-        self.switch_button = Qt.QPushButton(self.main.central_widget)
-        self.switch_button.setText('Playback')
-        self.switch_button.setCheckable(True)
+        self.toggle_button.setText('Playback')
 
-    def on_toggle(self, new_state: bool) -> None:
-        # invoking order matters
-        self.setVisible(new_state)
-        self.resize_main_window(new_state)
-
-    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
-        pass
-
-    def on_current_output_changed(self, index: int) -> None:
-        qt_silent_call(self.seek_frame_spinbox.setMaximum     ,                    self.main.current_output.total_frames - 1)
+    def on_current_output_changed(self, index: int, prev_index: int) -> None:
+        qt_silent_call(self.seek_frame_spinbox.setMaximum     ,                    self.main.current_output.total_frames - FrameInterval(1))
         qt_silent_call(self. seek_time_spinbox.setMaximumTime , timedelta_to_qtime(self.main.current_output.duration))
         qt_silent_call(self.       fps_spinbox.setValue       ,                    self.main.current_output.play_fps)
 
 
     def play(self) -> None:
-        if self.main.current_frame == self.main.current_output.total_frames - 1:
+        if self.main.current_frame == self.main.current_output.total_frames - FrameInterval(1):
             return
 
         if self.main.statusbar.label.text() == 'Ready':
@@ -142,7 +132,7 @@ class PlaybackToolbar(AbstractToolbar):
 
         self.play_buffer.clear()
         for i in range(self.main.PLAY_BUFFER_SIZE):
-            future = self.main.current_output.vs_output.get_frame_async(self.main.current_frame + i + 1)
+            future = self.main.current_output.vs_output.get_frame_async(int(self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
             self.play_buffer.append(future)
 
         if self.fps_unlimited_checkbox.isChecked():
@@ -157,7 +147,7 @@ class PlaybackToolbar(AbstractToolbar):
             self.play_pause_button.click()
             return
 
-        self.main.on_current_frame_changed(self.main.current_frame + 1, render_frame=False)
+        self.main.on_current_frame_changed(self.main.current_frame + FrameInterval(1), render_frame=False)
         pixmap = self.main.render_raw_videoframe(frame_future.result())
         self.main.current_output.graphics_scene_item.setPixmap(pixmap)
 
@@ -173,24 +163,24 @@ class PlaybackToolbar(AbstractToolbar):
 
     def seek_to_prev(self, checked: Optional[bool] = None) -> None:
         self.stop()
-        self.main.on_current_frame_changed(self.main.current_frame - 1)
+        self.main.on_current_frame_changed(self.main.current_frame - FrameInterval(1))
 
     def seek_to_next(self, checked: Optional[bool] = None) -> None:
         self.stop()
-        self.main.on_current_frame_changed(self.main.current_frame + 1)
+        self.main.on_current_frame_changed(self.main.current_frame + FrameInterval(1))
 
     def seek_n_frames_b(self, checked: Optional[bool] = None) -> None:
-        self.main.current_frame -= self.seek_frame_spinbox.value()
+        self.main.current_frame -= FrameInterval(self.seek_frame_spinbox.value())  # type: ignore
 
     def seek_n_frames_f(self, checked: Optional[bool] = None) -> None:
-        self.main.current_frame += self.seek_frame_spinbox.value()
+        self.main.current_frame += FrameInterval(self.seek_frame_spinbox.value())  # type: ignore
 
     def on_seek_frame_changed(self, frame: Union[Frame, int]) -> None:
         frame = Frame(frame)
-        qt_silent_call(self.seek_time_spinbox.setTime, timedelta_to_qtime(self.main.frame_to_timedelta(frame)))
+        qt_silent_call(self.seek_time_spinbox.setTime, timedelta_to_qtime(self.main.to_timedelta(frame)))
 
     def on_seek_time_changed(self, qtime: Qt.QTime) -> None:
-        qt_silent_call(self.seek_frame_spinbox.setValue, self.main.timedelta_to_frame(qtime_to_timedelta(qtime)))
+        qt_silent_call(self.seek_frame_spinbox.setValue, self.main.to_frame(qtime_to_timedelta(qtime)))
 
     def on_play_pause_clicked(self, checked: bool) -> None:
         if checked:
@@ -221,7 +211,7 @@ class PlaybackToolbar(AbstractToolbar):
             return
 
         current_frame = self.main.current_frame
-        current_fps = (current_frame - self.fps_prev_frame) / (1000 / self.fps_timer.interval())
+        current_fps = int(current_frame - self.fps_prev_frame) / (1000 / self.fps_timer.interval())
         if not self.fps_spinbox.isEnabled():
             self.fps_spinbox.setValue(current_fps)
         self.fps_prev_frame = current_frame

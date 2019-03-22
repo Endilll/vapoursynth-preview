@@ -149,16 +149,15 @@ class MainToolbar(AbstractToolbar):
 
         layout.addStretch()
 
-    def on_toggle(self, new_state: bool) -> None:
-        pass
+        self.toggle_button.setVisible(False)
 
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
         qt_silent_call(self.frame_spinbox.setValue, frame)
         qt_silent_call(self. time_spinbox.setTime, timedelta_to_qtime(t))
 
-    def on_current_output_changed(self, index: int) -> None:
+    def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.outputs_combobox.setCurrentIndex, index)
-        qt_silent_call(self.   frame_spinbox.setMaximum     ,                    self.main.current_output.total_frames - 1)
+        qt_silent_call(self.   frame_spinbox.setMaximum     ,                    self.main.current_output.total_frames - FrameInterval(1))
         qt_silent_call(self.    time_spinbox.setMaximumTime , timedelta_to_qtime(self.main.current_output.duration))
 
 
@@ -335,7 +334,7 @@ class MainWindow(AbstractMainWindow):
         self.main_layout.addWidget(self.toolbars.main)
         for toolbar in self.toolbars:
             self.main_layout.addWidget(toolbar)
-            self.toolbars.main.layout().addWidget(toolbar.switch_button)
+            self.toolbars.main.layout().addWidget(toolbar.toggle_button)
 
     def setup_ui(self) -> None:
         from vspreview.widgets import GraphicsView, Timeline
@@ -461,7 +460,7 @@ class MainWindow(AbstractMainWindow):
         if output is None:
             output = self.current_output
 
-        return self.render_raw_videoframe(output.vs_output.get_frame(frame))
+        return self.render_raw_videoframe(output.vs_output.get_frame(int(frame)))
 
     def render_raw_videoframe(self, vs_frame: vs.VideoFrame) -> Qt.QPixmap:
         import ctypes
@@ -488,7 +487,7 @@ class MainWindow(AbstractMainWindow):
         else:
             logging.debug('on_current_frame_changed(): both frame and t is None')
             return
-        if frame < 0 or frame >= self.current_output.total_frames:
+        if frame >= self.current_output.total_frames:
             # logging.debug('on_current_frame_changed(): New frame position is out of range')
             return
 
@@ -510,6 +509,7 @@ class MainWindow(AbstractMainWindow):
         # print(index)
         # print_stack()
 
+        prev_index = self.toolbars.main.outputs_combobox.currentIndex()
         if index < 0 or index >= len(self.outputs):
             logging.info('Output switching: output index is out of range. Switching to first output')
             index = 0
@@ -517,7 +517,7 @@ class MainWindow(AbstractMainWindow):
         self.toolbars.playback.stop()
 
         # current_output relies on outputs_combobox
-        self.toolbars.main.on_current_output_changed(index)
+        self.toolbars.main.on_current_output_changed(index, prev_index)
         self.timeline.setDuration(self.current_output.total_frames, self.current_output.duration)
         self.current_frame = self.current_output.last_showed_frame
 
@@ -527,7 +527,7 @@ class MainWindow(AbstractMainWindow):
         self.graphics_scene.setSceneRect(Qt.QRectF(self.current_output.graphics_scene_item.pixmap().rect()))
         self.timeline.updateNotches()
         for toolbar in self.toolbars:
-            toolbar.on_current_output_changed(index)
+            toolbar.on_current_output_changed(index, prev_index)
         self.update_statusbar_output_info()
 
     @property
