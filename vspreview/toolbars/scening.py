@@ -75,6 +75,32 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
         else:
             raise IndexError
 
+    def get_next_frame(self, initial: Frame) -> Optional[Frame]:
+        result       = None
+        result_delta = FrameInterval(int(self.max_value))
+        for scene in self.items:
+            if 0 < scene.start - initial < result_delta:
+                result = scene.start
+                result_delta = scene.start - initial
+            if 0 < scene.end - initial < result_delta:
+                result = scene.end
+                result_delta = scene.end - initial
+
+        return result
+
+    def get_prev_frame(self, initial: Frame) -> Optional[Frame]:
+        result       = None
+        result_delta = FrameInterval(int(self.max_value))
+        for scene in self.items:
+            if 0 < initial - scene.start < result_delta:
+                result = scene.start
+                result_delta = scene.start - initial
+            if 0 < initial - scene.end < result_delta:
+                result = scene.end
+                result_delta = scene.end - initial
+
+        return result
+
     def __getstate__(self) -> Mapping[str, Any]:
         return {name: getattr(self, name)
                 for name in self.__slots__}
