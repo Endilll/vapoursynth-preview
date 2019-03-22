@@ -301,10 +301,10 @@ class Timeline(Qt.QWidget):
         return timedelta(seconds=(x * self.totalT.total_seconds() / width))
 
     def fToX(self, f: Frame) -> int:
-        t = self.main.frame_to_timedelta(f)
+        t = self.main.to_timedelta(f)
         x = self.tToX(t)
         return x
 
     def xToF(self, x: int) -> Frame:
         t = self.xToT(x)
-        return self.main.timedelta_to_frame(t)
+        return self.main.to_frame(t)

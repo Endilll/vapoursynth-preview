@@ -269,8 +269,10 @@ class Scene(YAMLObject):
         return self.start <= frame <= self.end
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {name: getattr(self, name)
-                for name in self.__slots__}
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
@@ -475,26 +477,26 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
         raise NotImplementedError()
 
     @abstractmethod
-    def frame_to_timedelta(self, frame: Frame) -> timedelta:
+    def to_timedelta(self, frame: Frame) -> timedelta:
         raise NotImplementedError()
 
     @abstractmethod
-    def timedelta_to_frame(self, t: timedelta) -> Frame:
+    def to_frame(self, t: timedelta) -> Frame:
         raise NotImplementedError()
 
-    display_scale : float             = abstract_attribute()
     central_widget: Qt.QWidget        = abstract_attribute()
     clipboard     : Qt.QClipboard     = abstract_attribute()
     current_frame : Frame             = abstract_attribute()
     current_output: Output            = abstract_attribute()
+    display_scale : float             = abstract_attribute()
     graphics_scene: Qt.QGraphicsScene = abstract_attribute()
     graphics_view : Qt.QGraphicsView  = abstract_attribute()
-    save_on_exit  : bool              = abstract_attribute()
-    script_path   : Path              = abstract_attribute()
-    statusbar     : Qt.QStatusBar     = abstract_attribute()
     outputs       : Outputs           = abstract_attribute()
     timeline      : Timeline          = abstract_attribute()
     toolbars      : AbstractToolbars  = abstract_attribute()  # pylint: disable=used-before-assignment
+    save_on_exit  : bool              = abstract_attribute()
+    script_path   : Path              = abstract_attribute()
+    statusbar     : Qt.QStatusBar     = abstract_attribute()
 
 
 class AbstractToolbar(Qt.QWidget, QABC):
@@ -558,7 +560,7 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     yaml_tag: str = abstract_attribute()
 
-    # special toolbar ignored by len and not accessible via supscription and 'in' operator
+    # special toolbar ignored by len() and not accessible via subscription and 'in' operator
     main     : AbstractToolbar = abstract_attribute()
 
     playback : AbstractToolbar = abstract_attribute()
@@ -588,5 +590,4 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     if TYPE_CHECKING:
         # https://github.com/python/mypy/issues/2220
-        def __iter__(self) -> Iterator[AbstractToolbar]:
-            ...  # pylint: disable=pointless-statement
+        def __iter__(self) -> Iterator[AbstractToolbar]: ...

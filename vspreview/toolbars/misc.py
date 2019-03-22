@@ -32,11 +32,11 @@ class MiscToolbar(AbstractToolbar):
         self.autosave_timer = Qt.QTimer()
         self.autosave_timer.timeout.connect(self.save)
 
-        self.        switch_button.     clicked.connect(        self.on_toggle)
-        self. reload_script_button.     clicked.connect(lambda: self.main.reload_script())  # pylint: disable=unnecessary-lambda
-        self.          save_button.     clicked.connect(lambda: self.save(manually=True))
-        self.    autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
-        self. keep_on_top_checkbox.stateChanged.connect(        self.on_keep_on_top_changed)
+        self.       toggle_button.     clicked.connect(        self.on_toggle)
+        self.reload_script_button.     clicked.connect(lambda: self.main.reload_script())  # pylint: disable=unnecessary-lambda
+        self.         save_button.     clicked.connect(lambda: self.save(manually=True))
+        self.   autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
+        self.keep_on_top_checkbox.stateChanged.connect(        self.on_keep_on_top_changed)
         self. show_debug_checkbox.stateChanged.connect(        self.on_show_debug_changed)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_script_button.click)

@@ -99,7 +99,7 @@ class MainToolbar(AbstractToolbar):
 
         self.outputs_combobox.currentIndexChanged.connect(              self.main.switch_output)
         self.frame_spinbox          .valueChanged.connect(lambda f:     self.main.on_current_frame_changed(Frame(f)))
-        self.time_spinbox            .timeChanged.connect(lambda qtime: self.main.on_current_frame_changed(t=qtime_to_timedelta(qtime)))
+        self.time_spinbox            .timeChanged.connect(lambda qtime: self.main.on_current_frame_changed(t=qtime_to_timedelta(qtime)))  # type: ignore
         self.copy_frame_button           .clicked.connect(              self.on_copy_frame_button_clicked)
         self.copy_timestamp_button       .clicked.connect(              self.on_copy_timestamp_button_clicked)
         self.zoom_combobox    .currentTextChanged.connect(              self.on_zoom_changed)
@@ -144,7 +144,7 @@ class MainToolbar(AbstractToolbar):
         layout.addWidget(self.zoom_combobox)
 
         self.save_as_button = Qt.QPushButton(self)
-        self.save_as_button.setText('Save as')
+        self.save_as_button.setText('Save Frame as')
         layout.addWidget(self.save_as_button)
 
         layout.addStretch()
@@ -479,9 +479,9 @@ class MainWindow(AbstractMainWindow):
 
     def on_current_frame_changed(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
         if   t is     None and frame is not None:
-            t = self.frame_to_timedelta(frame)
+            t = self.to_timedelta(frame)
         elif t is not None and frame is     None:
-            frame = self.timedelta_to_frame(t)
+            frame = self.to_frame(t)
         elif t is not None and frame is not None:
             pass
         else:
@@ -593,11 +593,11 @@ class MainWindow(AbstractMainWindow):
                 and self.save_on_exit):
             self.toolbars.misc.save()
 
-    def timedelta_to_frame(self, t: timedelta) -> Frame:
-        return Frame(t.total_seconds() * (self.current_output.fps_num / self.current_output.fps_den))
+    def to_frame(self, t: timedelta) -> Frame:
+        return Frame(round(t.total_seconds() * (self.current_output.fps_num / self.current_output.fps_den)))
 
-    def frame_to_timedelta(self, frame: Frame) -> timedelta:
-        return timedelta(seconds=(frame / (self.current_output.fps_num / self.current_output.fps_den)))
+    def to_timedelta(self, frame: Frame) -> timedelta:
+        return timedelta(seconds=(int(frame) / (self.current_output.fps_num / self.current_output.fps_den)))
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
