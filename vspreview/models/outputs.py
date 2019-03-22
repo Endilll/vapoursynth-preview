@@ -127,6 +127,12 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         ))
 
     def __setstate__(self, state: Mapping[str, Output]) -> None:
+        for key, value in state.items():
+            if not isinstance(key, str):
+                raise TypeError(f'Storage loading: Outputs: key {key} is not a string')
+            if not isinstance(value, Output):
+                raise TypeError(f'Storage loading: Outputs: value of key {key} is not an Output')
+
         self.__init__(state)  # type: ignore
 
 
