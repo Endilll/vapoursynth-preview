@@ -11,7 +11,7 @@ from   typing   import Any, cast, Mapping, Optional
 from   PyQt5       import Qt
 import vapoursynth as     vs
 
-from vspreview.core   import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, Output
+from vspreview.core   import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
 from vspreview.models import Outputs  # , ItemEditDelegate
 from vspreview.utils  import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
 
@@ -235,14 +235,14 @@ class Toolbars(AbstractToolbars):
     yaml_tag = '!Toolbars'
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
-        from vspreview.toolbars import BookmarksToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar
+        from vspreview.toolbars import DebugToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar
 
         self.main      =      MainToolbar(main_window)
 
-        self.bookmarks = BookmarksToolbar(main_window)
         self.misc      =      MiscToolbar(main_window)
         self.playback  =  PlaybackToolbar(main_window)
         self.scening   =   SceningToolbar(main_window)
+        self.debug     =     DebugToolbar(main_window)
 
     def __getstate__(self) -> Mapping[str, Mapping[str, Any]]:
         return {
@@ -277,9 +277,7 @@ class MainWindow(AbstractMainWindow):
     SEEK_STEP                 =     1  # frames
     STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # s
 
-    DEBUG_LOG_FPS                     = False
-    DEBUG_RUN_GET_FRAME_TEST          = False
-    DEBUG_TEST_BUTTON                 =  True
+    DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
 
     storable_attrs = [
@@ -344,10 +342,6 @@ class MainWindow(AbstractMainWindow):
         for toolbar in self.toolbars:
             self.main_layout.addWidget(toolbar)
             self.toolbars.main.layout().addWidget(toolbar.switch_button)
-
-        # debug
-
-        self.init_debug()
 
     def setup_ui(self) -> None:
         from vspreview.widgets import GraphicsView, Timeline
@@ -622,33 +616,6 @@ class MainWindow(AbstractMainWindow):
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         # toolbars is singleton, so it initialize itself right in its __setstate__()
         pass
-
-    # debug
-
-    def init_debug(self) -> None:
-        if self.DEBUG_TEST_BUTTON:
-            self.toolbars.main.test_button.setVisible(True)
-            self.toolbars.main.test_button.clicked.connect(self.test_button_clicked)
-
-        if self.DEBUG_TOOLBAR_BUTTONS_PRINT_STATE:
-            self.filter = debug.EventFilter(self)
-            self.main_toolbar_widget.installEventFilter(self.filter)
-            self.toolbars.playback  .installEventFilter(self.filter)
-            self.toolbars.bookmarks .installEventFilter(self.filter)
-            self.toolbars.scening   .installEventFilter(self.filter)
-            self.toolbars.misc      .installEventFilter(self.filter)
-
-    def test_button_clicked(self) -> None:
-        print(self.devicePixelRatio())
-        print(self.devicePixelRatioF())
-        print(self.devicePixelRatioFScale())
-        print(self.app.primaryScreen().devicePixelRatio())
-        print(self.app.primaryScreen().logicalDotsPerInch())
-        print(self.app.primaryScreen().logicalDotsPerInchX())
-        print(self.app.primaryScreen().logicalDotsPerInchY())
-        print(self.app.primaryScreen().physicalDotsPerInch())
-        print(self.app.primaryScreen().physicalDotsPerInchX())
-        print(self.app.primaryScreen().physicalDotsPerInchY())
 
 
 class Application(Qt.QApplication):

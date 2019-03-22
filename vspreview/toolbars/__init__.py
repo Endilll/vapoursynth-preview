@@ -1,11 +1,4 @@
-# __all__ = [
-#     'bookmarks',
-#     'misc',
-#     'playback',
-#     'scening'
-# ]
-
-from .bookmarks import BookmarksToolbar
+from .debug     import DebugToolbar
 from .misc      import MiscToolbar
 from .playback  import PlaybackToolbar
 from .scening   import SceningToolbar

@@ -121,62 +121,18 @@ class Scene(YAMLObject):
     # def to_yaml(cls: Any, dumper: Dumper, instance: Scene) -> Node:
     #     return dumper.represent_scalar(cls.yaml_tag, str(instance))  # type: ignore
 
-
-@total_ordering
-class Bookmark(YAMLObject):
-    __slots__ = (
-        'frame', 'label'
-    )
-
-    yaml_tag = '!Bookmark'
-
-    def __init__(self, frame: Frame, label: str = '') -> None:
-        self.frame = frame
-        self.label = label
-
-    def __eq__(self, other: Union[Bookmark, Frame]) -> bool:  # type: ignore
-        if isinstance(other, Bookmark):
-            return self.frame == other.frame and self.label == other.label
-        if isinstance(other, Frame):
-            return self.frame == other
-
-        logging.debug(type(other))
-        raise TypeError()
-
-    def __ge__(self, other: Union[Bookmark, Frame]) -> bool:
-        if isinstance(other, Bookmark):
-            if self.frame != other.frame:
-                return self.frame >= other.frame
-            else:
-                return len(self.label) >= len(other.label)
-        if isinstance(other, Frame):
-            return self.frame >= other
-
-        logging.debug(type(other))
-        raise TypeError()
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {name: getattr(self, name)
-                for name in self.__slots__}
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            frame = state['frame']
-            if not isinstance(frame, Frame):
-                raise TypeError('\'frame\' of a Bookmark is not a Frame. It\'s most probably corrupted.')
-
             label = state['label']
             if not isinstance(label, str):
-                raise TypeError('\'label\' of a Bookmark is not a Frame. It\'s most probably corrupted.')
+                raise TypeError('Label of Scene is not a string. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('Bookmark lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError('Scene lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
 
         self.__init__(frame, label)  # type: ignore
 
 
 class Output(YAMLObject):
     storable_attrs = (
-        'name', 'last_showed_frame', 'bookmarks', 'scening_lists', 'play_fps'
+        'name', 'last_showed_frame', 'scening_lists', 'play_fps'
     )
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
@@ -186,8 +142,7 @@ class Output(YAMLObject):
     yaml_tag = '!Output'
 
     def __init__(self, vs_output: VideoNode, index: int, pixel_format: Format) -> None:
-        from vspreview.toolbars.bookmarks import Bookmarks
-        from vspreview.toolbars.scening   import SceningLists
+        from vspreview.toolbars.scening import SceningLists
 
         # runtime attributes
 
@@ -212,8 +167,6 @@ class Output(YAMLObject):
         if (not hasattr(self, 'last_showed_frame')
                 or self.last_showed_frame >= self.total_frames):
             self.last_showed_frame: Frame = Frame(0)
-        if not hasattr(self, 'bookmarks'):
-            self.bookmarks: Bookmarks = Bookmarks(self.total_frames - 1)
         if not hasattr(self, 'scening_lists'):
             self.scening_lists: SceningLists = SceningLists(self.total_frames - 1)
         if not hasattr(self, 'play_fps'):
@@ -238,11 +191,6 @@ class Output(YAMLObject):
             logging.warning(f'Storage loading: Output: failed to parse last showed frame.')
         except IndexError:
             logging.warning(f'Storage loading: Output: last showed frame is out of range.')
-
-        try:
-            self.bookmarks = state['bookmarks']
-        except (KeyError, TypeError, ValueError):
-            logging.warning(f'Storage loading: Output: failed to parse bookmarks.')
 
         try:
             self.scening_lists = state['scening_lists']
@@ -437,11 +385,11 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
     main     : AbstractToolbar = abstract_attribute()
 
     playback : AbstractToolbar = abstract_attribute()
-    bookmarks: AbstractToolbar = abstract_attribute()
     scening  : AbstractToolbar = abstract_attribute()
     misc     : AbstractToolbar = abstract_attribute()
+    debug    : AbstractToolbar = abstract_attribute()
 
-    toolbars_names = ('playback', 'bookmarks', 'scening', 'misc')
+    toolbars_names = ('playback', 'scening', 'misc', 'debug')
     # 'main' should be the first
     all_toolbars_names = ['main'] + list(toolbars_names)
 
