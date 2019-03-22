@@ -266,7 +266,7 @@ class MainWindow(AbstractMainWindow):
     LOG_LEVEL                 = logging.DEBUG
     OPENGL_RENDERING          = False
     OUTPUT_INDEX              =     0
-    PLAY_BUFFER_SIZE          =     4  # frames
+    PLAY_BUFFER_SIZE          = FrameInterval(4)  # frames
     PNG_COMPRESSION_LEVEL     =    80  # 0 - 100
     SAVE_TEMPLATE             = '{script_name}_{frame}'
     SEEK_STEP                 =     1  # frames
