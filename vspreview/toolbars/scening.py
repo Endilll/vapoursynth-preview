@@ -136,20 +136,27 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
 
 class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     __slots__ = (
-        'items', 'max_value'
+        'items'
     )
     yaml_tag = '!SceningLists'
 
-    def __init__(self, max_value: Optional[Frame] = None, items: Optional[List[SceningList]] = None) -> None:
+    def __init__(self, items: Optional[List[SceningList]] = None) -> None:
         super().__init__()
-        self.max_value = max_value if max_value is not None else Frame(2**31)
-        self.items     =     items if     items is not None else []
+        self.items = items if items is not None else []
 
     def __getitem__(self, i: int) -> SceningList:
         return self.items[i]
 
     def __len__(self) -> int:
         return len(self.items)
+
+    def __getiter__(self) -> Iterator[SceningList]:
+        return iter(self.items)
+
+    def index_of(self, item: SceningList, i: int = 0, j: int = 0) -> int:
+        if j == 0:
+            j = len(self.items)
+        return self.items.index(item, i, j)
 
     def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
         return len(self.items)
@@ -186,33 +193,36 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
         return True
 
     def insertRow(self, i: int, parent: Qt.QModelIndex = Qt.QModelIndex()) -> bool:
-        self.append(i=i)
+        self.add(i=i)
         return True
 
     def removeRow(self, i: int, parent: Qt.QModelIndex = Qt.QModelIndex()) -> bool:
         try:
-            self.remove_by_index(i)
+            self.remove(i)
         except IndexError:
             return False
 
         return True
 
-    def append(self, name: Optional[str] = None, i: Optional[int] = None) -> SceningList:
+    def add(self, name: Optional[str] = None, max_value: Optional[Frame] = None, i: Optional[int] = None) -> Tuple[SceningList, int]:
+        if max_value is None:
+            max_value = self.main.current_output.total_frames - FrameInterval(1)
         if i is None:
             i = len(self.items)
 
         self.beginInsertRows(Qt.QModelIndex(), i, i)
         if name is None:
-            self.items.insert(i, SceningList('List {}'.format(len(self.items) + 1), self.max_value))
+            self.items.insert(i, SceningList('List {}'.format(len(self.items) + 1), max_value))
         else:
-            self.items.insert(i, SceningList(name, self.max_value))
+            self.items.insert(i, SceningList(name, max_value))
         self.endInsertRows()
-        return self.items[i]
+        return self.items[i], i
 
-    def remove(self, item: SceningList) -> None:
-        self.remove_by_index(self.items.index(item))
+    def remove(self, item: Union[int, SceningList]) -> None:
+        i = item
+        if isinstance(i, SceningList):
+            i = self.items.index(i)
 
-    def remove_by_index(self, i: int) -> None:
         if i >= 0 and i < len(self.items):
             self.beginRemoveRows(Qt.QModelIndex(), i, i)
             del(self.items[i])
@@ -221,25 +231,23 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
             raise IndexError
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {name: getattr(self, name)
-                for name in self.__slots__}
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
-            max_value = state['max_value']
-            if not isinstance(max_value, Frame):
-                raise TypeError('\'max_value\' of a SceningLists is not a Frame. It\'s most probably corrupted.')
-
             items = state['items']
             if not isinstance(items, list):
                 raise TypeError('\'items\' of a SceningLists is not a List. It\'s most probably corrupted.')
             for item in items:
                 if not isinstance(item, SceningList):
-                    raise TypeError('One of the items of a SceningLists is not a Bookmark. It\'s most probably corrupted.')
+                    raise TypeError('One of the items of a SceningLists is not a SceningList. It\'s most probably corrupted.')
         except KeyError:
             raise KeyError('SceningLists lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
 
-        self.__init__(max_value, items)  # type: ignore
+        self.__init__(items)  # type: ignore
 
 
 class SceningListDialog(Qt.QDialog):
