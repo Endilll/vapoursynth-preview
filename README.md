@@ -1,4 +1,4 @@
-Preview for VapourSynth scripts. Meant to be paired with code editor like VS Code.
+Standalone preview for VapourSynth scripts. Meant to be paired with code editor like Visual Studio Code.
 
 # Prerequisites
 
@@ -6,7 +6,7 @@ Python 3.7
 Vapoursynth R45
 
 pip modules:
-`pyqt5 qdarkstyle pyyaml pysubs2 vapoursynth`
+`cueparser pyqt5 pysubs2 pyyaml qdarkstyle vapoursynth`
 
 # Usage
 
@@ -14,11 +14,11 @@ pip modules:
 
 # Note
 
-WIP, so there're some debug stuff among the logic, but not much. 'Test' button is the only trace of debug in UI.
+WIP, so there're some debug stuff among the logic, but not much.
 
 # Development
 
 pip modules:
-pyqt5-stubs mypy pycodestyle pylint
+mypy pycodestyle pylint pyqt5-stubs
 
 PyQt5 stubs may be incomplete when it comes to signals.
