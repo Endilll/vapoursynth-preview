@@ -223,6 +223,7 @@ class SceningListDialog(Qt.QDialog):
 
         self.listview = Qt.QListView()
         # self.listview.setFixedWidth(200)
+        self.listview.setSelectionMode(Qt.QListView.ExtendedSelection)
         layout.addWidget(self.listview)
 
 
