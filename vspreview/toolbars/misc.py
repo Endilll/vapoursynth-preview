@@ -37,6 +37,7 @@ class MiscToolbar(AbstractToolbar):
         self.          save_button.     clicked.connect(lambda: self.save(manually=True))
         self.    autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
         self. keep_on_top_checkbox.stateChanged.connect(        self.on_keep_on_top_changed)
+        self. show_debug_checkbox.stateChanged.connect(        self.on_show_debug_changed)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_script_button.click)
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_S, self.         save_button.click)
@@ -78,6 +79,10 @@ class MiscToolbar(AbstractToolbar):
 
         layout.addStretch()
         layout.addStretch()
+
+        self.show_debug_checkbox = Qt.QCheckBox(self)
+        self.show_debug_checkbox.setText('Show Debug Toolbar')
+        layout.addWidget(self.show_debug_checkbox)
 
         # switch button for main layout
 
@@ -133,6 +138,7 @@ class MiscToolbar(AbstractToolbar):
         }
         state.update({
             'save_file_name_template': self.save_template_lineedit.text()
+            'show_debug'             : self.show_debug_checkbox.isChecked()
         })
         return state
 
@@ -144,9 +150,24 @@ class MiscToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning('Storage loading: failed to parse autosave flag.')
             autosave_enabled = self.main.AUTOSAVE_ENABLED
+
         self.autosave_checkbox.setChecked(autosave_enabled)
 
         try:
             self.save_template_lineedit.setText(state['save_file_name_template'])
         except (KeyError, TypeError):
             logging.warning('Storage loading: failed to parse save file name template.')
+
+        try:
+            show_debug = state['show_debug']
+            if not isinstance(show_debug, bool):
+                raise TypeError
+        except (KeyError, TypeError):
+            logging.warning('Storage loading: failed to parse show debug flag.')
+            show_debug = self.main.DEBUG_TOOLBAR
+
+        # FIXME: get rid of workaround
+        if show_debug:
+            Qt.QTimer.singleShot(0, lambda: self.on_show_debug_changed(Qt.Qt.Checked))
+        else:
+            Qt.QTimer.singleShot(0, lambda: self.on_show_debug_changed(Qt.Qt.Unchecked))
