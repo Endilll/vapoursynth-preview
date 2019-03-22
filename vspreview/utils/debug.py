@@ -5,10 +5,10 @@ import inspect
 import logging
 import re
 from   time      import perf_counter_ns, time
-from   typing    import Any, Callable, TypeVar
+from   typing    import Any, Callable, cast, Dict, Type, TypeVar, Tuple
 
 from pprint import pprint
-from PyQt5  import Qt
+from PyQt5  import Qt, sip
 
 from vspreview.core import AbstractMainWindow
 
@@ -55,11 +55,10 @@ class EventFilter(Qt.QObject):
         return False
 
     def print_toolbars_state(self) -> None:
-        logging.debug(f'main toolbar:      {self.main.main_toolbar_widget.isVisible()}')
-        logging.debug(f'playback toolbar:  {self.main.toolbars.playback  .isVisible()}')
-        logging.debug(f'bookmarks toolbar: {self.main.toolbars.bookmarks .isVisible()}')
-        logging.debug(f'scening toolbar:   {self.main.toolbars.scening   .isVisible()}')
-        logging.debug(f'misc toolbar:      {self.main.toolbars.misc      .isVisible()}')
+        logging.debug(f'main toolbar:     {self.main.main_toolbar_widget.isVisible()}')
+        logging.debug(f'playback toolbar: {self.main.toolbars.playback  .isVisible()}')
+        logging.debug(f'scening toolbar:  {self.main.toolbars.scening   .isVisible()}')
+        logging.debug(f'misc toolbar:     {self.main.toolbars.misc      .isVisible()}')
 
     def run_get_frame_test(self, main_window: AbstractMainWindow) -> None:
         N = 10
@@ -97,7 +96,7 @@ def measure_exec_time(func: Callable[..., T]) -> Callable[..., T]:
         t1 = perf_counter_ns()
         ret = func(*args, **kwargs)
         t2 = perf_counter_ns()
-        print(f'{(t2 - t1) / 1000000}: {func.__self__.__class__.__name__}.{func.__name__}()')
+        print(f'{(t2 - t1) / 1000000} ms: {func.__name__}()')
         return ret
     return decorator
 
