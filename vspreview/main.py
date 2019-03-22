@@ -121,10 +121,12 @@ class MainToolbar(AbstractToolbar):
 
         self.outputs_combobox = Qt.QComboBox(self)
         # self.outputs_combobox.setEditable(True)
-        self.outputs_combobox.setMinimumContentsLength(6)
+        self.outputs_combobox.setDuplicatesEnabled(True)
+        self.outputs_combobox.setSizeAdjustPolicy(Qt.QComboBox.AdjustToContents)
         layout.addWidget(self.outputs_combobox)
 
         self.frame_spinbox = Qt.QSpinBox(self)
+        self.frame_spinbox.setMinimum(0)
         layout.addWidget(self.frame_spinbox)
 
         self.copy_frame_button = Qt.QPushButton(self)
