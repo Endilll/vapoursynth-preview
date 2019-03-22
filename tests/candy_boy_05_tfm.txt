@@ -30701,6 +30701,8 @@ crc32 = b17ac862
 #   [Grouped Ranges Allowing Small Breaks]
 #   FORMAT:  frame_start, frame_end (percentage combed)
 #
+#   269,316 (0.0%)
+#   445,479 (0.0%)
 #   13269,13306 (100.0%)
 #   17445,17479 (100.0%)
 #   20105,20134 (100.0%)
