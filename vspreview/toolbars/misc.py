@@ -118,13 +118,19 @@ class MiscToolbar(AbstractToolbar):
         elif state == Qt.Qt.Unchecked:
             self.main.setWindowFlag(Qt.Qt.WindowStaysOnTopHint, False)
 
+    def on_show_debug_changed(self, state: Qt.Qt.CheckState) -> None:
+        if   state == Qt.Qt.Checked:
+            self.main.toolbars.debug.toggle_button.setVisible(True)
+        elif state == Qt.Qt.Unchecked:
+            self.main.toolbars.debug.toggle_button.setVisible(False)
+
     def __getstate__(self) -> Mapping[str, Any]:
         state = {
             attr_name: getattr(self, attr_name)
             for attr_name in self.storable_attrs
         }
         state.update({
-            'save_file_name_template': self.save_template_lineedit.text()
+            'save_file_name_template': self.save_template_lineedit.text(),
             'show_debug'             : self.show_debug_checkbox.isChecked()
         })
         return state
