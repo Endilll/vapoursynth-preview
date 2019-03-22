@@ -85,7 +85,7 @@ class MiscToolbar(AbstractToolbar):
 
 
     @fire_and_forget
-    # @set_status_label(label='Saving')
+    @set_status_label(label='Saving')
     def save(self, path: Optional[Path] = None, manually: bool = False) -> None:
         import yaml
 
