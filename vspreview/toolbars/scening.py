@@ -373,7 +373,7 @@ class SceningToolbar(AbstractToolbar):
         layout.addWidget(self.view_list_button)
 
         self.import_file_button = Qt.QPushButton(self)
-        self.import_file_button.setText('Import File')
+        self.import_file_button.setText('Import List')
         layout.addWidget(self.import_file_button)
 
         separator = Qt.QFrame(self)
