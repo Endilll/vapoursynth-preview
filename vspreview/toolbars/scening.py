@@ -136,7 +136,7 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
 
 class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     __slots__ = (
-        'items'
+        'items',
     )
     yaml_tag = '!SceningLists'
 
@@ -289,7 +289,7 @@ class SceningToolbar(AbstractToolbar):
 
         self.first_frame : Optional[Frame] = None
         self.second_frame: Optional[Frame] = None
-        self.export_template_scene_pattern  = re.compile(r'.*(?:{start}|{end}|{label}).*')
+        self.export_template_pattern  = re.compile(r'.*(?:{start}|{end}|{label}).*')
         self.export_template_scenes_pattern = re.compile(r'.+')
 
         self.scening_update_status_label()
@@ -312,8 +312,9 @@ class SceningToolbar(AbstractToolbar):
         self.add_list_button               .clicked.connect(self.on_add_list_clicked)
         self.add_single_frame_button       .clicked.connect(self.on_add_single_frame_clicked)
         self.add_to_list_button            .clicked.connect(self.on_add_to_list_clicked)
-        self.export_multiline_button       .clicked.connect(self.export_multiline)  # type: ignore
-        self.export_single_line_button     .clicked.connect(self.export_single_line)  # type: ignore
+        self.export_multiline_button       .clicked.connect(self.export_multiline)
+        self.export_single_line_button     .clicked.connect(self.export_single_line)
+        self.export_template_lineedit  .textChanged.connect(self.check_remove_export_possibility)
         self.import_file_button            .clicked.connect(self.on_import_file_clicked)
         self.items_combobox           .indexChanged.connect(self.on_current_list_changed)
         self.remove_at_current_frame_button.clicked.connect(self.on_remove_at_current_frame_clicked)
@@ -324,8 +325,6 @@ class SceningToolbar(AbstractToolbar):
         self.toggle_first_frame_button     .clicked.connect(self.on_first_frame_clicked)
         self.toggle_second_frame_button    .clicked.connect(self.on_second_frame_clicked)
         self.view_list_button              .clicked.connect(self.on_view_list_clicked)
-        self.export_template_scene_lineedit .textChanged.connect(self.check_remove_export_possibility)
-        self.export_template_scenes_lineedit.textChanged.connect(self.check_remove_export_possibility)
 
         add_shortcut(Qt.Qt.SHIFT + Qt.Qt.Key_1, lambda: self.switch_list(0))
         add_shortcut(Qt.Qt.SHIFT + Qt.Qt.Key_2, lambda: self.switch_list(1))
@@ -384,10 +383,12 @@ class SceningToolbar(AbstractToolbar):
 
         self.seek_to_prev_button = Qt.QPushButton(self)
         self.seek_to_prev_button.setText('⏪')
+        self.seek_to_prev_button.setEnabled(False)
         layout.addWidget(self.seek_to_prev_button)
 
         self.seek_to_next_button = Qt.QPushButton(self)
         self.seek_to_next_button.setText('⏩')
+        self.seek_to_next_button.setEnabled(False)
         layout.addWidget(self.seek_to_next_button)
 
         separator = Qt.QFrame(self)
@@ -433,21 +434,16 @@ class SceningToolbar(AbstractToolbar):
         separator.setFrameShadow(Qt.QFrame.Sunken)
         layout.addWidget(separator)
 
-        self.export_template_scene_lineedit = Qt.QLineEdit(self)
+        self.export_template_lineedit = Qt.QLineEdit(self)
         # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
-        self.export_template_scene_lineedit.setToolTip(r'Use {start} and {end} as placeholders. Both are valid for single frame scenes. {label} is available, too.')
-        self.export_template_scene_lineedit.setPlaceholderText('Scene template')
-        layout.addWidget(self.export_template_scene_lineedit)
+        self.export_template_lineedit.setToolTip(r'Use {start} and {end} as placeholders. Both are valid for single frame scenes. {label} is available, too.')
+        self.export_template_lineedit.setPlaceholderText('Export Template')
+        layout.addWidget(self.export_template_lineedit)
 
         self.export_multiline_button = Qt.QPushButton(self)
         self.export_multiline_button.setText('Export Multiline')
         self.export_multiline_button.setEnabled(False)
         layout.addWidget(self.export_multiline_button)
-
-        self.export_template_scenes_lineedit = Qt.QLineEdit(self)
-        self.export_template_scenes_lineedit.setToolTip(r'Joiner for scenes exported using previous template to form single line.')
-        self.export_template_scenes_lineedit.setPlaceholderText('Scenes joiner')
-        layout.addWidget(self.export_template_scenes_lineedit)
 
         self.export_single_line_button = Qt.QPushButton(self)
         self.export_single_line_button.setText('Export Single Line')
@@ -517,7 +513,10 @@ class SceningToolbar(AbstractToolbar):
 
     @current_list_index.setter
     def current_list_index(self, index: int) -> None:
-        if not 0 <= index < len(self.current_lists):
+        print('current_list_index')
+        print(index)
+        print(len(self.current_lists))
+        if not (0 <= index < len(self.current_lists)):
             raise IndexError
         self.items_combobox.setCurrentIndex(index)
 
@@ -892,28 +891,35 @@ class SceningToolbar(AbstractToolbar):
 
     # export
 
-    def export_multiline(self, checked: Optional[bool] = None, clipboard: bool = True) -> str:
-        template = self.export_template_scene_lineedit.text()
+    def export_multiline(self, checked: Optional[bool] = None) -> None:
+        template = self.export_template_lineedit.text()
         export_str = str()
 
-        for scene in self.current_list:
-            export_str += template.format(start=scene.start, end=scene.end, label=scene.label) + '\n'
+        try:
+            for scene in self.current_list:
+                export_str += template.format(start=scene.start, end=scene.end, label=scene.label) + '\n'
+        except KeyError:
+            logging.warning('Scening: export template contains invalid placeholders.')
+            self.main.statusbar.showMessage('Export template contains invalid placeholders.', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+            return
 
-        if clipboard is True:
-            self.main.clipboard.setText(export_str)
-            self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+        self.main.clipboard.setText(export_str)
+        self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
-        return export_str
+    def export_single_line(self, checked: Optional[bool] = None) -> None:
+        template = self.export_template_lineedit.text()
+        export_str = str()
 
-    def export_single_line(self, checked: Optional[bool] = None, clipboard: bool = True) -> str:
-        joiner = self.export_template_scenes_lineedit.text()
-        export_str = joiner.join(self.export_multiline().splitlines())
+        try:
+            for scene in self.current_list:
+                export_str += template.format(start=scene.start, end=scene.end, label=scene.label)
+        except KeyError:
+            logging.warning('Scening: export template contains invalid placeholders.')
+            self.main.statusbar.showMessage('Export template contains invalid placeholders.', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+            return
 
-        if clipboard is True:
-            self.main.clipboard.setText(export_str)
-            self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
-
-        return export_str
+        self.main.clipboard.setText(export_str)
+        self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
     # misc
 
@@ -933,6 +939,8 @@ class SceningToolbar(AbstractToolbar):
         self.export_multiline_button       .setEnabled(False)
         self.remove_at_current_frame_button.setEnabled(False)
         self.remove_last_from_list_button  .setEnabled(False)
+        self.seek_to_next_button           .setEnabled(False)
+        self.seek_to_prev_button           .setEnabled(False)
 
         if not (self.current_list_index is not None
                 and self.current_list_index != -1
@@ -940,6 +948,8 @@ class SceningToolbar(AbstractToolbar):
             return
 
         self.remove_last_from_list_button.setEnabled(True)
+        self.seek_to_next_button         .setEnabled(True)
+        self.seek_to_prev_button         .setEnabled(True)
 
         for scene in self.current_list:
             if (scene.start == self.main.current_frame
@@ -948,9 +958,8 @@ class SceningToolbar(AbstractToolbar):
                 self.remove_at_current_frame_button.setEnabled(True)
                 break
 
-        if self.export_template_scene_pattern .fullmatch(self.export_template_scene_lineedit .text()) is not None:
+        if self.export_template_pattern.fullmatch(self.export_template_lineedit.text()) is not None:
             self.export_multiline_button  .setEnabled(True)
-        if self.export_template_scenes_pattern.fullmatch(self.export_template_scenes_lineedit.text()) is not None:
             self.export_single_line_button.setEnabled(True)
 
     def scening_update_status_label(self) -> None:
@@ -963,8 +972,7 @@ class SceningToolbar(AbstractToolbar):
             'first_frame': self.first_frame,
             'second_frame': self.second_frame,
             'label': self.label_lineedit.text(),
-            'scening_export_scene_template' : self.export_template_scene_lineedit .text(),
-            'scening_export_scenes_template': self.export_template_scenes_lineedit.text(),
+            'scening_export_template' : self.export_template_lineedit.text(),
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
@@ -999,11 +1007,6 @@ class SceningToolbar(AbstractToolbar):
             logging.warning('Storage loading: Scening: failed to parse label.')
 
         try:
-            self.export_template_scene_lineedit.setText(state['scening_export_scene_template'])
+            self.export_template_lineedit.setText(state['scening_export_template'])
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse scene export template.')
-
-        try:
-            self.export_template_scenes_lineedit.setText(state['scening_export_scenes_template'])
-        except (KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse scenes export template.')
+            logging.warning('Storage loading: Scening: failed to parse export template.')
