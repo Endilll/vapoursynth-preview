@@ -14,11 +14,11 @@ from vspreview.core   import AbstractMainWindow, AbstractToolbar, AbstractToolba
 from vspreview.models import Outputs  # , ItemEditDelegate
 from vspreview.utils  import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
 
-#  TODO: design settings part
-#  TODO: deisgn keyboard layout
-#  TODO: VFR support
-#  TODO: move to pyside2, but it lacks single Qt namespace with everything imported and not type annotated. https://bugreports.qt.io/browse/PYSIDE-735
-#  TODO: get rid of magical constants related to 'pixel' sizes (their actual units are yet to be discovered)
+# TODO: design settings part
+# TODO: deisgn keyboard layout
+# TODO: VFR support
+# TODO: move to pyside2, but it lacks single Qt namespace with everything imported and isn't type annotated. https://bugreports.qt.io/browse/PYSIDE-735
+# TODO: get rid of magical constants related to 'pixel' sizes (their actual units are yet to be discovered)
 
 
 class ScriptErrorDialog(Qt.QDialog):
