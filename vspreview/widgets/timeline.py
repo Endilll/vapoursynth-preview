@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from   datetime import timedelta
 # import logging
-from   typing   import Any, List, NamedTuple, Optional, Tuple, Union
+from   typing   import Any, cast, Dict, Iterator, List, Optional, Tuple, Union
 
 from PyQt5 import Qt
 
-from vspreview.core import Frame, Scene
+from vspreview.core import AbstractToolbar, Frame, Scene
 # import debug
 
 # pylint: disable=attribute-defined-outside-init
@@ -15,47 +15,46 @@ from vspreview.core import Frame, Scene
 # TODO: store cursor pos as frame
 # TODO: consider moving from ints to floats
 
-Notch = NamedTuple('Notch', (
-    ('line', Qt.QLineF),
-    ('t'   , timedelta)
-))
 
-
-class TimelineMark:
-    def __init__(self, data: Union[Frame, timedelta], color: Qt.QColor, label: str = '') -> None:
+class Notch:
+    def __init__(self, data: Union[Frame, timedelta], color: Qt.QColor = cast(Qt.QColor, Qt.Qt.white),
+                 label: str = '', line: Qt.QLineF = Qt.QLineF()) -> None:
         self.data  = data
         self.color = color
         self.label = label
+        self.line  = line
 
-        self.notch = Notch(Qt.QLineF(), timedelta(0))
 
-
-class TimelineMarks:
-    allowed_types = (Frame, Scene, timedelta)
-
-    def __init__(self, other: Optional[TimelineMarks] = None) -> None:
-        self.items: List[TimelineMark] = []
+class Notches:
+    def __init__(self, other: Optional[Notches] = None) -> None:
+        self.items: List[Notch] = []
 
         if other is None:
             return
-        if isinstance(other, TimelineMarks):
-            self.items = other.items
+        self.items = other.items
+
+    def add(self, data: Union[Frame, Scene, timedelta, Notch], color: Qt.QColor = cast(Qt.QColor, Qt.Qt.white), label: str = '') -> None:
+        if isinstance(data, Notch):
+            self.items.append(data)
+        elif isinstance(data, Scene):
+            if label == '':
+                label = data.label
+            self.items.append(Notch(data.start, color, label))
+            if data.end != data.start:
+                self.items.append(Notch(data.end, color, label))
+        elif isinstance(data, (Frame, timedelta)):
+            self.items.append(Notch(data, color, label))
         else:
             raise TypeError
 
-    def add(self, data: Union[Frame, Scene, timedelta, TimelineMark], color: Qt.QColor, label: str = '') -> None:
-        if isinstance(data, TimelineMark):
-            self.items.append(data)
-        if isinstance(data, Scene):
-            if label == '':
-                label = data.label
-            self.items.append(TimelineMark(data.start, color, label))
-            if data.end != data.start:
-                self.items.append(TimelineMark(data.end, color, label))
-        elif isinstance(data, (Frame, timedelta)):
-            self.items.append(TimelineMark(data, color, label))
-        else:
-            raise TypeError
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __getitem__(self, index: int) -> Notch:
+        return self.items[index]
+
+    def __iter__(self) -> Iterator[Notch]:
+        return iter(self.items)
 
 
 class Timeline(Qt.QWidget):
@@ -65,8 +64,8 @@ class Timeline(Qt.QWidget):
         'totalT', 'totalF',
         'notchIntervalTargetX', 'notchHeight', 'fontHeight',
         'notchLabelInterval', 'notchScrollInterval', 'scrollHeight',
-        'cursorX', 'cursorFT', 'needFullRepaint', '_bookmarksChanged',
-        'scrollRect', 'bookmarkLines'
+        'cursorX', 'cursorFT', 'needFullRepaint',
+        'scrollRect',
     )
 
     clicked = Qt.pyqtSignal(Frame, timedelta)
@@ -99,8 +98,10 @@ class Timeline(Qt.QWidget):
         self.cursorX = 0
         # used as a fallback when self.rectF.width() is 0, so cursorX is incorrect
         self.cursorFT: Optional[Union[Frame, timedelta]] = None
+        # False means that only cursor position'll be recalculated
         self.needFullRepaint = True
-        self._bookmarksChanged = True
+
+        self.toolbars_notches: Dict[AbstractToolbar, Notches] = {}
 
         self.setAttribute(Qt.Qt.WA_OpaquePaintEvent)
         self.setMouseTracking(True)
@@ -128,28 +129,35 @@ class Timeline(Qt.QWidget):
             notchIntervalT = self.calculateNotchInterval(self.notchIntervalTargetX)
             labelFormat = self.generateLabelFormat(notchIntervalT)
 
-            notches: List[Notch] = []
-            notchX = self.rectF.left()
-            notchT = timedelta(0)
+            labelsNotches = Notches()
+            labelNotchBottom = self.rectF.top() + self.fontHeight + self.notchLabelInterval + self.notchHeight + 5
+            labelNotchTop    = labelNotchBottom - self.notchHeight
 
-            notchBottom = self.rectF.top() + self.fontHeight + self.notchLabelInterval + self.notchHeight + 5
-            notchTop    = notchBottom - self.notchHeight
+            labelNotchX = self.rectF.left()
+            labelNotchT = timedelta(0)
+            while (labelNotchX < self.rectF.right() and labelNotchT < self.totalT):
+                line = Qt.QLineF(labelNotchX, labelNotchBottom, labelNotchX, labelNotchTop)
+                labelsNotches.add(Notch(labelNotchT, line=line))
+                # notches.append(Notch(line, labelNotchT))
+                labelNotchT += notchIntervalT
+                labelNotchX  = self.tToX(labelNotchT)
 
-            while (notchX < self.rectF.right() and notchT < self.totalT):
-                line = Qt.QLineF(notchX, notchBottom, notchX, notchTop)
-                notches.append(Notch(line, notchT))
-                notchT += notchIntervalT
-                notchX  = self.tToX(notchT)
+            self.scrollRect = Qt.QRectF(self.rectF.left(), labelNotchBottom + self.notchScrollInterval, self.rectF.width(), self.scrollHeight)
 
-            self.scrollRect = Qt.QRectF(self.rectF.left(), notchBottom + self.notchScrollInterval, self.rectF.width(), self.scrollHeight)
+            for toolbar, notches in self.toolbars_notches.items():
+                if not toolbar.is_notches_visible():
+                    continue
+
+                for notch in notches:
+                    if   isinstance(notch.data, Frame):
+                        x = self.fToX(notch.data)
+                    elif isinstance(notch.data, timedelta):
+                        x = self.tToX(notch.data)
+
+                    y = self.scrollRect.top()
+                    notch.line = Qt.QLineF(x, y, x, y + self.scrollRect.height() - 1)
 
         cursorLine = Qt.QLineF(self.cursorX, self.scrollRect.top(), self.cursorX, self.scrollRect.top() + self.scrollRect.height() - 1)
-
-        if self.needFullRepaint or self._bookmarksChanged:
-            self.bookmarkLines: List[Qt.QLineF] = []
-            for bookmark in self.main.current_output.bookmarks:
-                line = Qt.QLineF(self.fToX(bookmark.frame), self.scrollRect.top(), self.fToX(bookmark.frame), self.scrollRect.top() + self.scrollRect.height() - 1)
-                self.bookmarkLines.append(line)
 
         # drawing
 
@@ -158,18 +166,18 @@ class Timeline(Qt.QWidget):
 
             painter.setPen(Qt.QPen(self.palette().color(Qt.QPalette.WindowText)))
             painter.setRenderHint(Qt.QPainter.Antialiasing, False)
-            painter.drawLines([notch.line for notch in notches])
+            painter.drawLines([notch.line for notch in labelsNotches])
 
             painter.setRenderHint(Qt.QPainter.Antialiasing)
-            for i in range(0, len(notches)):
-                line = notches[i].line
-                t    = notches[i].t
+            for i in range(0, len(labelsNotches)):
+                line = labelsNotches[i].line
+                t    = cast(timedelta, labelsNotches[i].data)
                 anchorRect = Qt.QRectF(line.x2(), line.y2() - self.notchLabelInterval, 0, 0)
                 label = strfdelta(t, labelFormat)
                 if   i == 0:
                     rect = painter.boundingRect(anchorRect, Qt.Qt.AlignBottom + Qt.Qt.AlignLeft,    label)
                     rect.moveLeft(-2.5)
-                elif i == (len(notches) - 1):
+                elif i == (len(labelsNotches) - 1):
                     rect = painter.boundingRect(anchorRect, Qt.Qt.AlignBottom + Qt.Qt.AlignHCenter, label)
                     if rect.right() > self.rectF.right():
                         rect = painter.boundingRect(anchorRect, Qt.Qt.AlignBottom + Qt.Qt.AlignRight, label)
@@ -180,15 +188,18 @@ class Timeline(Qt.QWidget):
         painter.setRenderHint(Qt.QPainter.Antialiasing, False)
         painter.fillRect(self.scrollRect, Qt.Qt.gray)
 
-        painter.setPen(Qt.Qt.darkGreen)
-        for line in self.bookmarkLines:
-            painter.drawLine(line)
+        for toolbar, notches in self.toolbars_notches.items():
+            if not toolbar.is_notches_visible():
+                continue
+
+            for notch in notches:
+                painter.setPen(notch.color)
+                painter.drawLine(notch.line)
 
         painter.setPen(Qt.Qt.black)
         painter.drawLine(cursorLine)
 
         self.needFullRepaint = False
-        self._bookmarksChanged = False
 
     def moveEvent(self, event: Qt.QMoveEvent) -> None:
         super().moveEvent(event)
@@ -204,11 +215,14 @@ class Timeline(Qt.QWidget):
 
     def mouseMoveEvent(self, event: Qt.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
-        for i in range(len(self.bookmarkLines)):
-            line = self.bookmarkLines[i]
-            if line.x1() - 0.5 <= event.x() <= line.x1() + 0.5:
-                Qt.QToolTip.showText(event.globalPos(), self.main.current_output.bookmarks[i].label)
-                break
+        for toolbar, notches in self.toolbars_notches.items():
+            if not toolbar.is_notches_visible():
+                continue
+            for notch in notches:
+                line = notch.line
+                if line.x1() - 0.5 <= event.x() <= line.x1() + 0.5:
+                    Qt.QToolTip.showText(event.globalPos(), notch.label)
+                    return
 
     def resizeEvent(self, event: Qt.QResizeEvent) -> None:
         super().resizeEvent(event)
@@ -222,13 +236,17 @@ class Timeline(Qt.QWidget):
 
         return super().event(event)
 
-    def bookmarksChanged(self) -> None:
-        self._bookmarksChanged = True
-        self.update()
-
     def update(self, *args: Any, **kwargs: Any) -> None:
         self.needFullRepaint = True
         super().update(*args, **kwargs)
+
+    def updateNotches(self, toolbar: Optional[AbstractToolbar] = None) -> None:
+        if toolbar is not None:
+            self.toolbars_notches[toolbar] = toolbar.get_notches()
+        if toolbar is None:
+            for t in self.main.toolbars:
+                self.toolbars_notches[t] = t.get_notches()
+        self.update()
 
 
     def calculateNotchInterval(self, targetIntervalX: int) -> timedelta:

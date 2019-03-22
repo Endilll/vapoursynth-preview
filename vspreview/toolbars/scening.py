@@ -8,6 +8,7 @@ from PyQt5 import Qt
 
 from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame, QYAMLObject, Scene
 from vspreview.utils import add_shortcut, debug
+from vspreview.widgets import ComboBox, Notches
 
 # TODO: make lists combobox editable
 # TODO: add template edit for single line export using two fields: one for scene and the other one for list of scenes
@@ -375,6 +376,14 @@ class SceningToolbar(AbstractToolbar):
 
     def on_current_output_changed(self, index: int) -> None:
         self.items_combobox.setModel(self.main.current_output.scening_lists)
+
+    def get_notches(self) -> Notches:
+        marks = Notches()
+        if self.current_list is None:
+            return marks
+        for scene in self.current_list:
+            marks.add(scene, cast(Qt.QColor, Qt.Qt.green))
+        return marks
 
     @property
     def current_list(self) -> SceningList:

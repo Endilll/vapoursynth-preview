@@ -337,18 +337,22 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
 
 
 class AbstractToolbar(Qt.QWidget, QABC):
+    if TYPE_CHECKING:
+        from vspreview.widgets import Notches
+
     __slots__ = ('main')
 
-    if not TYPE_CHECKING:
-        timelineMarksChanged = Qt.pyqtSignal(object)
+    if TYPE_CHECKING:
+        notchesChanged = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable
     else:
-        timelineMarksChanged = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable
+        notchesChanged = Qt.pyqtSignal(object)
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
         self.main = main_window
         super().__init__(self.main.central_widget)
+        self.notchesChanged.connect(self.main.timeline.updateNotches)
 
-        self.timelineMarksChanged.connect(self.main.timeline.updateTimelineMarks)
+        self.toggle_button = Qt.QPushButton(self)
 
     @abstractmethod
     def on_toggle(self, new_state: bool) -> None:
@@ -357,10 +361,14 @@ class AbstractToolbar(Qt.QWidget, QABC):
     @abstractmethod
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
         raise NotImplementedError()
+    def on_current_output_changed(self, index: int, prev_index: int) -> None:
+    def get_notches(self) -> Notches:
+        from vspreview.widgets import Notches
 
-    @abstractmethod
+        return Notches()
     def on_current_output_changed(self, index: int) -> None:
-        raise NotImplementedError()
+    def is_notches_visible(self) -> bool:
+        return self.isVisible()
 
     def resize_main_window(self, expanding: bool) -> None:
         if expanding:

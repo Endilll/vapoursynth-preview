@@ -449,8 +449,6 @@ class MainWindow(AbstractMainWindow):
     def init_outputs(self) -> None:
         self.graphics_scene.clear()
         for output in self.outputs:
-            output.bookmarks.changed.connect(self.timeline.bookmarksChanged)
-
             frame_pixmap = self.render_frame(output.last_showed_frame, output)
             frame_item   = self.graphics_scene.addPixmap(frame_pixmap)
             frame_item.hide()
@@ -533,7 +531,7 @@ class MainWindow(AbstractMainWindow):
             output.graphics_scene_item.hide()
         self.current_output.graphics_scene_item.show()
         self.graphics_scene.setSceneRect(Qt.QRectF(self.current_output.graphics_scene_item.pixmap().rect()))
-        self.timeline.bookmarksChanged()
+        self.timeline.updateNotches()
         for toolbar in self.toolbars:
             toolbar.on_current_output_changed(index)
         self.update_statusbar_output_info()
