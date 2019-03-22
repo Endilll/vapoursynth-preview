@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from   datetime import timedelta
 import logging
-from   typing   import Any, cast, List, Mapping, Optional
+from   pathlib  import Path
+import re
+from   typing   import Any, Callable, cast, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
 from PyQt5 import Qt
 
-from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame, QYAMLObject, Scene
-from vspreview.utils import add_shortcut, debug
+from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, QYAMLObject, Scene
+from vspreview.utils   import add_shortcut, debug, fire_and_forget, set_status_label
 from vspreview.widgets import ComboBox, Notches
 
 # TODO: make lists combobox editable
-# TODO: add template edit for single line export using two fields: one for scene and the other one for list of scenes
+# TODO: annotate current_list() to return Optional[SceningList]
 
 
 class SceningList(Qt.QAbstractListModel, QYAMLObject):
@@ -48,7 +50,9 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
     def __getitem__(self, i: int) -> Scene:
         return self.items[i]
 
-    def add(self, start: Frame, end: Optional[Frame] = None) -> None:
+    def __getiter__(self) -> Iterator[Scene]:
+        return iter(self.items)
+
     def add(self, start: Frame, end: Optional[Frame] = None, label: str = '') -> Scene:
         from bisect import bisect_right
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from   typing  import Any, cast, List, Mapping, Optional
+from   typing  import Any, cast, Iterator, List, Mapping, Optional
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
@@ -43,6 +43,9 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
 
     def __len__(self) -> int:
         return len(self.items)
+
+    def __getiter__(self) -> Iterator[Output]:
+        return iter(self.items)
 
     def append(self, item: Output) -> int:
         index = len(self.items)
