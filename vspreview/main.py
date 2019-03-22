@@ -147,11 +147,6 @@ class MainToolbar(AbstractToolbar):
         self.save_as_button.setText('Save as')
         layout.addWidget(self.save_as_button)
 
-        self.test_button = Qt.QPushButton(self)
-        self.test_button.setText('Test')
-        self.test_button.setVisible(False)
-        layout.addWidget(self.test_button)
-
         layout.addStretch()
 
     def on_toggle(self, new_state: bool) -> None:
