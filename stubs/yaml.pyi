@@ -8,6 +8,8 @@ class Node:
     pass
 
 class Dumper:
+    ignore_aliases: Callable[[], bool]
+
     def represent_scalar(self, tag: str, value: Any, style: Optional[str] = None) -> Node: ...
 
 class Loader:
