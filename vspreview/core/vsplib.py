@@ -35,26 +35,30 @@ class FrameInterval(YAMLObject):
     def __add__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value + other)
 
-    def __iadd__(self, other: Any) -> None:
+    def __iadd__(self, other: Any) -> FrameInterval:
         self.value += other
+        return self
 
     def __sub__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value - other)
 
-    def __isub__(self, other: Any) -> None:
+    def __isub__(self, other: Any) -> FrameInterval:
         self.value -= other
+        return self
 
     def __mul__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value * other)
 
-    def __imul__(self, other: Any) -> None:
+    def __imul__(self, other: Any) -> FrameInterval:
         self.value *= other
+        return self
 
     def __floordiv__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value / other)
 
-    def __ifloordiv__(self, other: Any) -> None:
+    def __ifloordiv__(self, other: Any) -> FrameInterval:
         self.value //= other
+        return self
 
     def __int__(self) -> int:
         return self.value
@@ -147,8 +151,9 @@ class Frame(YAMLObject):
     def __add__(self, other: FrameInterval) -> Frame:
         return Frame(self.value + other.value)
 
-    def __iadd__(self, other: FrameInterval) -> None:
+    def __iadd__(self, other: FrameInterval) -> Frame:
         self.value += other.value
+        return self
 
     @overload
     def __sub__(self, other: FrameInterval) -> Frame: ...
@@ -162,8 +167,9 @@ class Frame(YAMLObject):
             return Frame(self.value - other.value)
         raise TypeError
 
-    def __isub__(self, other: FrameInterval) -> None:  # type: ignore
+    def __isub__(self, other: FrameInterval) -> Frame:  # type: ignore
         self.value -= other.value
+        return self
 
     def __int__(self) -> int:
         return self.value
