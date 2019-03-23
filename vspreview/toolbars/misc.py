@@ -160,9 +160,6 @@ class MiscToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning('Storage loading: failed to parse show debug flag.')
             show_debug = self.main.DEBUG_TOOLBAR
+            
+        self.show_debug_checkbox.setChecked(show_debug)
 
-        # FIXME: get rid of workaround
-        if show_debug:
-            Qt.QTimer.singleShot(0, lambda: self.on_show_debug_changed(Qt.Qt.Checked))
-        else:
-            Qt.QTimer.singleShot(0, lambda: self.on_show_debug_changed(Qt.Qt.Unchecked))

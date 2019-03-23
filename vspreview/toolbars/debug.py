@@ -52,6 +52,7 @@ class DebugToolbar(AbstractToolbar):
         # switch button for main toolbar
 
         self.toggle_button.setText('Debug')
+        self.toggle_button.setVisible(False)
 
 
     def test_button_clicked(self, checked: Optional[bool] = None) -> None:
