@@ -1,4 +1,4 @@
-Standalone preview for VapourSynth scripts. Meant to be paired with code editor like Visual Studio Code.
+Standalone preview for VapourSynth scripts. Meant to be paired with a code editor like Visual Studio Code.
 
 # Prerequisites
 
@@ -12,7 +12,7 @@ pip modules:
 
 # Usage
 
-`py run.py script.vpy` where `script.vpy` is VapourSynth script.
+`python run.py script.vpy` where `script.vpy` is path to VapourSynth script.
 
 # Note
 
