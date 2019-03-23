@@ -24,9 +24,9 @@ class FrameInterval(YAMLObject):
 
     yaml_tag = '!FrameInterval'
 
-    def __init__(self, value: Union[FrameInterval, int]) -> None:
-        if isinstance(value, int):
-            self.value = value
+    def __init__(self, value: Union[float, FrameInterval, int]) -> None:
+        if isinstance(value, (float, int)):
+            self.value = int(value)
         elif isinstance(value, FrameInterval):
             self.value = value.value
         else:
@@ -138,11 +138,11 @@ class Frame(YAMLObject):
 
     yaml_tag = '!Frame'
 
-    def __init__(self, value: Union[Frame, int]) -> None:
+    def __init__(self, value: Union[float, Frame, int]) -> None:
         if isinstance(value, int):
             if value < 0:
                 raise ValueError
-            self.value = value
+            self.value = int(value)
         elif isinstance(value, Frame):
             self.value = value.value
         else:
