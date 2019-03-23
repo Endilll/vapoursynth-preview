@@ -367,7 +367,6 @@ class MainWindow(AbstractMainWindow):
         # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.OptimizationFlag.DontSavePainterState)
         # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.OptimizationFlag.DontAdjustForAntialiasing)
         self.graphics_view.setBackgroundBrush(self.palette().brush(Qt.QPalette.Window))
-        # check gui update timer for actual size policy
         self.graphics_view.setSizePolicy(Qt.QSizePolicy.Fixed, Qt.QSizePolicy.Fixed)
         self.graphics_view.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
         self.main_layout.addWidget(self.graphics_view)
@@ -511,7 +510,7 @@ class MainWindow(AbstractMainWindow):
 
         self.current_output.last_showed_frame = frame
 
-        self.timeline.setPosition(frame)
+        self.timeline.set_position(frame)
         self.toolbars.main.on_current_frame_changed(frame, t)
         for toolbar in self.toolbars:
             toolbar.on_current_frame_changed(frame, t)
@@ -536,14 +535,14 @@ class MainWindow(AbstractMainWindow):
 
         # current_output relies on outputs_combobox
         self.toolbars.main.on_current_output_changed(index, prev_index)
-        self.timeline.setDuration(self.current_output.total_frames, self.current_output.duration)
+        self.timeline.set_duration(self.current_output.total_frames, self.current_output.duration)
         self.current_frame = self.current_output.last_showed_frame
 
         for output in self.outputs:
             output.graphics_scene_item.hide()
         self.current_output.graphics_scene_item.show()
         self.graphics_scene.setSceneRect(Qt.QRectF(self.current_output.graphics_scene_item.pixmap().rect()))
-        self.timeline.updateNotches()
+        self.timeline.update_notches()
         for toolbar in self.toolbars:
             toolbar.on_current_output_changed(index, prev_index)
         self.update_statusbar_output_info()
@@ -632,7 +631,7 @@ class MainWindow(AbstractMainWindow):
 
         try:
             timeline_mode = state['timeline_mode']
-            if not Timeline.Mode.isValid(timeline_mode):
+            if not Timeline.Mode.is_valid(timeline_mode):
                 raise TypeError
         except (KeyError, TypeError):
             logging.warning('Storage loading: failed to parse timeline mode. Using default.')

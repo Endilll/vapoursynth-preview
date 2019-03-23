@@ -522,7 +522,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
 
         self.setFocusPolicy(Qt.Qt.ClickFocus)
 
-        self.notchesChanged.connect(self.main.timeline.updateNotches)
+        self.notchesChanged.connect(self.main.timeline.update_notches)
 
         self.toggle_button = Qt.QPushButton(self)
         self.toggle_button.setCheckable(True)
@@ -555,7 +555,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
             self.main.resize(self.main.width(), self.main.height() + self.height() + round(6 * self.main.display_scale))
         if not expanding:
             self.main.resize(self.main.width(), self.main.height() - self.height() - round(6 * self.main.display_scale))
-            self.main.timeline.needFullRepaint = True
+            self.main.timeline.update()
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {}
