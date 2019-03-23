@@ -542,6 +542,9 @@ class AbstractToolbar(Qt.QWidget, QABC):
         return self.isVisible()
 
     def resize_main_window(self, expanding: bool) -> None:
+        if self.main.windowState() == Qt.Qt.WindowMaximized:
+            return
+
         if expanding:
             self.main.resize(self.main.width(), self.main.height() + self.height() + round(6 * self.main.display_scale))
         if not expanding:
