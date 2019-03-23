@@ -162,18 +162,34 @@ class PlaybackToolbar(AbstractToolbar):
             self.main.statusbar.label.setText('Ready')
 
     def seek_to_prev(self, checked: Optional[bool] = None) -> None:
+        try:
+            new_pos = self.main.current_frame - FrameInterval(1)
+        except ValueError:
+            return
         self.stop()
-        self.main.on_current_frame_changed(self.main.current_frame - FrameInterval(1))
+        self.main.current_frame = new_pos
 
     def seek_to_next(self, checked: Optional[bool] = None) -> None:
+        new_pos = self.main.current_frame + FrameInterval(1)
+        if new_pos >= self.main.current_output.total_frames:
+            return
         self.stop()
-        self.main.on_current_frame_changed(self.main.current_frame + FrameInterval(1))
+        self.main.current_frame = new_pos
 
     def seek_n_frames_b(self, checked: Optional[bool] = None) -> None:
-        self.main.current_frame -= FrameInterval(self.seek_frame_spinbox.value())  # type: ignore
+        try:
+            new_pos = self.main.current_frame - FrameInterval(self.seek_frame_spinbox.value())
+        except ValueError:
+            return
+        self.stop()
+        self.main.current_frame = new_pos
 
     def seek_n_frames_f(self, checked: Optional[bool] = None) -> None:
-        self.main.current_frame += FrameInterval(self.seek_frame_spinbox.value())  # type: ignore
+        new_pos = self.main.current_frame + FrameInterval(self.seek_frame_spinbox.value())
+        if new_pos >= self.main.current_output.total_frames:
+            return
+        self.stop()
+        self.main.current_frame = new_pos
 
     def on_seek_frame_changed(self, frame: Union[Frame, int]) -> None:
         frame = Frame(frame)
