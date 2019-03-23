@@ -355,7 +355,7 @@ class MainWindow(AbstractMainWindow):
             self.toolbars.main.layout().addWidget(toolbar.toggle_button)
 
     def setup_ui(self) -> None:
-        from vspreview.widgets import GraphicsView, Timeline
+        from vspreview.widgets import GraphicsView
 
         # mainWindow.resize(1300, 808)
 

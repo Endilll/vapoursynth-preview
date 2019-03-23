@@ -91,6 +91,7 @@ class PlaybackToolbar(AbstractToolbar):
 
         self.seek_frame_spinbox = Qt.QSpinBox(self)
         self.seek_frame_spinbox.setMinimum(1)
+        self.seek_frame_spinbox.setToolTip('Seek N Frames Step')
         layout.addWidget(self.seek_frame_spinbox)
 
         self.seek_time_spinbox = Qt.QTimeEdit(self)

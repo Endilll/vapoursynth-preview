@@ -168,7 +168,7 @@ class Timeline(Qt.QWidget):
                 while (labelNotchX < self.rectF.right() and labelNotchF < self.totalF):
                     line = Qt.QLineF(labelNotchX, labelNotchBottom, labelNotchX, labelNotchTop)
                     labelsNotches.add(Notch(deepcopy(labelNotchF), line=line))
-                    labelNotchF += notchIntervalF  # type: ignore
+                    labelNotchF += notchIntervalF
                     labelNotchX  = self.fToX(labelNotchF)
 
             self.scrollRect = Qt.QRectF(self.rectF.left(), labelNotchBottom + self.notchScrollInterval, self.rectF.width(), self.scrollHeight)
@@ -283,11 +283,11 @@ class Timeline(Qt.QWidget):
         self.update()
 
     @property
-    def mode(self) -> Mode:  # pylint: disable=undefined-variable
+    def mode(self) -> str:  # pylint: disable=undefined-variable
         return self._mode
 
     @mode.setter
-    def mode(self, value: Mode) -> None:
+    def mode(self, value: str) -> None:
         if value == self._mode:
             return
 
