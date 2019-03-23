@@ -249,21 +249,57 @@ class Timeline(Qt.QWidget):
         self.update()
 
 
-    def calculateNotchInterval(self, targetIntervalX: int) -> timedelta:
-        # 1.2 means that it's allowed to reduce target interval betweewn labels by 20% at most
-        MARGIN = 1.2
+        self._mode = value
+        self.update()
 
-        seconds = self.xToT(targetIntervalX).total_seconds()
-        if   seconds < 10 * MARGIN:
-            notchIntervalT = timedelta(seconds= 10)
-        elif seconds < 30 * MARGIN:
-            notchIntervalT = timedelta(seconds= 30)
-        elif seconds < 60 * MARGIN:
-            notchIntervalT = timedelta(seconds= 60)
-        else:
-            notchIntervalT = timedelta(seconds=120)
 
-        return notchIntervalT
+    def calculateNotchIntervalT(self, targetIntervalX: int) -> timedelta:
+        intervals = (
+            timedelta(seconds=  1),
+            timedelta(seconds=  2),
+            timedelta(seconds=  5),
+            timedelta(seconds= 10),
+            timedelta(seconds= 15),
+            timedelta(seconds= 30),
+            timedelta(seconds= 60),
+            timedelta(seconds= 90),
+            timedelta(seconds=120),
+            timedelta(seconds=300)
+        )
+        margin  = 1 + self.main.TIMELINE_LABEL_NOTCHES_MARGIN / 100
+        targetIntervalT = self.xToT(targetIntervalX)
+        for interval in intervals:
+            if targetIntervalT < interval * margin:
+                return interval
+        return intervals[-1]
+
+    def calculateNotchIntervalF(self, targetIntervalX: int) -> FrameInterval:
+        intervals = (
+            FrameInterval(    1),
+            FrameInterval(    5),
+            FrameInterval(   10),
+            FrameInterval(   20),
+            FrameInterval(   25),
+            FrameInterval(   50),
+            FrameInterval(   75),
+            FrameInterval(  100),
+            FrameInterval(  200),
+            FrameInterval(  250),
+            FrameInterval(  500),
+            FrameInterval(  750),
+            FrameInterval( 1000),
+            FrameInterval( 2000),
+            FrameInterval( 2500),
+            FrameInterval( 5000),
+            FrameInterval( 7500),
+            FrameInterval(10000),
+        )
+        margin  = 1 + self.main.TIMELINE_LABEL_NOTCHES_MARGIN / 100
+        targetIntervalF = self.xToF(targetIntervalX)
+        for interval in intervals:
+            if targetIntervalF < interval * margin:
+                return interval
+        return intervals[-1]
 
     def generateLabelFormat(self, notchIntervalT: timedelta) -> str:
         if   notchIntervalT >= timedelta(hours=1):
