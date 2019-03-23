@@ -169,11 +169,11 @@ class MainToolbar(AbstractToolbar):
         self.main.init_outputs()
         self.outputs_combobox.setModel(self.outputs)
 
-    def on_copy_frame_button_clicked(self) -> None:
+    def on_copy_frame_button_clicked(self, checked: Optional[bool] = None) -> None:
         self.main.clipboard.setText(str(self.main.current_frame))
         self.main.statusbar.showMessage('Current frame number copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
-    def on_copy_timestamp_button_clicked(self) -> None:
+    def on_copy_timestamp_button_clicked(self, checked: Optional[bool] = None) -> None:
         self.main.clipboard.setText(self.time_spinbox.text())
         self.main.statusbar.showMessage('Current timestamp copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
@@ -259,19 +259,19 @@ class Toolbars(AbstractToolbars):
 
 class MainWindow(AbstractMainWindow):
     # those are defaults that can be overriden in runtime or used as fallbacks
-    AUTOSAVE_ENABLED          =  True
-    AUTOSAVE_INTERVAL         =    30 * 1000  # s
-    BASE_PPI                  =    96  # PPI
-    DARK_THEME                =  True
-    FPS_REFRESH_INTERVAL      =  1000  # ms
-    LOG_LEVEL                 = logging.DEBUG
-    OPENGL_RENDERING          = False
-    OUTPUT_INDEX              =     0
-    PLAY_BUFFER_SIZE          = FrameInterval(4)  # frames
-    PNG_COMPRESSION_LEVEL     =    80  # 0 - 100
-    SAVE_TEMPLATE             = '{script_name}_{frame}'
-    SEEK_STEP                 =     1  # frames
-    STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # s
+    AUTOSAVE_ENABLED           =  True
+    AUTOSAVE_INTERVAL          =    30 * 1000  # s
+    BASE_PPI                   =    96  # PPI
+    DARK_THEME                 =  True
+    FPS_REFRESH_INTERVAL       =  1000  # ms
+    LOG_LEVEL          = logging.DEBUG
+    OPENGL_RENDERING           = False
+    OUTPUT_INDEX               =     0
+    PLAY_BUFFER_SIZE = FrameInterval(4)  # frames
+    PNG_COMPRESSION_LEVEL      =    80  # 0 - 100
+    SAVE_TEMPLATE = '{script_name}_{frame}'
+    SEEK_STEP                  =     1  # frames
+    STATUSBAR_MESSAGE_TIMEOUT  =     3 * 1000  # s
 
     DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
