@@ -232,7 +232,7 @@ class MainToolbar(AbstractToolbar):
             if self.outputs_combobox.currentIndex() == -1:
                 raise ValueError
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Main toolbar: failed to parse playback seek step.')
+            logging.warning('Storage loading: Main toolbar: failed to parse output index.')
             self.main.switch_output(self.main.OUTPUT_INDEX)
         except ValueError:
             logging.warning('Storage loading: Main toolbar: stored output index is not valid.')

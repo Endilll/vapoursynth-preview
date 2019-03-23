@@ -391,6 +391,31 @@ class SceningListDialog(Qt.QDialog):
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
         self.tableview.selectionModel().currentRowChanged.connect(self.on_tableview_selection_row_changed)  # type: ignore
 
+    def hideEvent(self, event: Qt.QHideEvent) -> None:
+        self.end_frame_lineedit  .textChanged.disconnect(self.on_end_frame_changed)
+        self.label_lineedit      .textChanged.disconnect(self.on_label_changed)
+        self.name_lineedit       .textChanged.disconnect(self.on_name_changed)
+        self.start_frame_lineedit.textChanged.disconnect(self.on_start_frame_changed)
+        self.tableview         .doubleClicked.disconnect(self.on_tableview_clicked)
+        self.tableview.selectionModel().currentRowChanged.disconnect(self.on_tableview_selection_row_changed)
+
+        super().hideEvent(event)
+
+    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
+        if not self.isVisible():
+            return
+        if self.tableview.selectionModel() is None:
+            return
+        selection = Qt.QItemSelection()
+        for i, scene in enumerate(self.scening_list):
+            if frame in scene:
+                index = self.scening_list.index(i, 0)
+                selection.select(index, index)
+        self.tableview.selectionModel().select(
+            selection,
+            Qt.QItemSelectionModel.SelectionFlags(  # type: ignore
+                Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))       
+
     def on_end_frame_changed(self, text: str) -> None:
         try:
             frame = Frame(int(self.end_frame_lineedit.text()))
@@ -663,6 +688,7 @@ class SceningToolbar(AbstractToolbar):
 
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
         self.check_remove_export_possibility()
+        self.scening_list_dialog.on_current_frame_changed(frame, t)
 
     def get_notches(self) -> Notches:
         marks = Notches()
