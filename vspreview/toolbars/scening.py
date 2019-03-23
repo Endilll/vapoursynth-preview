@@ -564,16 +564,16 @@ class SceningToolbar(AbstractToolbar):
     # seeking
 
     def on_seek_to_next_clicked(self, checked: Optional[bool] = None) -> None:
-        next_frame = self.current_list.get_next_frame(self.main.current_frame)
-        if next_frame is None:
+        new_pos = self.current_list.get_next_frame(self.main.current_frame)
+        if new_pos is None:
             return
-        self.main.current_frame = next_frame
+        self.main.current_frame = new_pos
 
     def on_seek_to_prev_clicked(self, checked: Optional[bool] = None) -> None:
-        next_frame = self.current_list.get_prev_frame(self.main.current_frame)
-        if next_frame is None:
+        new_pos = self.current_list.get_prev_frame(self.main.current_frame)
+        if new_pos is None:
             return
-        self.main.current_frame = next_frame
+        self.main.current_frame = new_pos
 
     # scene management
 
