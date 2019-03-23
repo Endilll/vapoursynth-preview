@@ -10,9 +10,10 @@ from   typing   import Any, cast, Mapping, Optional
 from   PyQt5       import Qt
 import vapoursynth as     vs
 
-from vspreview.core   import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
-from vspreview.models import Outputs
-from vspreview.utils  import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
+from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
+from vspreview.models  import Outputs
+from vspreview.utils   import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
+from vspreview.widgets import Timeline
 
 # TODO: design settings part
 # TODO: deisgn keyboard layout
@@ -104,6 +105,7 @@ class MainToolbar(AbstractToolbar):
         self.copy_timestamp_button       .clicked.connect(              self.on_copy_timestamp_button_clicked)
         self.zoom_combobox    .currentTextChanged.connect(              self.on_zoom_changed)
         self.save_as_button              .clicked.connect(              self.on_save_as_clicked)
+        self.switch_timeline_mode        .clicked.connect(              self.on_switch_timeline_mode_clicked)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_1, lambda: self.main.switch_output(0))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_2, lambda: self.main.switch_output(1))
@@ -150,6 +152,10 @@ class MainToolbar(AbstractToolbar):
         self.save_as_button.setText('Save Frame as')
         layout.addWidget(self.save_as_button)
 
+        self.switch_timeline_mode = Qt.QPushButton(self)
+        self.switch_timeline_mode.setText('Switch Timeline Mode')
+        layout.addWidget(self.switch_timeline_mode)
+
         layout.addStretch()
 
         self.toggle_button.setVisible(False)
@@ -176,6 +182,12 @@ class MainToolbar(AbstractToolbar):
     def on_copy_timestamp_button_clicked(self, checked: Optional[bool] = None) -> None:
         self.main.clipboard.setText(self.time_spinbox.text())
         self.main.statusbar.showMessage('Current timestamp copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+
+    def on_switch_timeline_mode_clicked(self, checked: Optional[bool] = None) -> None:
+        if self.main.timeline.mode == self.main.timeline.Mode.TIME:
+            self.main.timeline.mode = self.main.timeline.Mode.FRAME
+        elif self.main.timeline.mode == self.main.timeline.Mode.FRAME:
+            self.main.timeline.mode = self.main.timeline.Mode.TIME
 
     def on_zoom_changed(self, text: Optional[str] = None) -> None:
         self.main.graphics_view.setZoom(self.zoom_combobox.currentData())
@@ -272,6 +284,9 @@ class MainWindow(AbstractMainWindow):
     SAVE_TEMPLATE = '{script_name}_{frame}'
     SEEK_STEP                  =     1  # frames
     STATUSBAR_MESSAGE_TIMEOUT  =     3 * 1000  # s
+    # it's allowed to stretch target interval betweewn notches by 20% at most
+    TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
+    TIMELINE_MODE              = 'frame'
 
     DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
@@ -603,14 +618,26 @@ class MainWindow(AbstractMainWindow):
         return timedelta(seconds=(int(frame) / (self.current_output.fps_num / self.current_output.fps_den)))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {
+        state = {
             attr_name: getattr(self, attr_name)
             for attr_name in self.storable_attrs
         }
+        state.update({
+            'timeline_mode': self.timeline.mode
+        })
+        return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         # toolbars is singleton, so it initialize itself right in its __setstate__()
-        pass
+
+        try:
+            timeline_mode = state['timeline_mode']
+            if not Timeline.Mode.isValid(timeline_mode):
+                raise TypeError
+        except (KeyError, TypeError):
+            logging.warning('Storage loading: failed to parse timeline mode. Using default.')
+            timeline_mode = self.TIMELINE_MODE
+        self.timeline.mode = timeline_mode
 
 
 class Application(Qt.QApplication):

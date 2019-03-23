@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 from   datetime import timedelta
-# import logging
+from   enum import auto, Enum
+import logging
 from   typing   import Any, cast, Dict, Iterator, List, Optional, Tuple, Union
 
 from PyQt5 import Qt
+from yaml  import YAMLObject
 
-from vspreview.core import AbstractToolbar, Frame, Scene
-# import debug
+from vspreview.core  import AbstractToolbar, Frame, FrameInterval, Scene
+from vspreview.utils import debug
 
 # pylint: disable=attribute-defined-outside-init
 
-# TODO: add frame mode
 # TODO: store cursor pos as frame
 # TODO: consider moving from ints to floats
+# TODO: make Timeline.Mode a proper class instead of bunch of strings
 
 
 class Notch:
@@ -68,6 +70,19 @@ class Timeline(Qt.QWidget):
         'scrollRect',
     )
 
+    class Mode(YAMLObject):
+        FRAME = 'frame'
+        TIME  = 'time'
+
+        yaml_tag = '!Timeline.Mode'
+
+        @classmethod
+        def isValid(cls, value: str) -> bool:
+            return value in (
+                cls.FRAME,
+                cls.TIME
+            )
+
     clicked = Qt.pyqtSignal(Frame, timedelta)
 
     def __init__(self, parent: Qt.QWidget) -> None:
@@ -77,12 +92,14 @@ class Timeline(Qt.QWidget):
         self.app  = Qt.QApplication.instance()
         self.main = main_window()
 
+        self._mode = self.Mode.TIME
+
         self.rectF  = Qt.QRectF()
 
         self.totalT = timedelta(seconds=1)
         self.totalF = Frame(1)
 
-        self.notchIntervalTargetX = round(50 * self.main.display_scale)
+        self.notchIntervalTargetX = round(75 * self.main.display_scale)
         self.notchHeight          = round( 6 * self.main.display_scale)
         self.fontHeight           = round(10 * self.main.display_scale)
         self.notchLabelInterval   = round(-1 * self.main.display_scale)
@@ -121,26 +138,38 @@ class Timeline(Qt.QWidget):
         painter.end()
 
     def drawWidget(self, painter: Qt.QPainter) -> None:
+        from copy import deepcopy
+
         from vspreview.utils import strfdelta
 
         # calculations
 
         if self.needFullRepaint:
-            notchIntervalT = self.calculateNotchInterval(self.notchIntervalTargetX)
-            labelFormat = self.generateLabelFormat(notchIntervalT)
-
             labelsNotches = Notches()
             labelNotchBottom = self.rectF.top() + self.fontHeight + self.notchLabelInterval + self.notchHeight + 5
             labelNotchTop    = labelNotchBottom - self.notchHeight
-
             labelNotchX = self.rectF.left()
-            labelNotchT = timedelta(0)
-            while (labelNotchX < self.rectF.right() and labelNotchT < self.totalT):
-                line = Qt.QLineF(labelNotchX, labelNotchBottom, labelNotchX, labelNotchTop)
-                labelsNotches.add(Notch(labelNotchT, line=line))
-                # notches.append(Notch(line, labelNotchT))
-                labelNotchT += notchIntervalT
-                labelNotchX  = self.tToX(labelNotchT)
+
+            if self.mode == self.Mode.TIME:
+                notchIntervalT = self.calculateNotchIntervalT(self.notchIntervalTargetX)
+                labelFormat = self.generateLabelFormat(notchIntervalT)
+                labelNotchT = timedelta(0)
+
+                while (labelNotchX < self.rectF.right() and labelNotchT < self.totalT):
+                    line = Qt.QLineF(labelNotchX, labelNotchBottom, labelNotchX, labelNotchTop)
+                    labelsNotches.add(Notch(labelNotchT, line=line))
+                    labelNotchT += notchIntervalT
+                    labelNotchX  = self.tToX(labelNotchT)
+
+            elif self.mode == self.Mode.FRAME:
+                notchIntervalF = self.calculateNotchIntervalF(self.notchIntervalTargetX)
+                labelNotchF = Frame(0)
+
+                while (labelNotchX < self.rectF.right() and labelNotchF < self.totalF):
+                    line = Qt.QLineF(labelNotchX, labelNotchBottom, labelNotchX, labelNotchTop)
+                    labelsNotches.add(Notch(deepcopy(labelNotchF), line=line))
+                    labelNotchF += notchIntervalF  # type: ignore
+                    labelNotchX  = self.fToX(labelNotchF)
 
             self.scrollRect = Qt.QRectF(self.rectF.left(), labelNotchBottom + self.notchScrollInterval, self.rectF.width(), self.scrollHeight)
 
@@ -153,7 +182,6 @@ class Timeline(Qt.QWidget):
                         x = self.fToX(notch.data)
                     elif isinstance(notch.data, timedelta):
                         x = self.tToX(notch.data)
-
                     y = self.scrollRect.top()
                     notch.line = Qt.QLineF(x, y, x, y + self.scrollRect.height() - 1)
 
@@ -169,14 +197,20 @@ class Timeline(Qt.QWidget):
             painter.drawLines([notch.line for notch in labelsNotches])
 
             painter.setRenderHint(Qt.QPainter.Antialiasing)
-            for i in range(0, len(labelsNotches)):
-                line = labelsNotches[i].line
-                t    = cast(timedelta, labelsNotches[i].data)
+            for i, notch in enumerate(labelsNotches):
+                line = notch.line
                 anchorRect = Qt.QRectF(line.x2(), line.y2() - self.notchLabelInterval, 0, 0)
-                label = strfdelta(t, labelFormat)
+
+                if self.mode == self.Mode.TIME:
+                    t     = cast(timedelta, notch.data)
+                    label = strfdelta(t, labelFormat)
+                if self.mode == self.Mode.FRAME:
+                    label = str(notch.data)
+
                 if   i == 0:
-                    rect = painter.boundingRect(anchorRect, Qt.Qt.AlignBottom + Qt.Qt.AlignLeft,    label)
-                    rect.moveLeft(-2.5)
+                    rect = painter.boundingRect(anchorRect, Qt.Qt.AlignBottom + Qt.Qt.AlignLeft, label)
+                    if self.mode == self.Mode.TIME:
+                        rect.moveLeft(-2.5)
                 elif i == (len(labelsNotches) - 1):
                     rect = painter.boundingRect(anchorRect, Qt.Qt.AlignBottom + Qt.Qt.AlignHCenter, label)
                     if rect.right() > self.rectF.right():
@@ -248,6 +282,14 @@ class Timeline(Qt.QWidget):
                 self.toolbars_notches[t] = t.get_notches()
         self.update()
 
+    @property
+    def mode(self) -> Mode:  # pylint: disable=undefined-variable
+        return self._mode
+
+    @mode.setter
+    def mode(self, value: Mode) -> None:
+        if value == self._mode:
+            return
 
         self._mode = value
         self.update()
