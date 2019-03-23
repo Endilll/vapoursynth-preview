@@ -12,7 +12,6 @@ from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameI
 from vspreview.utils   import add_shortcut, debug, fire_and_forget, set_status_label
 from vspreview.widgets import ComboBox, Notches
 
-# TODO: make lists combobox editable
 # TODO: annotate current_list() to return Optional[SceningList]
 
 
@@ -186,9 +185,9 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
         if not index.isValid():
             return False
-        if not isinstance(value, str):
-            return False
         if not role == Qt.Qt.EditRole:
+            return False
+        if not isinstance(value, str):
             return False
 
         self.items[index.row()].name = value
@@ -353,7 +352,8 @@ class SceningToolbar(AbstractToolbar):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.items_combobox = ComboBox(self)
-        # self.items_combobox.setEditable(True)
+        self.items_combobox.setEditable(True)
+        self.items_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.items_combobox.setDuplicatesEnabled(True)
         self.items_combobox.setSizeAdjustPolicy(ComboBox.AdjustToContents)
         layout.addWidget(self.items_combobox)
@@ -513,9 +513,6 @@ class SceningToolbar(AbstractToolbar):
 
     @current_list_index.setter
     def current_list_index(self, index: int) -> None:
-        print('current_list_index')
-        print(index)
-        print(len(self.current_lists))
         if not (0 <= index < len(self.current_lists)):
             raise IndexError
         self.items_combobox.setCurrentIndex(index)

@@ -11,7 +11,7 @@ from   PyQt5       import Qt
 import vapoursynth as     vs
 
 from vspreview.core   import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
-from vspreview.models import Outputs  # , ItemEditDelegate
+from vspreview.models import Outputs
 from vspreview.utils  import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
 
 # TODO: design settings part
@@ -120,7 +120,8 @@ class MainToolbar(AbstractToolbar):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.outputs_combobox = Qt.QComboBox(self)
-        # self.outputs_combobox.setEditable(True)
+        self.outputs_combobox.setEditable(True)
+        self.outputs_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.outputs_combobox.setDuplicatesEnabled(True)
         self.outputs_combobox.setSizeAdjustPolicy(Qt.QComboBox.AdjustToContents)
         layout.addWidget(self.outputs_combobox)

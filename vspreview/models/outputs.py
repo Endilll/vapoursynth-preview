@@ -9,7 +9,6 @@ import vapoursynth as     vs
 from vspreview.core  import Output, QYAMLObject
 from vspreview.utils import debug
 
-# TODO: enable editing output name in combobox
 # TODO: consider converting it to singleton
 
 
@@ -61,24 +60,20 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         self.endRemoveRows()
 
     def data(self, index: Qt.QModelIndex, role: int = Qt.Qt.UserRole) -> Any:
-        # debug.print_func_name()
         if not index.isValid():
             return None
         if index.row() >= len(self.items):
             return None
 
-        if   role == Qt.Qt.DisplayRole:
+        if role == Qt.Qt.DisplayRole:
             return self.items[index.row()].name
-        if   role == Qt.Qt.EditRole:
+        if role == Qt.Qt.EditRole:
             return self.items[index.row()].name
-        elif role == Qt.Qt.UserRole:
-            # logging.debug('UserRole')
+        if role == Qt.Qt.UserRole:
             return self.items[index.row()]
-        else:
-            return None
+        return None
 
     def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
-        # debug.print_func_name()
         if self.items is not None:
             return len(self.items)
         else:
@@ -92,31 +87,15 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         return cast(Qt.Qt.ItemFlags, super().flags(index) | Qt.Qt.ItemIsEditable)
 
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
-        # debug.print_func_name()
-        # logging.debug(index.row())
-        # logging.debug(value)
         if not index.isValid():
             return False
-        if not isinstance(value, str):
-            return False
         if not role == Qt.Qt.EditRole:
+            return False
+        if not isinstance(value, str):
             return False
 
         self.items[index.row()].name = value
         self.dataChanged.emit(index, index, [role])
-        return True
-
-    def itemText(self, i: int) -> str:
-        debug.print_func_name()
-        return 'itemText'
-
-    def setItemData(self, index: Qt.QModelIndex, roles: Any) -> bool:
-        debug.print_func_name()
-        return True
-
-    def insertRows(self, pos: int, count: int, index: Optional[Qt.QModelIndex] = None) -> bool:
-        debug.print_func_name()
-        logging.debug(pos)
         return True
 
     def __getstate__(self) -> Mapping[str, Any]:
@@ -134,20 +113,3 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
                 raise TypeError(f'Storage loading: Outputs: value of key {key} is not an Output')
 
         self.__init__(state)  # type: ignore
-
-
-class ItemEditDelegate(Qt.QStyledItemDelegate):
-    def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
-        super().__init__(parent)
-        self.a = 1
-
-    def setModelData(self, editor: Qt.QWidget, model: Qt.QAbstractItemModel, index: Qt.QModelIndex) -> None:
-        debug.print_func_name()
-
-    def createEditor(self, parent: Qt.QWidget, option: Qt.QStyleOptionViewItem, index: Qt.QModelIndex) -> Qt.QWidget:
-        debug.print_func_name()
-
-        return Qt.QLineEdit()
-
-    def setEditorData(self, editor: Qt.QWidget, index: Qt.QModelIndex) -> None:
-        debug.print_func_name()
