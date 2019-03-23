@@ -15,11 +15,16 @@ from vspreview.widgets import ComboBox, Notches
 # TODO: annotate current_list() to return Optional[SceningList]
 
 
-class SceningList(Qt.QAbstractListModel, QYAMLObject):
+class SceningList(Qt.QAbstractTableModel, QYAMLObject):
     __slots__ = (
         'name', 'items', 'max_value'
     )
     yaml_tag = '!SceningList'
+
+    START_FRAME_COLUMN = 0
+    END_FRAME_COLUMN   = 1
+    LABEL_COLUMN       = 2
+    COLUMN_COUNT       = 3
 
     def __init__(self, name: str, max_value: Optional[Frame] = None, items: Optional[List[Scene]] = None) -> None:
         super().__init__()
@@ -30,24 +35,98 @@ class SceningList(Qt.QAbstractListModel, QYAMLObject):
     def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
         return len(self.items)
 
+    def columnCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
+        return self.COLUMN_COUNT
+
+    def headerData(self, section: int, orientation: Qt.Qt.Orientation, role: int = Qt.Qt.DisplayRole) -> Any:
+        if role != Qt.Qt.DisplayRole:
+            return None
+
+        if orientation == Qt.Qt.Horizontal:
+            if section == self.START_FRAME_COLUMN:
+                return 'Start'
+            if section == self.END_FRAME_COLUMN:
+                return 'End'
+            if section == self.LABEL_COLUMN:
+                return 'Label'
+        if orientation == Qt.Qt.Vertical:
+            return section + 1
+        return None
+
     def data(self, index: Qt.QModelIndex, role: int = Qt.Qt.UserRole) -> Any:
         if not index.isValid():
             return None
-        if index.row() >= len(self.items):
+        row = index.row()
+        if row >= len(self.items):
+            return None
+        column = index.column()
+        if column >= self.COLUMN_COUNT:
             return None
 
         if role in (Qt.Qt.DisplayRole,
                     Qt.Qt.EditRole):
-            return str(self.items[index.row()])
-        if role ==  Qt.Qt.UserRole:
-            return self.items[index]
+            if column == self.START_FRAME_COLUMN:
+                return str(self.items[row].start)
+            if column == self.END_FRAME_COLUMN:
+                if self.items[row].end != self.items[row].start:
+                    return str(self.items[row].end)
+                else:
+                    return ''
+            if column == self.LABEL_COLUMN:
+                return str(self.items[row].label)
+        if role == Qt.Qt.UserRole:
+            if column == self.START_FRAME_COLUMN:
+                return self.items[row].start
+            if column == self.END_FRAME_COLUMN:
+                return self.items[row].end
+            if column == self.LABEL_COLUMN:
+                return self.items[row].label
         return None
+
+    def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
+        if not index.isValid():
+            return False
+        if role not in (Qt.Qt.EditRole,
+                        Qt.Qt.UserRole):
+            return False
+
+        scene = self.items[index.row()]
+        column = index.column()
+
+        if column == self.START_FRAME_COLUMN:
+            if not isinstance(value, Frame):
+                raise TypeError
+            if value > scene.end:
+                return False
+            scene.start = value
+        elif column == self.END_FRAME_COLUMN:
+            if not isinstance(value, Frame):
+                raise TypeError
+            if value < scene.start:
+                return False
+            scene.end = value
+        elif column == self.LABEL_COLUMN:
+            if not isinstance(value, str):
+                raise TypeError
+            scene.label = value
+        self.dataChanged.emit(index, index)
+        return True
 
     def __len__(self) -> int:
         return len(self.items)
 
     def __getitem__(self, i: int) -> Scene:
         return self.items[i]
+
+    def __setitem__(self, i: int, value: Scene) -> None:
+        if i >= len(self.items):
+            raise IndexError
+
+        self.items[i] = value
+        self.dataChanged.emit(
+            self.createIndex(i, 0),
+            self.createIndex(i, self.COLUMN_COUNT - 1)
+        )
 
     def __getiter__(self) -> Iterator[Scene]:
         return iter(self.items)
@@ -155,10 +234,10 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     def __getiter__(self) -> Iterator[SceningList]:
         return iter(self.items)
 
-    def index_of(self, item: SceningList, i: int = 0, j: int = 0) -> int:
-        if j == 0:
-            j = len(self.items)
-        return self.items.index(item, i, j)
+    def index_of(self, item: SceningList, start_i: int = 0, end_i: int = 0) -> int:
+        if end_i == 0:
+            end_i = len(self.items)
+        return self.items.index(item, start_i, end_i)
 
     def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
         return len(self.items)
@@ -185,13 +264,14 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
         if not index.isValid():
             return False
-        if not role == Qt.Qt.EditRole:
+        if role not in (Qt.Qt.EditRole,
+                        Qt.Qt.UserRole):
             return False
         if not isinstance(value, str):
             return False
 
         self.items[index.row()].name = value
-        self.dataChanged.emit(index, index, [role])
+        self.dataChanged.emit(index, index)
         return True
 
     def insertRow(self, i: int, parent: Qt.QModelIndex = Qt.QModelIndex()) -> bool:
@@ -257,17 +337,115 @@ class SceningListDialog(Qt.QDialog):
         'listview'
     )
 
-    def __init__(self) -> None:
+    def __init__(self, main_window: AbstractMainWindow) -> None:
         super().__init__()
 
-        self.setWindowTitle('Scening List View')
+        self.main = main_window
+        self.scening_list = SceningList('')
 
+        self.setWindowTitle('Scening List View')
+        self.setup_ui()
+
+    def setup_ui(self) -> None:
         layout = Qt.QVBoxLayout(self)
 
-        self.listview = Qt.QListView()
-        # self.listview.setFixedWidth(200)
-        self.listview.setSelectionMode(Qt.QListView.ExtendedSelection)
-        layout.addWidget(self.listview)
+        self.name_lineedit = Qt.QLineEdit(self)
+        layout.addWidget(self.name_lineedit)
+
+        self.tableview = Qt.QTableView(self)
+        self.tableview.setSelectionMode(Qt.QListView.SingleSelection)
+        self.tableview.setSelectionBehavior(Qt.QListView.SelectRows)
+        self.tableview.setSizeAdjustPolicy(Qt.QTableView.AdjustToContents)
+        layout.addWidget(self.tableview)
+
+        scene_layout = Qt.QHBoxLayout()
+        layout.addLayout(scene_layout)
+
+        self.start_frame_lineedit = Qt.QLineEdit(self)
+        self.start_frame_lineedit.setPlaceholderText('Start')
+        self.start_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
+        scene_layout.addWidget(self.start_frame_lineedit)
+
+        self.end_frame_lineedit = Qt.QLineEdit(self)
+        self.end_frame_lineedit.setPlaceholderText('End')
+        self.end_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
+        scene_layout.addWidget(self.end_frame_lineedit)
+
+        self.label_lineedit = Qt.QLineEdit(self)
+        self.label_lineedit.setPlaceholderText('Label')
+        scene_layout.addWidget(self.label_lineedit)
+
+    def showEvent(self, event: Qt.QShowEvent) -> None:
+        super().showEvent(event)
+        self.scening_list = self.main.toolbars.scening.current_list
+
+        self.name_lineedit.setText(self.scening_list.name)
+
+        self.tableview.setModel(self.scening_list)
+        self.tableview.resizeColumnsToContents()
+
+        self.end_frame_lineedit  .textChanged.connect(self.on_end_frame_changed)
+        self.label_lineedit      .textChanged.connect(self.on_label_changed)
+        self.name_lineedit       .textChanged.connect(self.on_name_changed)
+        self.start_frame_lineedit.textChanged.connect(self.on_start_frame_changed)
+        self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
+        self.tableview.selectionModel().currentRowChanged.connect(self.on_tableview_selection_row_changed)  # type: ignore
+
+    def on_end_frame_changed(self, text: str) -> None:
+        try:
+            frame = Frame(int(self.end_frame_lineedit.text()))
+        except ValueError:
+            return
+        index = self.tableview.selectionModel().currentIndex()
+        if not index.isValid():
+            return
+        index = self.scening_list.index(index.row(), SceningList.END_FRAME_COLUMN)
+        if not index.isValid():
+            return
+        self.scening_list.setData(index, frame, Qt.Qt.UserRole)
+
+    def on_label_changed(self, text: str) -> None:
+        index = self.tableview.selectionModel().currentIndex()
+        if not index.isValid():
+            return
+        index = self.scening_list.index(index.row(), SceningList.LABEL_COLUMN)
+        if not index.isValid():
+            return
+        self.scening_list.setData(index, text, Qt.Qt.UserRole)
+
+    def on_name_changed(self, text: str) -> None:
+        i = self.main.current_output.scening_lists.index_of(self.scening_list)
+        index = self.main.current_output.scening_lists.index(i)
+        self.main.current_output.scening_lists.setData(index, text, Qt.Qt.UserRole)
+
+    def on_start_frame_changed(self, text: str) -> None:
+        try:
+            frame = Frame(int(self.start_frame_lineedit.text()))
+        except ValueError:
+            return
+        index = self.tableview.selectionModel().currentIndex()
+        if not index.isValid():
+            return
+        index = self.scening_list.index(index.row(), SceningList.START_FRAME_COLUMN)
+        if not index.isValid():
+            return
+        self.scening_list.setData(index, frame, Qt.Qt.UserRole)    
+
+    def on_tableview_clicked(self, index: Qt.QModelIndex) -> None:
+        if index.column() not in (SceningList.START_FRAME_COLUMN,
+                                  SceningList.END_FRAME_COLUMN):
+            return
+        self.main.current_frame = self.scening_list.data(index)
+
+    def on_tableview_selection_row_changed(self, index_new: Qt.QModelIndex, index_old: Qt.QModelIndex) -> None:
+        from vspreview.utils import qt_silent_call
+
+        if not index_new.isValid():
+            return
+        scene = self.scening_list[index_new.row()]
+        qt_silent_call(self.start_frame_lineedit.setText, str(scene.start))
+        qt_silent_call(self.  end_frame_lineedit.setText, str(scene.end))
+        qt_silent_call(self.      label_lineedit.setText,     scene.label)
 
 
 class SceningToolbar(AbstractToolbar):
@@ -292,7 +470,7 @@ class SceningToolbar(AbstractToolbar):
         self.export_template_scenes_pattern = re.compile(r'.+')
 
         self.scening_update_status_label()
-        self.scening_list_dialog = SceningListDialog()
+        self.scening_list_dialog = SceningListDialog(self.main)
 
         self.supported_file_types = {
             'Aegisub Project (*.ass)'       : self.import_ass,
@@ -352,8 +530,8 @@ class SceningToolbar(AbstractToolbar):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.items_combobox = ComboBox(self)
-        self.items_combobox.setEditable(True)
-        self.items_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
+        # self.items_combobox.setEditable(True)
+        # self.items_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.items_combobox.setDuplicatesEnabled(True)
         self.items_combobox.setSizeAdjustPolicy(ComboBox.AdjustToContents)
         layout.addWidget(self.items_combobox)
@@ -411,7 +589,7 @@ class SceningToolbar(AbstractToolbar):
         layout.addWidget(self.toggle_second_frame_button)
 
         self.label_lineedit = Qt.QLineEdit(self)
-        self.label_lineedit.setPlaceholderText('Label')
+        self.label_lineedit.setPlaceholderText('New Scene Label')
         layout.addWidget(self.label_lineedit)
 
         self.add_to_list_button = Qt.QPushButton(self)
@@ -532,7 +710,7 @@ class SceningToolbar(AbstractToolbar):
             self.  view_list_button.setEnabled(True)
             self.current_list.rowsInserted.connect(self._on_list_items_changed)  # type: ignore
             self.current_list.rowsRemoved .connect(self._on_list_items_changed)  # type: ignore
-            self.scening_list_dialog.listview.setModel(self.current_list)
+            self.scening_list_dialog.tableview.setModel(self.current_list)
 
         if old_index != -1:
             try:
@@ -552,7 +730,6 @@ class SceningToolbar(AbstractToolbar):
         self.current_lists.remove(self.current_list_index)
 
     def on_view_list_clicked(self, checked: Optional[bool] = None) -> None:
-        self.scening_list_dialog.listview.setModel(self.current_list)
         self.scening_list_dialog.open()
 
     def switch_list(self, index: int) -> None:
