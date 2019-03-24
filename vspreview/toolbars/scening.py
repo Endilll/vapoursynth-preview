@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from   bisect   import bisect_left, bisect_right
 from   datetime import timedelta
 import logging
 from   pathlib  import Path
@@ -84,14 +85,17 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         return None
 
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
+        from copy   import deepcopy
+
         if not index.isValid():
             return False
         if role not in (Qt.Qt.EditRole,
                         Qt.Qt.UserRole):
             return False
 
-        scene = self.items[index.row()]
+        row    = index.row()
         column = index.column()
+        scene  = deepcopy(self.items[row])
 
         if column == self.START_FRAME_COLUMN:
             if not isinstance(value, Frame):
@@ -99,17 +103,35 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if value > scene.end:
                 return False
             scene.start = value
+            proper_update = True
         elif column == self.END_FRAME_COLUMN:
             if not isinstance(value, Frame):
                 raise TypeError
             if value < scene.start:
                 return False
             scene.end = value
+            proper_update = True
         elif column == self.LABEL_COLUMN:
             if not isinstance(value, str):
                 raise TypeError
             scene.label = value
-        self.dataChanged.emit(index, index)
+            proper_update = False
+
+        if proper_update is True:
+            i = bisect_right(self.items, scene)
+            if i >= row:
+                i -= 1
+            if i != row:
+                self.beginMoveRows(self.createIndex(row, 0), row, row, self.createIndex(i, 0), i)
+                del self.items[row]
+                self.items.insert(i, scene)
+                self.endMoveRows()
+            else:
+                self.items[index.row()] = scene
+                self.dataChanged.emit(index, index)
+        else:
+            self.items[index.row()] = scene
+            self.dataChanged.emit(index, index)
         return True
 
     def __len__(self) -> int:
@@ -132,8 +154,6 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         return iter(self.items)
 
     def add(self, start: Frame, end: Optional[Frame] = None, label: str = '') -> Scene:
-        from bisect import bisect_right
-
         scene = Scene(start, end, label)
 
         if scene in self.items:
@@ -346,6 +366,12 @@ class SceningListDialog(Qt.QDialog):
         self.setWindowTitle('Scening List View')
         self.setup_ui()
 
+        self.end_frame_lineedit  .textChanged.connect(self.on_end_frame_changed)
+        self.label_lineedit      .textChanged.connect(self.on_label_changed)
+        self.name_lineedit       .textChanged.connect(self.on_name_changed)
+        self.start_frame_lineedit.textChanged.connect(self.on_start_frame_changed)
+        self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
+
     def setup_ui(self) -> None:
         layout = Qt.QVBoxLayout(self)
 
@@ -375,31 +401,27 @@ class SceningListDialog(Qt.QDialog):
         self.label_lineedit.setPlaceholderText('Label')
         scene_layout.addWidget(self.label_lineedit)
 
+        # self.add_button = Qt.QPushButton(self)
+        # self.add_button.setText('Add')
+        # self.add_button.setEnabled(False)
+        # scene_layout.addWidget(self.add_button)
+
     def showEvent(self, event: Qt.QShowEvent) -> None:
         super().showEvent(event)
         self.scening_list = self.main.toolbars.scening.current_list
+        self.scening_list.rowsMoved.connect(self.on_tableview_rows_moved)  # type: ignore
 
         self.name_lineedit.setText(self.scening_list.name)
 
         self.tableview.setModel(self.scening_list)
         self.tableview.resizeColumnsToContents()
-
-        self.end_frame_lineedit  .textChanged.connect(self.on_end_frame_changed)
-        self.label_lineedit      .textChanged.connect(self.on_label_changed)
-        self.name_lineedit       .textChanged.connect(self.on_name_changed)
-        self.start_frame_lineedit.textChanged.connect(self.on_start_frame_changed)
-        self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
-        self.tableview.selectionModel().currentRowChanged.connect(self.on_tableview_selection_row_changed)  # type: ignore
+        self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
     def hideEvent(self, event: Qt.QHideEvent) -> None:
-        self.end_frame_lineedit  .textChanged.disconnect(self.on_end_frame_changed)
-        self.label_lineedit      .textChanged.disconnect(self.on_label_changed)
-        self.name_lineedit       .textChanged.disconnect(self.on_name_changed)
-        self.start_frame_lineedit.textChanged.disconnect(self.on_start_frame_changed)
-        self.tableview         .doubleClicked.disconnect(self.on_tableview_clicked)
-        self.tableview.selectionModel().currentRowChanged.disconnect(self.on_tableview_selection_row_changed)
+        self.scening_list.rowsMoved.disconnect(self.on_tableview_rows_moved)  # type: ignore
 
-        super().hideEvent(event)
+    def on_add_clicked(self, checked: Optional[bool] = None) -> None:
+        pass
 
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
         if not self.isVisible():
@@ -414,14 +436,14 @@ class SceningListDialog(Qt.QDialog):
         self.tableview.selectionModel().select(
             selection,
             Qt.QItemSelectionModel.SelectionFlags(  # type: ignore
-                Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))       
+                Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))
 
     def on_end_frame_changed(self, text: str) -> None:
         try:
             frame = Frame(int(self.end_frame_lineedit.text()))
         except ValueError:
             return
-        index = self.tableview.selectionModel().currentIndex()
+        index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
         index = self.scening_list.index(index.row(), SceningList.END_FRAME_COLUMN)
@@ -430,7 +452,7 @@ class SceningListDialog(Qt.QDialog):
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
     def on_label_changed(self, text: str) -> None:
-        index = self.tableview.selectionModel().currentIndex()
+        index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
         index = self.scening_list.index(index.row(), SceningList.LABEL_COLUMN)
@@ -448,13 +470,13 @@ class SceningListDialog(Qt.QDialog):
             frame = Frame(int(self.start_frame_lineedit.text()))
         except ValueError:
             return
-        index = self.tableview.selectionModel().currentIndex()
+        index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
         index = self.scening_list.index(index.row(), SceningList.START_FRAME_COLUMN)
         if not index.isValid():
             return
-        self.scening_list.setData(index, frame, Qt.Qt.UserRole)    
+        self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
     def on_tableview_clicked(self, index: Qt.QModelIndex) -> None:
         if index.column() not in (SceningList.START_FRAME_COLUMN,
@@ -462,12 +484,20 @@ class SceningListDialog(Qt.QDialog):
             return
         self.main.current_frame = self.scening_list.data(index)
 
-    def on_tableview_selection_row_changed(self, index_new: Qt.QModelIndex, index_old: Qt.QModelIndex) -> None:
+    def on_tableview_rows_moved(self, parent_index: Qt.QModelIndex, start_i: int, end_i: int, dest_index: Qt.QModelIndex, dest_i: int) -> None:
+        index = self.scening_list.index(dest_i, 0)
+        self.tableview.selectionModel().select(
+            index,
+            Qt.QItemSelectionModel.SelectionFlags(  # type: ignore
+                Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))
+
+    def on_tableview_selection_changed(self, selected: Qt.QItemSelection, deselected: Qt.QItemSelection) -> None:
         from vspreview.utils import qt_silent_call
 
-        if not index_new.isValid():
+        if len(selected.indexes()) == 0:
             return
-        scene = self.scening_list[index_new.row()]
+        index = selected.indexes()[0]
+        scene = self.scening_list[index.row()]
         qt_silent_call(self.start_frame_lineedit.setText, str(scene.start))
         qt_silent_call(self.  end_frame_lineedit.setText, str(scene.end))
         qt_silent_call(self.      label_lineedit.setText,     scene.label)
