@@ -134,7 +134,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.play_buffer.clear()
         for i in range(self.main.PLAY_BUFFER_SIZE):
             future = self.main.current_output.vs_output.get_frame_async(int(self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
-            self.play_buffer.append(future)
+            self.play_buffer.appendleft(future)
 
         if self.fps_unlimited_checkbox.isChecked():
             self.play_timer.start(0)
