@@ -9,7 +9,8 @@
             "console": "integratedTerminal",
             "args": [
                 "${workspaceFolder}/tests/script.vpy"
-            ]
+            ],
+            "showReturnValue": true
         },
         {
             "name": "Current File",
@@ -17,7 +18,8 @@
             "request": "launch",
             "program": "${file}",
             "args": [
-            ]
+            ],
+            "showReturnValue": true
         }
         // {
         //     "name": "Python: Attach",
