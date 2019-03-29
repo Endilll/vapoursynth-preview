@@ -417,9 +417,6 @@ class SceningListDialog(Qt.QDialog):
         self.tableview.resizeColumnsToContents()
         self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
-    def hideEvent(self, event: Qt.QHideEvent) -> None:
-        self.scening_list.rowsMoved.disconnect(self.on_tableview_rows_moved)  # type: ignore
-
     def on_add_clicked(self, checked: Optional[bool] = None) -> None:
         pass
 
