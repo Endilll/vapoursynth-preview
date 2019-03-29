@@ -226,16 +226,21 @@ class Scene(YAMLObject):
 
     yaml_tag = '!Scene'
 
-    def __init__(self, start: Frame, end: Optional[Frame] = None, label: str = '') -> None:
-        if end is None:
-            self.start = start
-            self.end   = start
-        elif start <= end:
+    def __init__(self, start: Optional[Frame] = None, end: Optional[Frame] = None, label: str = '') -> None:
+        if start is not None and end is not None:
             self.start = start
             self.end   = end
-        else:
-            self.start = end
+        elif start is not None:
+            self.start = start
             self.end   = start
+        elif end is not None:
+            self.start = end
+            self.end   = end
+        else:
+            raise ValueError
+
+        if self.start > self.end:
+            self.start, self.end = self.end, self.start
 
         self.label = label
 
