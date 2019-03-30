@@ -13,7 +13,7 @@ import vapoursynth as     vs
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
 from vspreview.models  import Outputs
 from vspreview.utils   import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
-from vspreview.widgets import Timeline
+from vspreview.widgets import ComboBox, Timeline
 
 # TODO: design settings part
 # TODO: deisgn keyboard layout
@@ -121,7 +121,7 @@ class MainToolbar(AbstractToolbar):
         layout = Qt.QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.outputs_combobox = Qt.QComboBox(self)
+        self.outputs_combobox = ComboBox(self)
         self.outputs_combobox.setEditable(True)
         self.outputs_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.outputs_combobox.setDuplicatesEnabled(True)
@@ -145,7 +145,8 @@ class MainToolbar(AbstractToolbar):
         self.copy_timestamp_button.setText('Copy Time')
         layout.addWidget(self.copy_timestamp_button)
 
-        self.zoom_combobox = Qt.QComboBox(self)
+        self.zoom_combobox = ComboBox(self)
+        self.zoom_combobox.setMinimumContentsLength(4)
         layout.addWidget(self.zoom_combobox)
 
         self.save_as_button = Qt.QPushButton(self)
