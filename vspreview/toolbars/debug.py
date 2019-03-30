@@ -23,6 +23,7 @@ class DebugToolbar(AbstractToolbar):
         self.toggle_button.clicked.connect(self.on_toggle)
         self.  test_button.clicked.connect(self.test_button_clicked)
         self.  exec_button.clicked.connect(self.exec_button_clicked)
+        self.exec_lineedit.editingFinished.connect(self.exec_button_clicked)
 
         if self.main.DEBUG_TOOLBAR_BUTTONS_PRINT_STATE:
             self.filter = debug.EventFilter(self)
@@ -59,4 +60,7 @@ class DebugToolbar(AbstractToolbar):
         pass
 
     def exec_button_clicked(self, checked: Optional[bool] = None) -> None:
-        exec(self.exec_lineedit.text())  # pylint: disable=exec-used
+        try:
+            exec(self.exec_lineedit.text())  # pylint: disable=exec-used
+        except Exception as e:
+            print(e)
