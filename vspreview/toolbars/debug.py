@@ -62,5 +62,5 @@ class DebugToolbar(AbstractToolbar):
     def exec_button_clicked(self, checked: Optional[bool] = None) -> None:
         try:
             exec(self.exec_lineedit.text())  # pylint: disable=exec-used
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(e)
