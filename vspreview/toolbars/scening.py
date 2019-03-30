@@ -578,110 +578,115 @@ class SceningToolbar(AbstractToolbar):
 
     def setup_ui(self) -> None:
         self.setVisible(False)
-        layout = Qt.QHBoxLayout(self)
+
+        layout = Qt.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+
+        layout_line_1 = Qt.QHBoxLayout()
+        layout.addLayout(layout_line_1)
 
         self.items_combobox = ComboBox(self)
         # self.items_combobox.setEditable(True)
         # self.items_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.items_combobox.setDuplicatesEnabled(True)
         self.items_combobox.setSizeAdjustPolicy(ComboBox.AdjustToContents)
-        layout.addWidget(self.items_combobox)
+        layout_line_1.addWidget(self.items_combobox)
 
         self.add_list_button = Qt.QPushButton(self)
         self.add_list_button.setText('Add List')
-        layout.addWidget(self.add_list_button)
+        layout_line_1.addWidget(self.add_list_button)
 
         self.remove_list_button = Qt.QPushButton(self)
         self.remove_list_button.setText('Remove List')
         self.remove_list_button.setEnabled(False)
-        layout.addWidget(self.remove_list_button)
+        layout_line_1.addWidget(self.remove_list_button)
 
         self.view_list_button = Qt.QPushButton(self)
         self.view_list_button.setText('View List')
         self.view_list_button.setEnabled(False)
-        layout.addWidget(self.view_list_button)
+        layout_line_1.addWidget(self.view_list_button)
 
         self.import_file_button = Qt.QPushButton(self)
         self.import_file_button.setText('Import List')
-        layout.addWidget(self.import_file_button)
+        layout_line_1.addWidget(self.import_file_button)
 
         separator = Qt.QFrame(self)
         separator.setFrameShape(Qt.QFrame.VLine)
         separator.setFrameShadow(Qt.QFrame.Sunken)
-        layout.addWidget(separator)
+        layout_line_1.addWidget(separator)
 
         self.seek_to_prev_button = Qt.QPushButton(self)
         self.seek_to_prev_button.setText('⏪')
         self.seek_to_prev_button.setEnabled(False)
-        layout.addWidget(self.seek_to_prev_button)
+        layout_line_1.addWidget(self.seek_to_prev_button)
 
         self.seek_to_next_button = Qt.QPushButton(self)
         self.seek_to_next_button.setText('⏩')
         self.seek_to_next_button.setEnabled(False)
-        layout.addWidget(self.seek_to_next_button)
+        layout_line_1.addWidget(self.seek_to_next_button)
 
-        separator = Qt.QFrame(self)
-        separator.setFrameShape(Qt.QFrame.VLine)
-        separator.setFrameShadow(Qt.QFrame.Sunken)
-        layout.addWidget(separator)
+        layout_line_1.addStretch()
+
+
+        layout_line_2 = Qt.QHBoxLayout()
+        layout.addLayout(layout_line_2)
 
         self.add_single_frame_button = Qt.QPushButton(self)
         self.add_single_frame_button.setText('Add Single Frame')
-        layout.addWidget(self.add_single_frame_button)
+        layout_line_2.addWidget(self.add_single_frame_button)
 
         self.toggle_first_frame_button = Qt.QPushButton(self)
         self.toggle_first_frame_button.setText('Frame 1')
         self.toggle_first_frame_button.setCheckable(True)
-        layout.addWidget(self.toggle_first_frame_button)
+        layout_line_2.addWidget(self.toggle_first_frame_button)
 
         self.toggle_second_frame_button = Qt.QPushButton(self)
         self.toggle_second_frame_button.setText('Frame 2')
         self.toggle_second_frame_button.setCheckable(True)
-        layout.addWidget(self.toggle_second_frame_button)
+        layout_line_2.addWidget(self.toggle_second_frame_button)
 
         self.label_lineedit = Qt.QLineEdit(self)
         self.label_lineedit.setPlaceholderText('New Scene Label')
-        layout.addWidget(self.label_lineedit)
+        layout_line_2.addWidget(self.label_lineedit)
 
         self.add_to_list_button = Qt.QPushButton(self)
         self.add_to_list_button.setText('Add to List')
         self.add_to_list_button.setEnabled(False)
-        layout.addWidget(self.add_to_list_button)
+        layout_line_2.addWidget(self.add_to_list_button)
 
         self.remove_last_from_list_button = Qt.QPushButton(self)
         self.remove_last_from_list_button.setText('Remove Last')
         self.remove_last_from_list_button.setEnabled(False)
-        layout.addWidget(self.remove_last_from_list_button)
+        layout_line_2.addWidget(self.remove_last_from_list_button)
 
         self.remove_at_current_frame_button = Qt.QPushButton(self)
         self.remove_at_current_frame_button.setText('Remove at Current Frame')
         self.remove_at_current_frame_button.setEnabled(False)
-        layout.addWidget(self.remove_at_current_frame_button)
+        layout_line_2.addWidget(self.remove_at_current_frame_button)
 
         separator = Qt.QFrame(self)
         separator.setFrameShape(Qt.QFrame.VLine)
         separator.setFrameShadow(Qt.QFrame.Sunken)
-        layout.addWidget(separator)
+        layout_line_2.addWidget(separator)
 
         self.export_template_lineedit = Qt.QLineEdit(self)
         # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
         self.export_template_lineedit.setToolTip(r'Use {start} and {end} as placeholders. Both are valid for single frame scenes. {label} is available, too.')
         self.export_template_lineedit.setPlaceholderText('Export Template')
-        layout.addWidget(self.export_template_lineedit)
+        layout_line_2.addWidget(self.export_template_lineedit)
 
         self.export_multiline_button = Qt.QPushButton(self)
         self.export_multiline_button.setText('Export Multiline')
         self.export_multiline_button.setEnabled(False)
-        layout.addWidget(self.export_multiline_button)
+        layout_line_2.addWidget(self.export_multiline_button)
 
         self.export_single_line_button = Qt.QPushButton(self)
         self.export_single_line_button.setText('Export Single Line')
         self.export_single_line_button.setEnabled(False)
-        layout.addWidget(self.export_single_line_button)
+        layout_line_2.addWidget(self.export_single_line_button)
 
-        layout.addStretch()
-        layout.addStretch()
+        layout_line_2.addStretch()
+        layout_line_2.addStretch()
 
         # statusbar label
 
