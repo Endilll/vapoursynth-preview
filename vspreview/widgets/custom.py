@@ -61,6 +61,8 @@ class ComboBox(Qt.QComboBox):
         self.prevIndex = self.currentIndex()
         self.currentIndexChanged.connect(self._indexChanged)
 
+        self.setSizeAdjustPolicy(Qt.QComboBox.AdjustToMinimumContentsLengthWithIcon)
+
     def _indexChanged(self, nextIndex: int) -> None:
         self.indexChanged.emit(nextIndex, self.prevIndex)
         self.prevIndex = nextIndex

@@ -589,7 +589,7 @@ class SceningToolbar(AbstractToolbar):
         # self.items_combobox.setEditable(True)
         # self.items_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.items_combobox.setDuplicatesEnabled(True)
-        self.items_combobox.setSizeAdjustPolicy(ComboBox.AdjustToContents)
+        self.items_combobox.setMinimumContentsLength(6)
         layout_line_1.addWidget(self.items_combobox)
 
         self.add_list_button = Qt.QPushButton(self)
