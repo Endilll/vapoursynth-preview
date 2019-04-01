@@ -689,8 +689,8 @@ def main() -> None:
 def check_versions() -> bool:
     from pkg_resources import get_distribution
 
-    if sys.version_info < (3, 7, 2, 'final', 0):
-        print('VSPreview is not tested on Python versions prior to 3.7.1 final, but you have {}. Use at your own risk.'.format(sys.version))
+    if sys.version_info < (3, 7, 3, 'final', 0):
+        print('VSPreview is not tested on Python versions prior to 3.7.3 final, but you have {}. Use at your own risk.'.format(sys.version))
         return False
 
     if get_distribution('PyQt5').version < '5.12':

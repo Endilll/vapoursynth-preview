@@ -2,7 +2,7 @@ Standalone preview for VapourSynth scripts. Meant to be paired with a code edito
 
 # Prerequisites
 
-Python 3.7
+Python 3.7.3
 
 Vapoursynth R45
 
