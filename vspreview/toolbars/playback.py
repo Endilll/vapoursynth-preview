@@ -52,6 +52,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_frame_spinbox    .valueChanged.connect(self.on_seek_frame_changed)
         self.seek_time_spinbox      .timeChanged.connect(self.on_seek_time_changed)  # type: ignore
         self.fps_spinbox           .valueChanged.connect(self.on_fps_changed)
+        self.fps_reset_button           .clicked.connect(self.reset_fps)
         self.fps_unlimited_checkbox.stateChanged.connect(self.on_fps_unlimited_changed)
 
         add_shortcut(              Qt.Qt.Key_Space, self.play_pause_button     .click)
@@ -106,6 +107,10 @@ class PlaybackToolbar(AbstractToolbar):
         self.fps_spinbox.setDecimals(3)
         self.fps_spinbox.setSuffix(' fps')
         layout.addWidget(self.fps_spinbox)
+
+        self.fps_reset_button = Qt.QPushButton(self)
+        self.fps_reset_button.setText('Reset FPS')
+        layout.addWidget(self.fps_reset_button)
 
         self.fps_unlimited_checkbox = Qt.QCheckBox(self)
         self.fps_unlimited_checkbox.setText('Unlimited FPS')
@@ -218,11 +223,16 @@ class PlaybackToolbar(AbstractToolbar):
             self.stop()
             self.play()
 
+    def reset_fps(self, checked: Optional[bool] = None) -> None:
+        self.fps_spinbox.setValue(self.main.current_output.fps_num / self.main.current_output.fps_den)
+
     def on_fps_unlimited_changed(self, state: int) -> None:
         if state == Qt.Qt.Checked:
             self.fps_spinbox.setEnabled(False)
+            self.fps_reset_button.setEnabled(False)
         if state == Qt.Qt.Unchecked:
             self.fps_spinbox.setEnabled(True)
+            self.fps_reset_button.setEnabled(True)
             self.fps_spinbox.setValue(self.main.current_output.play_fps)
 
         if self.play_timer.isActive():
