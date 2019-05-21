@@ -124,6 +124,7 @@ class MiscToolbar(AbstractToolbar):
         if   state == Qt.Qt.Checked:
             self.main.toolbars.debug.toggle_button.setVisible(True)
         elif state == Qt.Qt.Unchecked:
+            self.main.toolbars.debug.on_toggle(False)
             self.main.toolbars.debug.toggle_button.setVisible(False)
 
     def __getstate__(self) -> Mapping[str, Any]:
@@ -162,4 +163,3 @@ class MiscToolbar(AbstractToolbar):
             show_debug = self.main.DEBUG_TOOLBAR
             
         self.show_debug_checkbox.setChecked(show_debug)
-
