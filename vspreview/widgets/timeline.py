@@ -114,7 +114,7 @@ class Timeline(Qt.QWidget):
 
         self.cursor_x = 0
         # used as a fallback when self.rectF.width() is 0, so cursorX is incorrect
-        self.cursor_ft: Optional[Union[Frame, timedelta]] = None
+        self.cursor_ftx: Optional[Union[Frame, timedelta, int]] = None
         # False means that only cursor position'll be recalculated
         self.need_full_repaint = True
 
@@ -128,9 +128,9 @@ class Timeline(Qt.QWidget):
         self.rect_f = Qt.QRectF(event.rect())
         # self.rectF.adjust(0, 0, -1, -1)
 
-        if self.cursor_ft is not None:
-            self.set_position(self.cursor_ft)
-        self.cursor_ft = None
+        if self.cursor_ftx is not None:
+            self.set_position(self.cursor_ftx)
+        self.cursor_ftx = None
 
         painter = Qt.QPainter(self)
         self.drawWidget(painter)
@@ -233,17 +233,20 @@ class Timeline(Qt.QWidget):
 
         self.need_full_repaint = False
 
+    def full_repaint(self) -> None:
+        self.need_full_repaint = True
+        self.update()
+
     def moveEvent(self, event: Qt.QMoveEvent) -> None:
         super().moveEvent(event)
-        self.update()
+        self.full_repaint()
 
     def mousePressEvent(self, event: Qt.QMouseEvent) -> None:
         super().mousePressEvent(event)
         pos = Qt.QPoint(event.pos())
         if self.scroll_rect.contains(pos):
-            self.cursor_x = pos.x()
+            self.set_position(pos.x())
             self.clicked.emit(self.x_to_f(self.cursor_x), self.x_to_t(self.cursor_x))
-            self.update()
 
     def mouseMoveEvent(self, event: Qt.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
@@ -258,19 +261,15 @@ class Timeline(Qt.QWidget):
 
     def resizeEvent(self, event: Qt.QResizeEvent) -> None:
         super().resizeEvent(event)
-        self.update()
+        self.full_repaint()
 
     def event(self, event: Qt.QEvent) -> bool:
         if event.type() in (Qt.QEvent.Polish, Qt.QEvent.ApplicationPaletteChange):
             self.setPalette(self.main.palette())
-            self.update()
+            self.full_repaint()
             return True
 
         return super().event(event)
-
-    def update(self, *args: Any, **kwargs: Any) -> None:
-        self.need_full_repaint = True
-        super().update(*args, **kwargs)
 
     def update_notches(self, toolbar: Optional[AbstractToolbar] = None) -> None:
         if toolbar is not None:
@@ -278,7 +277,7 @@ class Timeline(Qt.QWidget):
         if toolbar is None:
             for t in self.main.toolbars:
                 self.toolbars_notches[t] = t.get_notches()
-        self.update()
+        self.full_repaint()
 
     @property
     def mode(self) -> str:  # pylint: disable=undefined-variable
@@ -290,7 +289,7 @@ class Timeline(Qt.QWidget):
             return
 
         self._mode = value
-        self.update()
+        self.full_repaint()
 
 
     def calculate_notch_interval_t(self, target_interval_x: int) -> timedelta:
@@ -352,17 +351,18 @@ class Timeline(Qt.QWidget):
     def set_duration(self, total_f: Frame, total_t: timedelta) -> None:
         self.total_f = total_f
         self.total_t = total_t
-        self.need_full_repaint = True
-        self.update()
+        self.full_repaint()
 
-    def set_position(self, pos: Union[Frame, timedelta]) -> None:
+    def set_position(self, pos: Union[Frame, timedelta, int]) -> None:
         if self.rect_f.width() == 0:
-            self.cursor_ft = pos
+            self.cursor_ftx = pos
 
         if   isinstance(pos, Frame):
             self.cursor_x = self.f_to_x(pos)
         elif isinstance(pos, timedelta):
             self.cursor_x = self.t_to_x(pos)
+        elif isinstance(pos, int):
+            self.cursor_x = pos
         else:
             raise TypeError(f'Timeline.set_position(): pos of type {type(pos)} isn\'t supported.')
         self.update()
