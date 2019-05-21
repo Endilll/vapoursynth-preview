@@ -273,7 +273,7 @@ class Toolbars(AbstractToolbars):
 
 
 class MainWindow(AbstractMainWindow):
-    # those are defaults that can be overriden in runtime or used as fallbacks
+    # those are defaults that can be overriden at runtime or used as fallbacks
     AUTOSAVE_ENABLED           =  True
     AUTOSAVE_INTERVAL          =    30 * 1000  # s
     BASE_PPI                   =    96  # PPI
