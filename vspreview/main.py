@@ -276,7 +276,8 @@ class MainWindow(AbstractMainWindow):
     AUTOSAVE_INTERVAL          =    30 * 1000  # s
     BASE_PPI                   =    96  # PPI
     DARK_THEME                 =  True
-    FPS_REFRESH_INTERVAL       =  1000  # ms
+    FPS_AVERAGING_WINDOW_SIZE  =   100  # frames
+    FPS_REFRESH_INTERVAL       =   150  # ms
     LOG_LEVEL          = logging.DEBUG
     OPENGL_RENDERING           = False
     OUTPUT_INDEX               =     0

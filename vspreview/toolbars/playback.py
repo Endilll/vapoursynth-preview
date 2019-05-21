@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from   datetime import timedelta
 import logging
+from   time     import perf_counter_ns
 from   typing   import Any, Deque, Mapping, Optional, Union
 
 from PyQt5 import Qt
@@ -12,7 +13,7 @@ from vspreview.utils import add_shortcut, debug, qt_silent_call, qtime_to_timede
 
 class PlaybackToolbar(AbstractToolbar):
     __slots__ = (
-        'play_timer', 'fps_prev_frame', 'fps_timer',
+        'play_timer', 'fps_timer', 'fps_history', 'current_fps',
         'seek_n_frames_b_button', 'seek_to_prev_button', 'play_pause_button',
         'seek_to_next_button', 'seek_n_frames_f_button',
         'seek_frame_spinbox', 'seek_time_spinbox', 'fps_spinbox', 'fps_unlimited_checkbox',
@@ -36,10 +37,11 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_frame_spinbox.setMinimum(0)
         self.seek_time_spinbox .setMinimumTime(Qt.QTime(0, 0))
 
-        self.fps_prev_frame: Optional[Frame] = None
+        self.fps_history: Deque[int] = deque([], self.main.FPS_AVERAGING_WINDOW_SIZE)
+        self.current_fps = 0.0
         self.fps_timer = Qt.QTimer()
         self.fps_timer.setTimerType(Qt.Qt.PreciseTimer)
-        self.fps_timer.timeout.connect(self.update_fps_counter)
+        self.fps_timer.timeout.connect(lambda: self.fps_spinbox.setValue(self.current_fps))
 
         self.toggle_button              .clicked.connect(self.on_toggle)
         self.play_pause_button          .clicked.connect(self.on_play_pause_clicked)
@@ -128,9 +130,6 @@ class PlaybackToolbar(AbstractToolbar):
         if self.main.statusbar.label.text() == 'Ready':
             self.main.statusbar.label.setText('Playing')
 
-        self.fps_prev_frame = self.main.current_frame
-        self.fps_timer.start(self.main.FPS_REFRESH_INTERVAL)
-
         self.play_buffer.clear()
         for i in range(self.main.PLAY_BUFFER_SIZE):
             future = self.main.current_output.vs_output.get_frame_async(int(self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
@@ -138,6 +137,7 @@ class PlaybackToolbar(AbstractToolbar):
 
         if self.fps_unlimited_checkbox.isChecked():
             self.play_timer.start(0)
+            self.fps_timer.start(self.main.FPS_REFRESH_INTERVAL)
         else:
             self.play_timer.start(round(1000 / self.main.current_output.play_fps))
 
@@ -152,15 +152,19 @@ class PlaybackToolbar(AbstractToolbar):
         pixmap = self.main.render_raw_videoframe(frame_future.result())
         self.main.current_output.graphics_scene_item.setPixmap(pixmap)
 
+        self.update_fps_counter()
+
         next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE
         if next_frame_for_buffer < self.main.current_output.total_frames:
             self.play_buffer.appendleft(self.main.current_output.vs_output.get_frame_async(next_frame_for_buffer))
 
     def stop(self) -> None:
         self.play_timer.stop()
-        self.fps_timer.stop()
         if self.main.statusbar.label.text() == 'Playing':
             self.main.statusbar.label.setText('Ready')
+
+        self.fps_history.clear()
+        self.fps_timer.stop()
 
     def seek_to_prev(self, checked: Optional[bool] = None) -> None:
         try:
@@ -206,9 +210,10 @@ class PlaybackToolbar(AbstractToolbar):
             self.stop()
 
     def on_fps_changed(self, new_fps: float) -> None:
-        if self.fps_spinbox.isEnabled():
-            self.main.current_output.play_fps = new_fps
+        if not self.fps_spinbox.isEnabled():
+            return
 
+        self.main.current_output.play_fps = new_fps
         if self.play_timer.isActive():
             self.stop()
             self.play()
@@ -221,17 +226,22 @@ class PlaybackToolbar(AbstractToolbar):
             self.fps_spinbox.setValue(self.main.current_output.play_fps)
 
         if self.play_timer.isActive():
+            self.stop()
             self.play()
 
     def update_fps_counter(self) -> None:
-        if self.fps_prev_frame is None:
+        if self.fps_spinbox.isEnabled():
             return
 
-        current_frame = self.main.current_frame
-        current_fps = int(current_frame - self.fps_prev_frame) / (1000 / self.fps_timer.interval())
-        if not self.fps_spinbox.isEnabled():
-            self.fps_spinbox.setValue(current_fps)
-        self.fps_prev_frame = current_frame
+        self.fps_history.append(perf_counter_ns())
+        if len(self.fps_history) == 1:
+            return
+
+        elapsed_total = 0
+        for i in range(len(self.fps_history) - 1):
+            elapsed_total += self.fps_history[i + 1] - self.fps_history[i]
+
+        self.current_fps = 1_000_000_000 / (elapsed_total / len(self.fps_history))
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
