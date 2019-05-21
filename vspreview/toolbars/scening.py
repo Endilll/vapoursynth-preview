@@ -14,6 +14,7 @@ from vspreview.utils   import add_shortcut, debug, fire_and_forget, set_status_l
 from vspreview.widgets import ComboBox, Notches
 
 # TODO: annotate current_list() to return Optional[SceningList]
+# TODO: add time columns to scening list view
 
 
 class SceningList(Qt.QAbstractTableModel, QYAMLObject):

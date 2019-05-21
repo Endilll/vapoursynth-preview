@@ -20,6 +20,8 @@ from vspreview.widgets import ComboBox, Timeline
 # TODO: VFR support
 # TODO: move to pyside2, but it lacks single Qt namespace with everything imported and isn't type annotated. https://bugreports.qt.io/browse/PYSIDE-735
 # TODO: get rid of magical constants related to 'pixel' sizes (their actual units are yet to be discovered)
+# TODO: implement VSEdit-like benchmark
+# TODO: perform profiling
 
 
 class ScriptErrorDialog(Qt.QDialog):
