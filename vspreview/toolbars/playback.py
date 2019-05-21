@@ -34,7 +34,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.play_timer.setTimerType(Qt.Qt.PreciseTimer)
         self.play_timer.timeout.connect(self._playback_show_next_frame)
 
-        self.seek_frame_spinbox.setMinimum(0)
+        self.seek_frame_spinbox.setMinimum(int(FrameInterval(0)))
         self.seek_time_spinbox .setMinimumTime(Qt.QTime(0, 0))
 
         self.fps_history: Deque[int] = deque([], self.main.FPS_AVERAGING_WINDOW_SIZE)
@@ -123,9 +123,9 @@ class PlaybackToolbar(AbstractToolbar):
         self.toggle_button.setText('Playback')
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        qt_silent_call(self.seek_frame_spinbox.setMaximum     ,                    self.main.current_output.total_frames - FrameInterval(1))
-        qt_silent_call(self. seek_time_spinbox.setMaximumTime , timedelta_to_qtime(self.main.current_output.duration))
-        qt_silent_call(self.       fps_spinbox.setValue       ,                    self.main.current_output.play_fps)
+        qt_silent_call(self.seek_frame_spinbox.setMaximum    ,                    self.main.current_output.total_frames - FrameInterval(1))
+        qt_silent_call(self. seek_time_spinbox.setMaximumTime, timedelta_to_qtime(self.main.current_output.duration))
+        qt_silent_call(self.       fps_spinbox.setValue      ,                    self.main.current_output.play_fps)
 
 
     def play(self) -> None:
