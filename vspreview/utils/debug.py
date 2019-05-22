@@ -392,10 +392,12 @@ qevent_info = {
 
 class Application(Qt.QApplication):
     def notify(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
+        import sys
+
         isex = False
         try:
-            ret, time = measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event)
-            if time > 1:
+            ret, t = cast(Tuple[bool, float], measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event))
+            if t > 1:
                 if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
                     event_name = qevent_info[event.type()][0]
                 else:

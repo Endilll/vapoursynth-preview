@@ -18,6 +18,7 @@ class PlaybackToolbar(AbstractToolbar):
         'seek_to_next_button', 'seek_n_frames_f_button',
         'seek_frame_spinbox', 'seek_time_spinbox',
         'fps_spinbox', 'fps_unlimited_checkbox', 'fps_reset_button',
+        'play_start_time', 'play_start_frame', 'play_end_time', 'play_end_frame',
         'play_buffer', 'toggle_button',
     )
 
@@ -43,6 +44,11 @@ class PlaybackToolbar(AbstractToolbar):
         self.fps_timer = Qt.QTimer()
         self.fps_timer.setTimerType(Qt.Qt.PreciseTimer)
         self.fps_timer.timeout.connect(lambda: self.fps_spinbox.setValue(self.current_fps))
+
+        self.play_start_time: Optional[int] = None
+        self.play_start_frame = Frame(0)
+        self.play_end_time = 0
+        self.play_end_frame = Frame(0)
 
         self.toggle_button              .clicked.connect(self.on_toggle)
         self.play_pause_button          .clicked.connect(self.on_play_pause_clicked)
@@ -147,8 +153,8 @@ class PlaybackToolbar(AbstractToolbar):
         if self.fps_unlimited_checkbox.isChecked() or self.main.DEBUG_PLAY_FPS:
             self.play_timer.start(0)
             if self.main.DEBUG_PLAY_FPS:
-                self.start_time  = debug.perf_counter_ns()
-                self.start_frame = self.main.current_frame
+                self.play_start_time  = debug.perf_counter_ns()
+                self.play_start_frame = self.main.current_frame
             else:
                 self.fps_timer.start(self.main.FPS_REFRESH_INTERVAL)
         else:
@@ -174,19 +180,20 @@ class PlaybackToolbar(AbstractToolbar):
 
     def stop(self) -> None:
         self.play_timer.stop()
-        if self.main.DEBUG_PLAY_FPS and hasattr(self, 'start_time'):
-            self.end_time = debug.perf_counter_ns()
-            self.end_frame = self.main.current_frame
+        if self.main.DEBUG_PLAY_FPS and self.play_start_time is not None:
+            self.play_end_time = debug.perf_counter_ns()
+            self.play_end_frame = self.main.current_frame
         if self.main.statusbar.label.text() == 'Playing':
             self.main.statusbar.label.setText('Ready')
 
         self.fps_history.clear()
         self.fps_timer.stop()
 
-        if self.main.DEBUG_PLAY_FPS and hasattr(self, 'start_time'):
-            time_interval  = (self.end_time - self.start_time) / 1_000_000_000
-            frame_interval = self.end_frame - self.start_frame
+        if self.main.DEBUG_PLAY_FPS and self.play_start_time is not None:
+            time_interval  = (self.play_end_time - self.play_start_time) / 1_000_000_000
+            frame_interval = self.play_end_frame - self.play_start_frame
             logging.debug(f'{time_interval:.3f} s, {frame_interval} frames, {int(frame_interval) / time_interval:.3f} fps')
+            self.play_start_time = None
 
     def seek_to_prev(self, checked: Optional[bool] = None) -> None:
         try:
