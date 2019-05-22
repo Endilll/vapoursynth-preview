@@ -148,3 +148,262 @@ class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # pylint: disable=
         attr = super().__getattribute__(name)
         if callable(attr):
             return measure_exec_time_ms(attr)
+
+
+qevent_info = {
+    0: ('None', 'invalid event'),
+    1: ('Timer', 'timer event'),
+    2: ('MouseButtonPress', 'mouse button pressed'),
+    3: ('MouseButtonRelease', 'mouse button released'),
+    4: ('MouseButtonDblClick', 'mouse button double click'),
+    5: ('MouseMove', 'mouse move'),
+    6: ('KeyPress', 'key pressed'),
+    7: ('KeyRelease', 'key released'),
+    8: ('FocusIn', 'keyboard focus received'),
+    9: ('FocusOut', 'keyboard focus lost'),
+    23: ('FocusAboutToChange', 'keyboard focus is about to be lost'),
+    10: ('Enter', 'mouse enters widget'),
+    11: ('Leave', 'mouse leaves widget'),
+    12: ('Paint', 'paint widget'),
+    13: ('Move', 'move widget'),
+    14: ('Resize', 'resize widget'),
+    15: ('Create', 'after widget creation'),
+    16: ('Destroy', 'during widget destruction'),
+    17: ('Show', 'widget is shown'),
+    18: ('Hide', 'widget is hidden'),
+    19: ('Close', 'request to close widget'),
+    20: ('Quit', 'request to quit application'),
+    21: ('ParentChange', 'widget has been reparented'),
+    131: ('ParentAboutToChange', 'sent just before the parent change is done'),
+    22: ('ThreadChange', 'object has changed threads'),
+    24: ('WindowActivate', 'window was activated'),
+    25: ('WindowDeactivate', 'window was deactivated'),
+    26: ('ShowToParent', 'widget is shown to parent'),
+    27: ('HideToParent', 'widget is hidden to parent'),
+    31: ('Wheel', 'wheel event'),
+    33: ('WindowTitleChange', 'window title changed'),
+    34: ('WindowIconChange', 'icon changed'),
+    35: ('ApplicationWindowIconChange', 'application icon changed'),
+    36: ('ApplicationFontChange', 'application font changed'),
+    37: ('ApplicationLayoutDirectionChange', 'application layout direction changed'),
+    38: ('ApplicationPaletteChange', 'application palette changed'),
+    39: ('PaletteChange', 'widget palette changed'),
+    40: ('Clipboard', 'internal clipboard event'),
+    42: ('Speech', 'reserved for speech input'),
+    43: ('MetaCall', 'meta call event'),
+    50: ('SockAct', 'socket activation'),
+    132: ('WinEventAct', 'win event activation'),
+    52: ('DeferredDelete', 'deferred delete event'),
+    60: ('DragEnter', 'drag moves into widget'),
+    61: ('DragMove', 'drag moves in widget'),
+    62: ('DragLeave', 'drag leaves or is cancelled'),
+    63: ('Drop', 'actual drop'),
+    64: ('DragResponse', 'drag accepted/rejected'),
+    68: ('ChildAdded', 'new child widget'),
+    69: ('ChildPolished', 'polished child widget'),
+    71: ('ChildRemoved', 'deleted child widget'),
+    73: ('ShowWindowRequest', 'widget\'s window should be mapped'),
+    74: ('PolishRequest', 'widget should be polished'),
+    75: ('Polish', 'widget is polished'),
+    76: ('LayoutRequest', 'widget should be relayouted'),
+    77: ('UpdateRequest', 'widget should be repainted'),
+    78: ('UpdateLater', 'request update() later'),
+
+    79: ('EmbeddingControl', 'ActiveX embedding'),
+    80: ('ActivateControl', 'ActiveX activation'),
+    81: ('DeactivateControl', 'ActiveX deactivation'),
+    82: ('ContextMenu', 'context popup menu'),
+    83: ('InputMethod', 'input method'),
+    87: ('TabletMove', 'Wacom tablet event'),
+    88: ('LocaleChange', 'the system locale changed'),
+    89: ('LanguageChange', 'the application language changed'),
+    90: ('LayoutDirectionChange', 'the layout direction changed'),
+    91: ('Style', 'internal style event'),
+    92: ('TabletPress', 'tablet press'),
+    93: ('TabletRelease', 'tablet release'),
+    94: ('OkRequest', 'CE (Ok) button pressed'),
+    95: ('HelpRequest', 'CE (?)  button pressed'),
+
+    96: ('IconDrag', 'proxy icon dragged'),
+
+    97: ('FontChange', 'font has changed'),
+    98: ('EnabledChange', 'enabled state has changed'),
+    99: ('ActivationChange', 'window activation has changed'),
+    100: ('StyleChange', 'style has changed'),
+    101: ('IconTextChange', 'icon text has changed.  Deprecated.'),
+    102: ('ModifiedChange', 'modified state has changed'),
+    109: ('MouseTrackingChange', 'mouse tracking state has changed'),
+
+    103: ('WindowBlocked', 'window is about to be blocked modally'),
+    104: ('WindowUnblocked', 'windows modal blocking has ended'),
+    105: ('WindowStateChange', ''),
+
+    106: ('ReadOnlyChange', 'readonly state has changed'),
+
+    110: ('ToolTip', ''),
+    111: ('WhatsThis', ''),
+    112: ('StatusTip', ''),
+
+    113: ('ActionChanged', ''),
+    114: ('ActionAdded', ''),
+    115: ('ActionRemoved', ''),
+
+    116: ('FileOpen', 'file open request'),
+
+    117: ('Shortcut', 'shortcut triggered'),
+    51: ('ShortcutOverride', 'shortcut override request'),
+
+    118: ('WhatsThisClicked', ''),
+
+    120: ('ToolBarChange', 'toolbar visibility toggled'),
+
+    121: ('ApplicationActivate', 'deprecated. Use ApplicationStateChange instead.'),
+    122: ('ApplicationDeactivate', 'deprecated. Use ApplicationStateChange instead.'),
+
+    123: ('QueryWhatsThis', 'query what\'s this widget help'),
+    124: ('EnterWhatsThisMode', ''),
+    125: ('LeaveWhatsThisMode', ''),
+
+    126: ('ZOrderChange', 'child widget has had its z-order changed'),
+
+    127: ('HoverEnter', 'mouse cursor enters a hover widget'),
+    128: ('HoverLeave', 'mouse cursor leaves a hover widget'),
+    129: ('HoverMove', 'mouse cursor move inside a hover widget'),
+
+    150: ('EnterEditFocus', 'enter edit mode in keypad navigation'),
+    151: ('LeaveEditFocus', 'enter edit mode in keypad navigation'),
+    152: ('AcceptDropsChange', ''),
+
+    154: ('ZeroTimerEvent', 'Used for Windows Zero timer events'),
+
+    155: ('GraphicsSceneMouseMove', 'GraphicsView'),
+    156: ('GraphicsSceneMousePress', ''),
+    157: ('GraphicsSceneMouseRelease', ''),
+    158: ('GraphicsSceneMouseDoubleClick', ''),
+    159: ('GraphicsSceneContextMenu', ''),
+    160: ('GraphicsSceneHoverEnter', ''),
+    161: ('GraphicsSceneHoverMove', ''),
+    162: ('GraphicsSceneHoverLeave', ''),
+    163: ('GraphicsSceneHelp', ''),
+    164: ('GraphicsSceneDragEnter', ''),
+    165: ('GraphicsSceneDragMove', ''),
+    166: ('GraphicsSceneDragLeave', ''),
+    167: ('GraphicsSceneDrop', ''),
+    168: ('GraphicsSceneWheel', ''),
+
+    169: ('KeyboardLayoutChange', 'keyboard layout changed'),
+
+    170: ('DynamicPropertyChange', 'A dynamic property was changed through setProperty/property'),
+
+    171: ('TabletEnterProximity', ''),
+    172: ('TabletLeaveProximity', ''),
+
+    173: ('NonClientAreaMouseMove', ''),
+    174: ('NonClientAreaMouseButtonPress', ''),
+    175: ('NonClientAreaMouseButtonRelease', ''),
+    176: ('NonClientAreaMouseButtonDblClick', ''),
+
+    177: ('MacSizeChange', 'when the Qt::WA_Mac{Normal,Small,Mini}Size changes'),
+
+    178: ('ContentsRectChange', 'sent by QWidget::setContentsMargins (internal)'),
+
+    179: ('MacGLWindowChange', 'Internal! the window of the GLWidget has changed'),
+
+    180: ('FutureCallOut', ''),
+
+    181: ('GraphicsSceneResize', ''),
+    182: ('GraphicsSceneMove', ''),
+
+    183: ('CursorChange', ''),
+    184: ('ToolTipChange', ''),
+
+    185: ('NetworkReplyUpdated', 'Internal for QNetworkReply'),
+
+    186: ('GrabMouse', ''),
+    187: ('UngrabMouse', ''),
+    188: ('GrabKeyboard', ''),
+    189: ('UngrabKeyboard', ''),
+    191: ('MacGLClearDrawable', 'Internal Cocoa, the window has changed, so we must clear'),
+
+    192: ('StateMachineSignal', ''),
+    193: ('StateMachineWrapped', ''),
+
+    194: ('TouchBegin', ''),
+    195: ('TouchUpdate', ''),
+    196: ('TouchEnd', ''),
+
+    197: ('NativeGesture', 'QtGui native gesture'),
+    199: ('RequestSoftwareInputPanel', ''),
+    200: ('CloseSoftwareInputPanel', ''),
+
+    203: ('WinIdChange', ''),
+    198: ('Gesture', ''),
+    202: ('GestureOverride', ''),
+    204: ('ScrollPrepare', ''),
+    205: ('Scroll', ''),
+
+    206: ('Expose', ''),
+
+    207: ('InputMethodQuery', ''),
+    208: ('OrientationChange', 'Screen orientation has changed'),
+
+    209: ('TouchCancel', ''),
+
+    210: ('ThemeChange', ''),
+
+    211: ('SockClose', 'socket closed'),
+
+    212: ('PlatformPanel', ''),
+
+    213: ('StyleAnimationUpdate', 'style animation target should be updated'),
+    214: ('ApplicationStateChange', ''),
+
+    215: ('WindowChangeInternal', 'internal for QQuickWidget'),
+    216: ('ScreenChangeInternal', ''),
+
+    217: ('PlatformSurface', 'Platform surface created or about to be destroyed'),
+
+    218: ('Pointer', 'QQuickPointerEvent; ### Qt 6: QPointerEvent'),
+
+    219: ('TabletTrackingChange', 'tablet tracking state has changed'),
+
+    512: ('reserved', 'reserved for Qt Jambi\'s MetaCall event'),
+    513: ('reserved', 'reserved for Qt Jambi\'s DeleteOnMainThread event'),
+
+    1000: ('User', 'first user event id'),
+    65535: ('MaxUser', 'last user event id'),
+}
+
+class Application(Qt.QApplication):
+    def notify(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
+        isex = False
+        try:
+            ret, time = measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event)
+            if time > 1:
+                if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
+                    event_name = qevent_info[event.type()][0]
+                else:
+                    event_name = type(event).__name__
+
+                try:
+                    obj_name = obj.objectName()
+                except RuntimeError:
+                    obj_name = ''
+
+                if obj_name == '':
+                    try:
+                        if obj.parent() is not None and obj.parent().objectName() != '':
+                            obj_name = '(parent) ' + obj.parent().objectName()
+                    except RuntimeError:
+                        pass
+
+                print(f'{time:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
+            return ret
+        except Exception:  # pylint: disable=broad-except
+            isex = True
+            logging.error('Application: unexpected error')
+            print(*sys.exc_info())
+            return False
+        finally:
+            if isex:
+                self.quit()
