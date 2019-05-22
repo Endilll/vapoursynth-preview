@@ -292,12 +292,12 @@ class MainWindow(AbstractMainWindow):
     AUTOSAVE_INTERVAL          =    30 * 1000  # s
     BASE_PPI                   =    96  # PPI
     DARK_THEME                 =  True
-    FPS_AVERAGING_WINDOW_SIZE  =   100  # frames
+    FPS_AVERAGING_WINDOW_SIZE  = FrameInterval(100)
     FPS_REFRESH_INTERVAL       =   150  # ms
     LOG_LEVEL          = logging.DEBUG
     OPENGL_RENDERING           = False
     OUTPUT_INDEX               =     0
-    PLAY_BUFFER_SIZE = FrameInterval(4)  # frames
+    PLAY_BUFFER_SIZE = FrameInterval(5)
     PNG_COMPRESSION_LEVEL      =    80  # 0 - 100
     SAVE_TEMPLATE = '{script_name}_{frame}'
     SEEK_STEP                  =     1  # frames

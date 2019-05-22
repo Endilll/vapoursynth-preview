@@ -38,7 +38,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_frame_spinbox.setMinimum(int(FrameInterval(0)))
         self.seek_time_spinbox .setMinimumTime(Qt.QTime(0, 0))
 
-        self.fps_history: Deque[int] = deque([], self.main.FPS_AVERAGING_WINDOW_SIZE)
+        self.fps_history: Deque[int] = deque([], int(self.main.FPS_AVERAGING_WINDOW_SIZE) + 1)
         self.current_fps = 0.0
         self.fps_timer = Qt.QTimer()
         self.fps_timer.setTimerType(Qt.Qt.PreciseTimer)
@@ -144,9 +144,13 @@ class PlaybackToolbar(AbstractToolbar):
             future = self.main.current_output.vs_output.get_frame_async(int(self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
             self.play_buffer.appendleft(future)
 
-        if self.fps_unlimited_checkbox.isChecked():
+        if self.fps_unlimited_checkbox.isChecked() or self.main.DEBUG_PLAY_FPS:
             self.play_timer.start(0)
-            self.fps_timer.start(self.main.FPS_REFRESH_INTERVAL)
+            if self.main.DEBUG_PLAY_FPS:
+                self.start_time  = debug.perf_counter_ns()
+                self.start_frame = self.main.current_frame
+            else:
+                self.fps_timer.start(self.main.FPS_REFRESH_INTERVAL)
         else:
             self.play_timer.start(round(1000 / self.main.current_output.play_fps))
 
@@ -157,23 +161,32 @@ class PlaybackToolbar(AbstractToolbar):
             self.play_pause_button.click()
             return
 
-        self.main.on_current_frame_changed(self.main.current_frame + FrameInterval(1), render_frame=False)
-        pixmap = self.main.render_raw_videoframe(frame_future.result())
-        self.main.current_output.graphics_scene_item.setPixmap(pixmap)
-
-        self.update_fps_counter()
-
         next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE
         if next_frame_for_buffer < self.main.current_output.total_frames:
             self.play_buffer.appendleft(self.main.current_output.vs_output.get_frame_async(next_frame_for_buffer))
 
+        self.main.on_current_frame_changed(self.main.current_frame + FrameInterval(1), render_frame=False)
+        pixmap = self.main.render_raw_videoframe(frame_future.result())
+        self.main.current_output.graphics_scene_item.setPixmap(pixmap)
+
+        if not self.main.DEBUG_PLAY_FPS:
+            self.update_fps_counter()
+
     def stop(self) -> None:
         self.play_timer.stop()
+        if self.main.DEBUG_PLAY_FPS and hasattr(self, 'start_time'):
+            self.end_time = debug.perf_counter_ns()
+            self.end_frame = self.main.current_frame
         if self.main.statusbar.label.text() == 'Playing':
             self.main.statusbar.label.setText('Ready')
 
         self.fps_history.clear()
         self.fps_timer.stop()
+
+        if self.main.DEBUG_PLAY_FPS and hasattr(self, 'start_time'):
+            time_interval  = (self.end_time - self.start_time) / 1_000_000_000
+            frame_interval = self.end_frame - self.start_frame
+            logging.debug(f'{time_interval:.3f} s, {frame_interval} frames, {int(frame_interval) / time_interval:.3f} fps')
 
     def seek_to_prev(self, checked: Optional[bool] = None) -> None:
         try:
