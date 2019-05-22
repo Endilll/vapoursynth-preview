@@ -114,6 +114,22 @@ def print_perf_timepoints(*args: int) -> None:
         logging.debug(f'{i}: {args[i] - args[i-1]} ns')
 
 
+def profile_cpu(func: Callable[..., T]) -> Callable[..., T]:
+    @wraps(func)
+    def decorator(*args: Any, **kwargs: Any) -> T:
+        from cProfile import Profile
+        from pstats   import Stats, SortKey
+
+        p = Profile(perf_counter_ns, 0.000_000_001, True, False)
+        ret = p.runcall(func, *args, **kwargs)
+
+        s = Stats(p)
+        s.sort_stats(SortKey.TIME)
+        s.print_stats(10)
+        return ret
+    return decorator
+
+
 class DebugMeta(sip.wrappertype):  # type: ignore
     def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> type:
         from functools import partialmethod
