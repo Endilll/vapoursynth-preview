@@ -151,6 +151,16 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             self.createIndex(i, self.COLUMN_COUNT - 1)
         )
 
+    def __contains__(self, item: Union[Scene, Frame]) -> bool:
+        if isinstance(item, Scene):
+            return item in self.items
+        if isinstance(item, Frame):
+            for scene in self.items:
+                if item in (scene.start, scene.end):
+                    return True
+            return False
+        raise TypeError()
+
     def __getiter__(self) -> Iterator[Scene]:
         return iter(self.items)
 
@@ -1182,33 +1192,31 @@ class SceningToolbar(AbstractToolbar):
         self.add_to_list_button.setEnabled(True)
 
     def check_remove_export_possibility(self, checked: Optional[bool] = None) -> None:
-        self.add_single_frame_button       .setEnabled(True)
-        self.export_single_line_button     .setEnabled(False)
-        self.export_multiline_button       .setEnabled(False)
-        self.remove_at_current_frame_button.setEnabled(False)
-        self.remove_last_from_list_button  .setEnabled(False)
-        self.seek_to_next_button           .setEnabled(False)
-        self.seek_to_prev_button           .setEnabled(False)
-
         if not (self.current_list_index is not None
                 and self.current_list_index != -1
                 and len(self.current_list) > 0):
-            return
+            self.remove_last_from_list_button.setEnabled(True)
+            self.seek_to_next_button         .setEnabled(True)
+            self.seek_to_prev_button         .setEnabled(True)
+        else:
+            self.remove_last_from_list_button.setEnabled(False)
+            self.seek_to_next_button         .setEnabled(False)
+            self.seek_to_prev_button         .setEnabled(False)
 
-        self.remove_last_from_list_button.setEnabled(True)
-        self.seek_to_next_button         .setEnabled(True)
-        self.seek_to_prev_button         .setEnabled(True)
-
-        for scene in self.current_list:
-            if (scene.start == self.main.current_frame
-                    or scene.end == self.main.current_frame):
-                self.       add_single_frame_button.setEnabled(False)
-                self.remove_at_current_frame_button.setEnabled(True)
-                break
+        if self.current_list is not None and self.main.current_frame in self.current_list:
+            self.       add_single_frame_button.setEnabled(False)
+            self.remove_at_current_frame_button.setEnabled(True)
+        else:
+            self.       add_single_frame_button.setEnabled(True)
+            self.remove_at_current_frame_button.setEnabled(False)
 
         if self.export_template_pattern.fullmatch(self.export_template_lineedit.text()) is not None:
             self.export_multiline_button  .setEnabled(True)
             self.export_single_line_button.setEnabled(True)
+        else:
+            self.export_single_line_button.setEnabled(False)
+            self.export_multiline_button  .setEnabled(False)
+
 
     def scening_update_status_label(self) -> None:
         first_frame_text  = str(self.first_frame)  if self.first_frame  is not None else ''
