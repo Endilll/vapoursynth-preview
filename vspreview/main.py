@@ -142,7 +142,7 @@ class MainToolbar(AbstractToolbar):
         layout.addWidget(self.frame_spinbox)
 
         self.copy_frame_button = Qt.QPushButton(self)
-        self.copy_frame_button.setText('Copy Frame')
+        self.copy_frame_button.setText('⎘')
         layout.addWidget(self.copy_frame_button)
 
         self.time_spinbox = Qt.QTimeEdit(self)
@@ -151,7 +151,7 @@ class MainToolbar(AbstractToolbar):
         layout.addWidget(self.time_spinbox)
 
         self.copy_timestamp_button = Qt.QPushButton(self)
-        self.copy_timestamp_button.setText('Copy Time')
+        self.copy_timestamp_button.setText('⎘')
         layout.addWidget(self.copy_timestamp_button)
 
         self.zoom_combobox = ComboBox(self)
