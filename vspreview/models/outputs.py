@@ -14,7 +14,7 @@ from vspreview.utils import debug
 
 class Outputs(Qt.QAbstractListModel, QYAMLObject):
     __slots__ = (
-        'items'
+        'items',
     )
 
     yaml_tag = '!Outputs'

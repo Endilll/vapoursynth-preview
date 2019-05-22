@@ -10,7 +10,7 @@ from   typing   import Any, Callable, cast, Dict, Iterator, List, Mapping, Optio
 from PyQt5 import Qt
 
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, QYAMLObject, Scene
-from vspreview.utils   import add_shortcut, debug, fire_and_forget, set_status_label
+from vspreview.utils   import add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label
 from vspreview.widgets import ComboBox, Notches
 
 # TODO: annotate current_list() to return Optional[SceningList]
@@ -355,7 +355,10 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
 
 class SceningListDialog(Qt.QDialog):
     __slots__ = (
-        'listview'
+        'main', 'scening_list',
+        'name_lineedit', 'tableview',
+        'start_frame_lineedit', 'end_frame_lineedit',
+        'label_lineedit',
     )
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
@@ -373,19 +376,23 @@ class SceningListDialog(Qt.QDialog):
         self.start_frame_lineedit.textChanged.connect(self.on_start_frame_changed)
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
 
+        set_qobject_names(self)
+
     def setup_ui(self) -> None:
         layout = Qt.QVBoxLayout(self)
+        layout.setObjectName('SceningListDialog.setup_ui.layout')
 
         self.name_lineedit = Qt.QLineEdit(self)
         layout.addWidget(self.name_lineedit)
 
         self.tableview = Qt.QTableView(self)
-        self.tableview.setSelectionMode(Qt.QListView.SingleSelection)
-        self.tableview.setSelectionBehavior(Qt.QListView.SelectRows)
+        self.tableview.setSelectionMode(Qt.QTableView.SingleSelection)
+        self.tableview.setSelectionBehavior(Qt.QTableView.SelectRows)
         self.tableview.setSizeAdjustPolicy(Qt.QTableView.AdjustToContents)
         layout.addWidget(self.tableview)
 
         scene_layout = Qt.QHBoxLayout()
+        scene_layout.setObjectName('SceningListDialog.setup_ui.scene_layout')
         layout.addLayout(scene_layout)
 
         self.start_frame_lineedit = Qt.QLineEdit(self)
@@ -503,13 +510,15 @@ class SceningListDialog(Qt.QDialog):
 
 class SceningToolbar(AbstractToolbar):
     __slots__ = (
-        'first_frame', 'second_frame', 'export_template_pattern',
-        'scening_list_dialog',
-        'lists_combobox', 'add_list_button', 'remove_list_button', 'view_list_button',
-        'toggle_first_frame_button', 'toggle_second_frame_button',
+        'first_frame', 'second_frame',
+        'export_template_pattern', 'export_template_scenes_pattern',
+        'scening_list_dialog', 'supported_file_types',
+        'add_list_button', 'remove_list_button', 'view_list_button',
+        'toggle_first_frame_button', 'toggle_second_frame_button', 'add_single_frame_button',
         'add_to_list_button', 'remove_last_from_list_button',
         'export_single_line_button', 'export_template_lineedit', 'export_multiline_button',
-        'status_label',
+        'status_label', 'import_file_button', 'items_combobox', 'remove_at_current_frame_button',
+        'seek_to_next_button', 'seek_to_prev_button',
         'toggle_button'
     )
 
@@ -577,13 +586,17 @@ class SceningToolbar(AbstractToolbar):
         # FIXME: get rid of workaround
         self._on_list_items_changed = lambda *arg: self.on_list_items_changed(*arg)  # pylint: disable=unnecessary-lambda, no-value-for-parameter
 
+        set_qobject_names(self)
+
     def setup_ui(self) -> None:
         self.setVisible(False)
 
         layout = Qt.QVBoxLayout(self)
+        layout.setObjectName('SceningToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
 
         layout_line_1 = Qt.QHBoxLayout()
+        layout_line_1.setObjectName('SceningToolbar.setup_ui.layout_line_1')
         layout.addLayout(layout_line_1)
 
         self.items_combobox = ComboBox(self)
@@ -630,6 +643,7 @@ class SceningToolbar(AbstractToolbar):
 
 
         layout_line_2 = Qt.QHBoxLayout()
+        layout_line_2.setObjectName('SceningToolbar.setup_ui.layout_line_2')
         layout.addLayout(layout_line_2)
 
         self.add_single_frame_button = Qt.QPushButton(self)
@@ -666,6 +680,7 @@ class SceningToolbar(AbstractToolbar):
         layout_line_2.addWidget(self.remove_at_current_frame_button)
 
         separator = Qt.QFrame(self)
+        separator.setObjectName('SceningToolbar.setup_ui.separator')
         separator.setFrameShape(Qt.QFrame.VLine)
         separator.setFrameShadow(Qt.QFrame.Sunken)
         layout_line_2.addWidget(separator)

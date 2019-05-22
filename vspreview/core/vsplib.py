@@ -514,7 +514,9 @@ class AbstractToolbar(Qt.QWidget, QABC):
     if TYPE_CHECKING:
         from vspreview.widgets import Notches
 
-    __slots__ = ('main')
+    __slots__ = (
+        'main', 'toggle_button'
+    )
 
     if TYPE_CHECKING:
         notchesChanged = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable

@@ -8,17 +8,18 @@ from   typing   import Any, Mapping, Optional
 from PyQt5 import Qt
 
 from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame
-from vspreview.utils import add_shortcut, debug, fire_and_forget, set_status_label
+from vspreview.utils import add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label
 
 
 class MiscToolbar(AbstractToolbar):
     storable_attrs = [
-        'autosave_enabled'
+        'autosave_enabled',
     ]
     __slots__ = storable_attrs + [
         'autosave_timer', 'reload_script_button',
         'save_button', 'autosave_checkbox',
         'keep_on_top_checkbox', 'save_template_lineedit',
+        'show_debug_checkbox',
         'toggle_button'
     ]
 
@@ -42,9 +43,12 @@ class MiscToolbar(AbstractToolbar):
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_script_button.click)
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_S, self.         save_button.click)
 
+        set_qobject_names(self)
+
     def setup_ui(self) -> None:
         self.setVisible(False)
         layout = Qt.QHBoxLayout(self)
+        layout.setObjectName('MiscToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.reload_script_button = Qt.QPushButton(self)
@@ -65,6 +69,7 @@ class MiscToolbar(AbstractToolbar):
         layout.addWidget(self.keep_on_top_checkbox)
 
         save_template_label = Qt.QLabel(self)
+        save_template_label.setObjectName('MiscToolbar.setup_ui.save_template_label')
         save_template_label.setText('Save file name template:')
         layout.addWidget(save_template_label)
 

@@ -28,7 +28,9 @@ def print_func_name() -> None:
 
 
 class EventFilter(Qt.QObject):
-    __slots__ = ('main')
+    __slots__ = (
+        'main',
+    )
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
         super().__init__()

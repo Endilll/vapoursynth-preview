@@ -131,3 +131,12 @@ def method_dispatch(func: Callable[..., T]) -> Callable[..., T]:
     wrapper.register = dispatcher.register  # type: ignore
     update_wrapper(wrapper, dispatcher)
     return wrapper
+
+def set_qobject_names(obj: object) -> None:
+    if hasattr(obj, '__slots__'):
+        for attr_name in obj.__slots__:
+            attr = getattr(obj, attr_name)
+            if not isinstance(attr, Qt.QObject):
+                continue
+            attr.setObjectName(type(obj).__name__ + '.' + attr_name)
+           

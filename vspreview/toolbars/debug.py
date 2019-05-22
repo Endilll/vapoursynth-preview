@@ -4,14 +4,15 @@ from typing   import Optional
 from PyQt5 import Qt
 
 from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame
-from vspreview.utils import debug
+from vspreview.utils import debug, set_qobject_names
 
 
 class DebugToolbar(AbstractToolbar):
     __slots__ = (
         'test_button',
         'exec_lineedit', 'exec_button',
-        'filter',
+        'test_button',
+        # 'filter',
         'toggle_button'
     )
 
@@ -31,9 +32,12 @@ class DebugToolbar(AbstractToolbar):
             for toolbar in self.main.toolbars:
                 toolbar.widget.installEventFilter(self.filter)
 
+        set_qobject_names(self)
+
     def setup_ui(self) -> None:
         self.setVisible(False)
         layout = Qt.QHBoxLayout(self)
+        layout.setObjectName('DebugToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.test_button = Qt.QPushButton(self)

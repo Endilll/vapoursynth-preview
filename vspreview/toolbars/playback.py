@@ -8,7 +8,7 @@ from   typing   import Any, Deque, Mapping, Optional, Union
 from PyQt5 import Qt
 
 from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval
-from vspreview.utils import add_shortcut, debug, qt_silent_call, qtime_to_timedelta, timedelta_to_qtime
+from vspreview.utils import add_shortcut, debug, qt_silent_call, qtime_to_timedelta, set_qobject_names, timedelta_to_qtime
 
 
 class PlaybackToolbar(AbstractToolbar):
@@ -16,8 +16,9 @@ class PlaybackToolbar(AbstractToolbar):
         'play_timer', 'fps_timer', 'fps_history', 'current_fps',
         'seek_n_frames_b_button', 'seek_to_prev_button', 'play_pause_button',
         'seek_to_next_button', 'seek_n_frames_f_button',
-        'seek_frame_spinbox', 'seek_time_spinbox', 'fps_spinbox', 'fps_unlimited_checkbox',
-        'play_buffer', 'toggle_button'
+        'seek_frame_spinbox', 'seek_time_spinbox',
+        'fps_spinbox', 'fps_unlimited_checkbox', 'fps_reset_button',
+        'play_buffer', 'toggle_button',
     )
 
     yaml_tag = '!PlaybackToolbar'
@@ -61,9 +62,12 @@ class PlaybackToolbar(AbstractToolbar):
         add_shortcut(Qt.Qt.SHIFT + Qt.Qt.Key_Left , self.seek_n_frames_b_button.click)
         add_shortcut(Qt.Qt.SHIFT + Qt.Qt.Key_Right, self.seek_n_frames_f_button.click)
 
+        set_qobject_names(self)
+
     def setup_ui(self) -> None:
         self.setVisible(False)
         layout = Qt.QHBoxLayout(self)
+        layout.setObjectName('PlaybackToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.seek_n_frames_b_button = Qt.QPushButton(self)

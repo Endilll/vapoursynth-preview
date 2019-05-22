@@ -12,7 +12,7 @@ import vapoursynth as     vs
 
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
 from vspreview.models  import Outputs
-from vspreview.utils   import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, timedelta_to_qtime
+from vspreview.utils   import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, set_qobject_names, timedelta_to_qtime
 from vspreview.widgets import ComboBox, Timeline
 
 # TODO: design settings part
@@ -43,14 +43,19 @@ class ScriptErrorDialog(Qt.QDialog):
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_button.click, self)
 
+        set_qobject_names(self)
+
     def setup_ui(self) -> None:
         main_layout = Qt.QVBoxLayout(self)
+        main_layout.setObjectName('ScriptErrorDialog.setup_ui.main_layout')
 
         self.label = Qt.QLabel()
         main_layout.addWidget(self.label)
 
         buttons_widget = Qt.QWidget(self)
+        buttons_widget.setObjectName('ScriptErrorDialog.setup_ui.buttons_widget')
         buttons_layout = Qt.QHBoxLayout(buttons_widget)
+        buttons_layout.setObjectName('ScriptErrorDialog.setup_uibuttons_layout')
 
         self.reload_button = Qt.QPushButton(self)
         self.reload_button.setText('Reload')
@@ -77,10 +82,10 @@ class ScriptErrorDialog(Qt.QDialog):
 
 class MainToolbar(AbstractToolbar):
     __slots__ = (
-        'save_file_types', 'zoom_levels',
+        'outputs', 'save_file_types', 'zoom_levels',
         'outputs_combobox', 'frame_spinbox', 'copy_frame_button',
         'time_spinbox', 'copy_timestamp_button',
-        'zoom_combobox', 'save_as_button', 'test_button'
+        'zoom_combobox', 'save_as_button', 'switch_timeline_mode_button',
     )
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
@@ -107,7 +112,7 @@ class MainToolbar(AbstractToolbar):
         self.copy_timestamp_button       .clicked.connect(              self.on_copy_timestamp_button_clicked)
         self.zoom_combobox    .currentTextChanged.connect(              self.on_zoom_changed)
         self.save_as_button              .clicked.connect(              self.on_save_as_clicked)
-        self.switch_timeline_mode        .clicked.connect(              self.on_switch_timeline_mode_clicked)
+        self.switch_timeline_mode_button .clicked.connect(              self.on_switch_timeline_mode_clicked)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_1, lambda: self.main.switch_output(0))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_2, lambda: self.main.switch_output(1))
@@ -118,6 +123,8 @@ class MainToolbar(AbstractToolbar):
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_7, lambda: self.main.switch_output(6))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_8, lambda: self.main.switch_output(7))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_9, lambda: self.main.switch_output(8))
+
+        set_qobject_names(self)
 
     def setup_ui(self) -> None:
         layout = Qt.QHBoxLayout(self)
@@ -155,9 +162,9 @@ class MainToolbar(AbstractToolbar):
         self.save_as_button.setText('Save Frame as')
         layout.addWidget(self.save_as_button)
 
-        self.switch_timeline_mode = Qt.QPushButton(self)
-        self.switch_timeline_mode.setText('Switch Timeline Mode')
-        layout.addWidget(self.switch_timeline_mode)
+        self.switch_timeline_mode_button = Qt.QPushButton(self)
+        self.switch_timeline_mode_button.setText('Switch Timeline Mode')
+        layout.addWidget(self.switch_timeline_mode_button)
 
         layout.addStretch()
 
@@ -248,12 +255,19 @@ class Toolbars(AbstractToolbars):
     def __init__(self, main_window: AbstractMainWindow) -> None:
         from vspreview.toolbars import DebugToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar
 
-        self.main      =      MainToolbar(main_window)
+        self.main      =     MainToolbar(main_window)
+        self.main.setObjectName('Toolbars.main')
 
-        self.misc      =      MiscToolbar(main_window)
-        self.playback  =  PlaybackToolbar(main_window)
-        self.scening   =   SceningToolbar(main_window)
-        self.debug     =     DebugToolbar(main_window)
+        self.misc      =     MiscToolbar(main_window)
+        self.playback  = PlaybackToolbar(main_window)
+        self.scening   =  SceningToolbar(main_window)
+        self.debug     =    DebugToolbar(main_window)
+
+        self.misc    .setObjectName('Toolbars.misc')
+        self.playback.setObjectName('Toolbars.playback')
+        self.scening .setObjectName('Toolbars.scening')
+        self.debug   .setObjectName('Toolbars.debug')
+
 
     def __getstate__(self) -> Mapping[str, Mapping[str, Any]]:
         return {
@@ -292,18 +306,19 @@ class MainWindow(AbstractMainWindow):
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE              = 'frame'
 
+    DEBUG_PLAY_FPS                    = True
     DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
 
     storable_attrs = [
-        'toolbars'
+        'toolbars',
     ]
     __slots__ = storable_attrs + [
-        'app', 'opengl_widget',
-        'main_layout', 'main_toolbar_widget', 'main_toolbar_layout',
-        'graphics_view', 'script_error_dialog'
-        'outputs_combobox', 'frame_spinbox', 'copy_frame_button',
-        'time_spinbox', 'copy_timestamp_button', 'test_button'
+        'app', 'display_scale', 'clipboard',
+        'script_path', 'save_on_exit', 'timeline', 'main_layout',
+        'graphics_scene', 'graphics_view', 'script_error_dialog',
+        'central_widget', 'statusbar',
+        'opengl_widget',
     ]
 
     yaml_tag = '!MainWindow'
@@ -340,6 +355,7 @@ class MainWindow(AbstractMainWindow):
 
         self.graphics_scene = Qt.QGraphicsScene(self)
         self.graphics_view.setScene(self.graphics_scene)
+        self.opengl_widget = None
         if self.OPENGL_RENDERING:
             self.opengl_widget = Qt.QOpenGLWidget()
             self.graphics_view.setViewport(self.opengl_widget)
@@ -357,6 +373,8 @@ class MainWindow(AbstractMainWindow):
         for toolbar in self.toolbars:
             self.main_layout.addWidget(toolbar)
             self.toolbars.main.layout().addWidget(toolbar.toggle_button)
+
+        set_qobject_names(self)
 
     def setup_ui(self) -> None:
         from vspreview.widgets import GraphicsView
@@ -383,21 +401,27 @@ class MainWindow(AbstractMainWindow):
         self.statusbar = Qt.QStatusBar(self.central_widget)
 
         self.statusbar.total_frames_label = Qt.QLabel(self.central_widget)
+        self.statusbar.total_frames_label.setObjectName('MainWindow.statusbar.total_frames_label')
         self.statusbar.addWidget(self.statusbar.total_frames_label)
 
         self.statusbar.duration_label = Qt.QLabel(self.central_widget)
+        self.statusbar.duration_label.setObjectName('MainWindow.statusbar.duration_label')
         self.statusbar.addWidget(self.statusbar.duration_label)
 
         self.statusbar.resolution_label = Qt.QLabel(self.central_widget)
+        self.statusbar.resolution_label.setObjectName('MainWindow.statusbar.resolution_label')
         self.statusbar.addWidget(self.statusbar.resolution_label)
 
         self.statusbar.pixel_format_label = Qt.QLabel(self.central_widget)
+        self.statusbar.pixel_format_label.setObjectName('MainWindow.statusbar.pixel_format_label')
         self.statusbar.addWidget(self.statusbar.pixel_format_label)
 
         self.statusbar.fps_label = Qt.QLabel(self.central_widget)
+        self.statusbar.fps_label.setObjectName('MainWindow.statusbar.fps_label')
         self.statusbar.addWidget(self.statusbar.fps_label)
 
         self.statusbar.label = Qt.QLabel(self.central_widget)
+        self.statusbar.label.setObjectName('MainWindow.statusbar.label')
         self.statusbar.addPermanentWidget(self.statusbar.label)
 
         self.setStatusBar(self.statusbar)

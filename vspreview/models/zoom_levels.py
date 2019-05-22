@@ -9,7 +9,9 @@ from vspreview.utils import debug
 
 
 class ZoomLevels(Qt.QAbstractListModel):
-    __slots__ = ('levels')
+    __slots__ = (
+        'levels',
+    )
 
     def __init__(self, init_seq: Sequence[float]) -> None:
         super().__init__()
