@@ -5,7 +5,7 @@ import inspect
 import logging
 import re
 from   time      import perf_counter_ns, time
-from   typing    import Any, Callable, cast, Dict, Type, TypeVar, Tuple
+from   typing    import Any, Callable, cast, Dict, Type, TypeVar, Tuple, Union
 
 from pprint import pprint
 from PyQt5  import Qt, sip
@@ -88,17 +88,21 @@ class EventFilter(Qt.QObject):
                 total_sync += s2 - s1
 
         logging.debug('')
-        logging.debug(f'Async average: {total_async / N - 1} ns, {1000000000 / (total_async / N - 1)} fps')
-        logging.debug(f'Sync average:  {total_sync  / N - 1} ns, {1000000000 / (total_sync  / N - 1)} fps')
+        logging.debug(f'Async average: {total_async / N - 1} ns, {1_000_000_000 / (total_async / N - 1)} fps')
+        logging.debug(f'Sync average:  {total_sync  / N - 1} ns, {1_000_000_000 / (total_sync  / N - 1)} fps')
 
 
-def measure_exec_time(func: Callable[..., T]) -> Callable[..., T]:
+def measure_exec_time_ms(func: Callable[..., T], return_exec_time: bool = False, print_exec_time: bool = True) -> Callable[..., Union[T, Tuple[T, float]]]:
     @wraps(func)
     def decorator(*args: Any, **kwargs: Any) -> T:
         t1 = perf_counter_ns()
         ret = func(*args, **kwargs)
         t2 = perf_counter_ns()
-        print(f'{(t2 - t1) / 1000000} ms: {func.__name__}()')
+        exec_time = (t2 - t1) / 1_000_000
+        if print_exec_time:
+            logging.debug(f'{exec_time:7.3f} ms: {func.__name__}()')
+        if return_exec_time:
+            return ret, exec_time  # type: ignore
         return ret
     return decorator
 
@@ -124,7 +128,7 @@ class DebugMeta(sip.wrappertype):  # type: ignore
 
     def dummy_method(self, name: str, *args: Any, **kwargs: Any) -> Any:
         method = getattr(super(GraphicsScene, GraphicsScene), name)
-        method = measure_exec_time(method)
+        method = measure_exec_time_ms(method)
         return method(self, *args, **kwargs)
 
 
@@ -134,13 +138,13 @@ class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # pylint: disable=
         ret = super().event(event)
         t1 = perf_counter_ns()
         interval = t1 - t0
-        if interval > 5000000:
+        if interval > 5_000_000:
             print(self.__class__.__name__ + '.event()')
-            print(f'{interval / 1000000}: {event.type()}')
+            print(f'{interval / 1_000_000}: {event.type()}')
 
         return ret
 
     def __getattribute__(self, name: str) -> Any:
         attr = super().__getattribute__(name)
         if callable(attr):
-            return measure_exec_time(attr)
+            return measure_exec_time_ms(attr)

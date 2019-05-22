@@ -1070,7 +1070,7 @@ class SceningToolbar(AbstractToolbar):
         scene_start = Frame(0)
         scene_end: Optional[Frame] = None
         for i in range(1, len(deltas)):
-            if abs(round((deltas[i] - scene_delta).total_seconds(), 6)) <= 0.000001:
+            if abs(round((deltas[i] - scene_delta).total_seconds(), 6)) <= 0.000_001:
                 continue
             # TODO: investigate, why offset by -1 is necessary here
             scene_end = Frame(i - 1)

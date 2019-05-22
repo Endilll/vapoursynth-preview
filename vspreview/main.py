@@ -674,7 +674,7 @@ class Application(Qt.QApplication):
             return Qt.QApplication.notify(self, obj, event)
         except Exception:  # pylint: disable=broad-except
             isex = True
-            logging.error('Unexpected Error')
+            logging.error('Application: unexpected error')
             print(*sys.exc_info())
             return False
         finally:
