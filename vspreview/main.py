@@ -386,8 +386,9 @@ class MainWindow(AbstractMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.graphics_view = GraphicsView(self.central_widget)
-        # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.OptimizationFlag.DontSavePainterState)
-        # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.OptimizationFlag.DontAdjustForAntialiasing)
+        # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.DontSavePainterState)
+        # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.DontAdjustForAntialiasing)
+        # self.graphics_view.setViewportUpdateMode(Qt.QGraphicsView.FullViewportUpdate)
         self.graphics_view.setBackgroundBrush(self.palette().brush(Qt.QPalette.Window))
         self.graphics_view.setSizePolicy(Qt.QSizePolicy.Fixed, Qt.QSizePolicy.Fixed)
         self.graphics_view.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
