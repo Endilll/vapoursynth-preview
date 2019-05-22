@@ -295,7 +295,7 @@ class MainWindow(AbstractMainWindow):
     FPS_AVERAGING_WINDOW_SIZE  = FrameInterval(100)
     FPS_REFRESH_INTERVAL       =   150  # ms
     LOG_LEVEL          = logging.DEBUG
-    OPENGL_RENDERING           = False
+    OPENGL_RENDERING           =  True
     OUTPUT_INDEX               =     0
     PLAY_BUFFER_SIZE = FrameInterval(5)
     PNG_COMPRESSION_LEVEL      =    80  # 0 - 100
