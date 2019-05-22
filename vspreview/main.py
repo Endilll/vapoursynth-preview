@@ -306,7 +306,7 @@ class MainWindow(AbstractMainWindow):
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE              = 'frame'
 
-    DEBUG_PLAY_FPS                    = True
+    DEBUG_PLAY_FPS                    = False
     DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
 
