@@ -10,7 +10,8 @@ from   typing   import Any, Callable, cast, Dict, Iterator, List, Mapping, Optio
 from PyQt5 import Qt
 
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, QYAMLObject, Scene
-from vspreview.utils   import add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label
+from vspreview.utils   import (add_shortcut, debug, main_window, fire_and_forget, qtime_to_timedelta,
+                               qt_silent_call, set_qobject_names, set_status_label, strfdelta, timedelta_to_qtime)
 from vspreview.widgets import ComboBox, Notches
 
 # TODO: annotate current_list() to return Optional[SceningList]
@@ -25,14 +26,18 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
 
     START_FRAME_COLUMN = 0
     END_FRAME_COLUMN   = 1
-    LABEL_COLUMN       = 2
-    COLUMN_COUNT       = 3
+    START_TIME_COLUMN  = 2
+    END_TIME_COLUMN    = 3
+    LABEL_COLUMN       = 4
+    COLUMN_COUNT       = 5
 
     def __init__(self, name: str, max_value: Optional[Frame] = None, items: Optional[List[Scene]] = None) -> None:
         super().__init__()
         self.name      = name
         self.max_value = max_value if max_value is not None else Frame(2**31)
         self.items     =     items if     items is not None else []
+
+        self.main = main_window()
 
     def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
         return len(self.items)
@@ -48,6 +53,10 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if section == self.START_FRAME_COLUMN:
                 return 'Start'
             if section == self.END_FRAME_COLUMN:
+                return 'End'
+            if section == self.START_TIME_COLUMN:
+                return 'Start'
+            if section == self.END_TIME_COLUMN:
                 return 'End'
             if section == self.LABEL_COLUMN:
                 return 'Label'
@@ -74,19 +83,32 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                     return str(self.items[row].end)
                 else:
                     return ''
+            if column == self.START_TIME_COLUMN:
+                return strfdelta(main_window().to_timedelta(self.items[row].start), '%h:%M:%S.%Z')
+            if column == self.END_TIME_COLUMN:
+                if self.items[row].end != self.items[row].start:
+                    return strfdelta(main_window().to_timedelta(self.items[row].end), '%h:%M:%S.%Z')
+                else:
+                    return ''
             if column == self.LABEL_COLUMN:
                 return str(self.items[row].label)
+
         if role == Qt.Qt.UserRole:
             if column == self.START_FRAME_COLUMN:
                 return self.items[row].start
             if column == self.END_FRAME_COLUMN:
                 return self.items[row].end
+            if column == self.START_TIME_COLUMN:
+                return main_window().to_timedelta(self.items[row].start)
+            if column == self.END_TIME_COLUMN:
+                return main_window().to_timedelta(self.items[row].end)
             if column == self.LABEL_COLUMN:
                 return self.items[row].label
+
         return None
 
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
-        from copy   import deepcopy
+        from copy import deepcopy
 
         if not index.isValid():
             return False
@@ -111,6 +133,22 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if value < scene.start:
                 return False
             scene.end = value
+            proper_update = True
+        if column == self.START_TIME_COLUMN:
+            if not isinstance(value, timedelta):
+                raise TypeError
+            frame = self.main.to_frame(value)
+            if frame > scene.end:
+                return False
+            scene.start = frame
+            proper_update = True
+        if column == self.END_TIME_COLUMN:
+            if not isinstance(value, timedelta):
+                raise TypeError
+            frame = self.main.to_frame(value)
+            if frame < scene.start:
+                return False
+            scene.end = frame
             proper_update = True
         elif column == self.LABEL_COLUMN:
             if not isinstance(value, str):
@@ -250,8 +288,6 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     yaml_tag = '!SceningLists'
 
     def __init__(self, items: Optional[List[SceningList]] = None) -> None:
-        from vspreview.utils import main_window
-
         super().__init__()
         self.main = main_window()
         self.items = items if items is not None else []
@@ -381,9 +417,11 @@ class SceningListDialog(Qt.QDialog):
         self.setup_ui()
 
         self.end_frame_lineedit  .textChanged.connect(self.on_end_frame_changed)
+        self.end_time_spinbox    .timeChanged.connect(lambda qtime: self.on_end_time_changed(qtime_to_timedelta(qtime)))  # type: ignore
         self.label_lineedit      .textChanged.connect(self.on_label_changed)
         self.name_lineedit       .textChanged.connect(self.on_name_changed)
         self.start_frame_lineedit.textChanged.connect(self.on_start_frame_changed)
+        self.start_time_spinbox  .timeChanged.connect(lambda qtime: self.on_start_time_changed(qtime_to_timedelta(qtime)))  # type: ignore
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
 
         set_qobject_names(self)
@@ -415,6 +453,18 @@ class SceningListDialog(Qt.QDialog):
         self.end_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
         scene_layout.addWidget(self.end_frame_lineedit)
 
+        self.start_time_spinbox = Qt.QTimeEdit(self)
+        self.start_time_spinbox.setMinimumTime(Qt.QTime())
+        self.start_time_spinbox.setDisplayFormat('H:mm:ss.zzz')
+        self.start_time_spinbox.setButtonSymbols(Qt.QTimeEdit.NoButtons)
+        scene_layout.addWidget(self.start_time_spinbox)
+
+        self.end_time_spinbox = Qt.QTimeEdit(self)
+        self.end_time_spinbox.setMinimumTime(Qt.QTime())
+        self.end_time_spinbox.setDisplayFormat('H:mm:ss.zzz')
+        self.end_time_spinbox.setButtonSymbols(Qt.QTimeEdit.NoButtons)
+        scene_layout.addWidget(self.end_time_spinbox)
+
         self.label_lineedit = Qt.QLineEdit(self)
         self.label_lineedit.setPlaceholderText('Label')
         scene_layout.addWidget(self.label_lineedit)
@@ -423,17 +473,6 @@ class SceningListDialog(Qt.QDialog):
         # self.add_button.setText('Add')
         # self.add_button.setEnabled(False)
         # scene_layout.addWidget(self.add_button)
-
-    def showEvent(self, event: Qt.QShowEvent) -> None:
-        super().showEvent(event)
-        self.scening_list = self.main.toolbars.scening.current_list
-        self.scening_list.rowsMoved.connect(self.on_tableview_rows_moved)  # type: ignore
-
-        self.name_lineedit.setText(self.scening_list.name)
-
-        self.tableview.setModel(self.scening_list)
-        self.tableview.resizeColumnsToContents()
-        self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
     def on_add_clicked(self, checked: Optional[bool] = None) -> None:
         pass
@@ -453,6 +492,24 @@ class SceningListDialog(Qt.QDialog):
             Qt.QItemSelectionModel.SelectionFlags(  # type: ignore
                 Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))
 
+    def on_current_list_changed(self, scening_list: Optional[SceningList] = None) -> None:
+        if scening_list is not None:
+            self.scening_list = scening_list
+        else:
+            self.scening_list = self.main.toolbars.scening.current_list
+
+        self.scening_list.rowsMoved.connect(self.on_tableview_rows_moved)  # type: ignore
+
+        self.name_lineedit.setText(self.scening_list.name)
+
+        self.tableview.setModel(self.scening_list)
+        self.tableview.resizeColumnsToContents()
+        self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
+
+    def on_current_output_changed(self, index: int, prev_index: int) -> None:
+        self.start_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.to_timedelta(self.main.current_output.total_frames)))
+        self.  end_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.to_timedelta(self.main.current_output.total_frames)))
+
     def on_end_frame_changed(self, text: str) -> None:
         try:
             frame = Frame(int(self.end_frame_lineedit.text()))
@@ -465,6 +522,15 @@ class SceningListDialog(Qt.QDialog):
         if not index.isValid():
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
+
+    def on_end_time_changed(self, t: timedelta) -> None:
+        index = self.tableview.selectionModel().selectedRows()[0]
+        if not index.isValid():
+            return
+        index = index.siblingAtColumn(SceningList.END_TIME_COLUMN)
+        if not index.isValid():
+            return
+        self.scening_list.setData(index, t, Qt.Qt.UserRole)
 
     def on_label_changed(self, text: str) -> None:
         index = self.tableview.selectionModel().selectedRows()[0]
@@ -493,11 +559,23 @@ class SceningListDialog(Qt.QDialog):
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
-    def on_tableview_clicked(self, index: Qt.QModelIndex) -> None:
-        if index.column() not in (SceningList.START_FRAME_COLUMN,
-                                  SceningList.END_FRAME_COLUMN):
+    def on_start_time_changed(self, t: timedelta) -> None:
+        index = self.tableview.selectionModel().selectedRows()[0]
+        if not index.isValid():
             return
-        self.main.current_frame = self.scening_list.data(index)
+        index = index.siblingAtColumn(SceningList.START_TIME_COLUMN)
+        if not index.isValid():
+            return
+        self.scening_list.setData(index, t, Qt.Qt.UserRole)
+
+    def on_tableview_clicked(self, index: Qt.QModelIndex) -> None:
+        if index.column() in (SceningList.START_FRAME_COLUMN,
+                              SceningList.END_FRAME_COLUMN):
+            self.main.current_frame = self.scening_list.data(index)
+        if index.column() == SceningList.START_TIME_COLUMN:
+            self.main.current_frame = self.scening_list.data(index.siblingAtColumn(SceningList.START_FRAME_COLUMN))
+        if index.column() == SceningList.END_TIME_COLUMN:
+            self.main.current_frame = self.scening_list.data(index.siblingAtColumn(SceningList.END_FRAME_COLUMN))
 
     def on_tableview_rows_moved(self, parent_index: Qt.QModelIndex, start_i: int, end_i: int, dest_index: Qt.QModelIndex, dest_i: int) -> None:
         index = self.scening_list.index(dest_i, 0)
@@ -507,14 +585,14 @@ class SceningListDialog(Qt.QDialog):
                 Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))
 
     def on_tableview_selection_changed(self, selected: Qt.QItemSelection, deselected: Qt.QItemSelection) -> None:
-        from vspreview.utils import qt_silent_call
-
         if len(selected.indexes()) == 0:
             return
         index = selected.indexes()[0]
         scene = self.scening_list[index.row()]
         qt_silent_call(self.start_frame_lineedit.setText, str(scene.start))
         qt_silent_call(self.  end_frame_lineedit.setText, str(scene.end))
+        qt_silent_call(self.  start_time_spinbox.setTime, timedelta_to_qtime(self.main.to_timedelta(scene.start)))
+        qt_silent_call(self.    end_time_spinbox.setTime, timedelta_to_qtime(self.main.to_timedelta(scene.end)))
         qt_silent_call(self.      label_lineedit.setText,     scene.label)
 
 
@@ -743,6 +821,7 @@ class SceningToolbar(AbstractToolbar):
 
         self.items_combobox.setModel(self.current_lists)
         self.notchesChanged.emit(self)
+        self.scening_list_dialog.on_current_output_changed(index, prev_index)
 
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
         self.check_remove_export_possibility()
@@ -794,7 +873,7 @@ class SceningToolbar(AbstractToolbar):
             self.  view_list_button.setEnabled(True)
             self.current_list.rowsInserted.connect(self._on_list_items_changed)  # type: ignore
             self.current_list.rowsRemoved .connect(self._on_list_items_changed)  # type: ignore
-            self.scening_list_dialog.tableview.setModel(self.current_list)
+            self.scening_list_dialog.on_current_list_changed(self.current_list)
 
         if old_index != -1:
             try:
@@ -814,7 +893,7 @@ class SceningToolbar(AbstractToolbar):
         self.current_lists.remove(self.current_list_index)
 
     def on_view_list_clicked(self, checked: Optional[bool] = None) -> None:
-        self.scening_list_dialog.open()
+        self.scening_list_dialog.show()
 
     def switch_list(self, index: int) -> None:
         try:
