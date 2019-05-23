@@ -391,13 +391,18 @@ qevent_info = {
 }
 
 class Application(Qt.QApplication):
+    enter_count = 0
+
     def notify(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
         import sys
 
         isex = False
         try:
+            self.enter_count += 1
+            recursive_call = self.enter_count > 1
+
             ret, t = cast(Tuple[bool, float], measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event))
-            if t > 1:
+            if t > -1:
                 if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
                     event_name = qevent_info[event.type()][0]
                 else:
@@ -414,8 +419,11 @@ class Application(Qt.QApplication):
                             obj_name = '(parent) ' + obj.parent().objectName()
                     except RuntimeError:
                         pass
-
-                print(f'{t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
+                if recursive_call:
+                    print(f'R {t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
+                else:
+                    print(f'  {t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
+            self.enter_count -= 1
             return ret
         except Exception:  # pylint: disable=broad-except
             isex = True
