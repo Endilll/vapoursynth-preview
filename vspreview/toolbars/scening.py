@@ -628,7 +628,7 @@ class SceningToolbar(AbstractToolbar):
             'Matroska XML Chapters (*.xml)' : self.import_matroska_xml_chapters,
             'OGM Chapters (*.txt)'          : self.import_ogm_chapters,
             'TFM Log (*.txt)'               : self.import_tfm,
-            'x264 QP File (*.qp)'           : self.import_qp,
+            'x264/x265 QP File (*.qp)'      : self.import_qp,
             'XviD Log (*.txt)'              : self.import_xvid,
         }
 

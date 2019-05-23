@@ -415,7 +415,7 @@ class Application(Qt.QApplication):
                     except RuntimeError:
                         pass
 
-                print(f'{time:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
+                print(f'{t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
             return ret
         except Exception:  # pylint: disable=broad-except
             isex = True
