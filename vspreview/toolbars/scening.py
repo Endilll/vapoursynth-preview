@@ -14,9 +14,6 @@ from vspreview.utils   import (add_shortcut, debug, main_window, fire_and_forget
                                qt_silent_call, set_qobject_names, set_status_label, strfdelta, timedelta_to_qtime)
 from vspreview.widgets import ComboBox, Notches
 
-# TODO: annotate current_list() to return Optional[SceningList]
-# TODO: add time columns to scening list view
-
 
 class SceningList(Qt.QAbstractTableModel, QYAMLObject):
     __slots__ = (
@@ -836,8 +833,8 @@ class SceningToolbar(AbstractToolbar):
         return marks
 
     @property
-    def current_list(self) -> SceningList:
-        return cast(SceningList, self.items_combobox.currentData())
+    def current_list(self) -> Optional[SceningList]:
+        return cast(Optional[SceningList], self.items_combobox.currentData())
 
     @current_list.setter
     def current_list(self, item: SceningList) -> None:
@@ -904,12 +901,18 @@ class SceningToolbar(AbstractToolbar):
     # seeking
 
     def on_seek_to_next_clicked(self, checked: Optional[bool] = None) -> None:
+        if self.current_list is None:
+            return
+
         new_pos = self.current_list.get_next_frame(self.main.current_frame)
         if new_pos is None:
             return
         self.main.current_frame = new_pos
 
     def on_seek_to_prev_clicked(self, checked: Optional[bool] = None) -> None:
+        if self.current_list is None:
+            return
+
         new_pos = self.current_list.get_prev_frame(self.main.current_frame)
         if new_pos is None:
             return
@@ -920,7 +923,7 @@ class SceningToolbar(AbstractToolbar):
     def on_add_single_frame_clicked(self, checked: Optional[bool] = None) -> None:
         if self.current_list is None:
             self.on_add_list_clicked()
-        self.current_list.add(self.main.current_frame)
+        cast(SceningList, self.current_list).add(self.main.current_frame)
         self.check_remove_export_possibility()
 
     def on_add_to_list_clicked(self, checked: Optional[bool] = None) -> None:
@@ -947,6 +950,9 @@ class SceningToolbar(AbstractToolbar):
         self.check_add_to_list_possibility()
 
     def on_remove_at_current_frame_clicked(self, checked: Optional[bool] = None) -> None:
+        if self.current_list is None:
+            return
+
         for scene in self.current_list:
             if (scene.start == self.main.current_frame
                     or scene.end == self.main.current_frame):
@@ -956,6 +962,9 @@ class SceningToolbar(AbstractToolbar):
         self.check_remove_export_possibility()
 
     def on_remove_last_from_list_clicked(self, checked: Optional[bool] = None) -> None:
+        if self.current_list is None:
+            return
+
         self.current_list.remove(self.current_list[-1])
         self.remove_last_from_list_button.clearFocus()
         self.check_remove_export_possibility()
@@ -1229,6 +1238,9 @@ class SceningToolbar(AbstractToolbar):
     # export
 
     def export_multiline(self, checked: Optional[bool] = None) -> None:
+        if self.current_list is None:
+            return
+
         template = self.export_template_lineedit.text()
         export_str = str()
 
@@ -1244,6 +1256,9 @@ class SceningToolbar(AbstractToolbar):
         self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
     def export_single_line(self, checked: Optional[bool] = None) -> None:
+        if self.current_list is None:
+            return
+
         template = self.export_template_lineedit.text()
         export_str = str()
 
@@ -1271,9 +1286,7 @@ class SceningToolbar(AbstractToolbar):
         self.add_to_list_button.setEnabled(True)
 
     def check_remove_export_possibility(self, checked: Optional[bool] = None) -> None:
-        if not (self.current_list_index is not None
-                and self.current_list_index != -1
-                and len(self.current_list) > 0):
+        if self.current_list is not None and len(self.current_list) > 0:
             self.remove_last_from_list_button.setEnabled(True)
             self.seek_to_next_button         .setEnabled(True)
             self.seek_to_prev_button         .setEnabled(True)
