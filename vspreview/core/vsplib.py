@@ -16,6 +16,7 @@ from .better_abc  import ABCMeta, abstract_attribute
 
 # pylint: disable=pointless-statement, function-redefined
 
+# TODO: add reverse operators
 
 class FrameInterval(YAMLObject):
     __slots__ = (
