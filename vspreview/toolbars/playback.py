@@ -24,11 +24,11 @@ class PlaybackToolbar(AbstractToolbar):
 
     yaml_tag = '!PlaybackToolbar'
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
+    def __init__(self, main: AbstractMainWindow) -> None:
         from collections        import deque
         from concurrent.futures import Future
 
-        super().__init__(main_window)
+        super().__init__(main)
         self.setup_ui()
 
         self.play_buffer: Deque[Future] = deque()
@@ -171,7 +171,7 @@ class PlaybackToolbar(AbstractToolbar):
         if next_frame_for_buffer < self.main.current_output.total_frames:
             self.play_buffer.appendleft(self.main.current_output.vs_output.get_frame_async(next_frame_for_buffer))
 
-        self.main.on_current_frame_changed(self.main.current_frame + FrameInterval(1), render_frame=False)
+        self.main.switch_frame(self.main.current_frame + FrameInterval(1), render_frame=False)
         pixmap = self.main.render_raw_videoframe(frame_future.result())
         self.main.current_output.graphics_scene_item.setPixmap(pixmap)
 
@@ -286,7 +286,7 @@ class PlaybackToolbar(AbstractToolbar):
         try:
             seek_interval_frame = state['seek_interval_frame']
             if not isinstance(seek_interval_frame, int):
-                raise TypeError()
+                raise TypeError
             self.seek_frame_spinbox.setValue(seek_interval_frame)
         except (KeyError, TypeError):
             logging.warning('Storage loading: PlaybackToolbar: failed to parse seek_interval_frame')

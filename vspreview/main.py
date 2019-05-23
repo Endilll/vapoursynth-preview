@@ -105,8 +105,8 @@ class MainToolbar(AbstractToolbar):
         self.save_file_types = {'Single Image (*.png)': self.save_as_png}
 
         self.outputs_combobox.currentIndexChanged.connect(              self.main.switch_output)
-        self.frame_spinbox          .valueChanged.connect(lambda f:     self.main.on_current_frame_changed(Frame(f)))
-        self.time_spinbox            .timeChanged.connect(lambda qtime: self.main.on_current_frame_changed(t=qtime_to_timedelta(qtime)))  # type: ignore
+        self.frame_spinbox          .valueChanged.connect(lambda f:     self.main.switch_frame(Frame(f)))
+        self.time_spinbox            .timeChanged.connect(lambda qtime: self.main.switch_frame(t=qtime_to_timedelta(qtime)))  # type: ignore
         self.copy_frame_button           .clicked.connect(              self.on_copy_frame_button_clicked)
         self.copy_timestamp_button       .clicked.connect(              self.on_copy_timestamp_button_clicked)
         self.zoom_combobox    .currentTextChanged.connect(              self.on_zoom_changed)
@@ -279,7 +279,7 @@ class Toolbars(AbstractToolbars):
             try:
                 storage = state[toolbar_name]
                 if not isinstance(storage, Mapping):
-                    raise TypeError()
+                    raise TypeError
                 getattr(self, toolbar_name).__setstate__(storage)
             except (KeyError, TypeError):
                 logging.warning(f'Storage loading: failed to parse storage of {toolbar_name}.')
@@ -363,7 +363,7 @@ class MainWindow(AbstractMainWindow):
 
         # timeline
 
-        self.timeline.clicked.connect(self.on_current_frame_changed)
+        self.timeline.clicked.connect(self.switch_frame)
 
         # init toolbars and outputs
 
@@ -522,7 +522,7 @@ class MainWindow(AbstractMainWindow):
 
         return frame_pixmap
 
-    def on_current_frame_changed(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
         if   t is     None and frame is not None:
             t = self.to_timedelta(frame)
         elif t is not None and frame is     None:
@@ -530,10 +530,10 @@ class MainWindow(AbstractMainWindow):
         elif t is not None and frame is not None:
             pass
         else:
-            logging.debug('on_current_frame_changed(): both frame and t is None')
+            logging.debug('switch_frame(): both frame and t is None')
             return
         if frame >= self.current_output.total_frames:
-            # logging.debug('on_current_frame_changed(): New frame position is out of range')
+            # logging.debug('switch_frame(): New frame position is out of range')
             return
 
         self.current_output.last_showed_frame = frame
@@ -592,7 +592,7 @@ class MainWindow(AbstractMainWindow):
 
     @current_frame.setter
     def current_frame(self, value: Frame) -> None:
-        self.on_current_frame_changed(value)
+        self.switch_frame(value)
 
     @property
     def outputs(self) -> Outputs:  # type: ignore

@@ -23,8 +23,8 @@ class MiscToolbar(AbstractToolbar):
         'toggle_button'
     ]
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
-        super().__init__(main_window)
+    def __init__(self, main: AbstractMainWindow) -> None:
+        super().__init__(main)
         self.setup_ui()
 
         self.save_template_lineedit.setText(self.main.SAVE_TEMPLATE)
@@ -167,5 +167,5 @@ class MiscToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning('Storage loading: failed to parse show debug flag.')
             show_debug = self.main.DEBUG_TOOLBAR
-            
+
         self.show_debug_checkbox.setChecked(show_debug)

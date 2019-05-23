@@ -15,9 +15,9 @@ T = TypeVar('T')
 
 
 def timedelta_to_qtime(t: timedelta) -> Qt.QTime:
-    return Qt.QTime(t.seconds // 3600,
-                    t.seconds // 60,
-                    t.seconds  % 60,
+    return Qt.QTime(t.seconds      // 3600,
+                    t.seconds      //   60,
+                    t.seconds       %   60,
                     t.microseconds // 1000)
 
 
@@ -78,7 +78,7 @@ def main_window() -> AbstractMainWindow:
 def add_shortcut(key: int, handler: Callable[[], None], widget: Optional[Qt.QWidget] = None) -> None:
     if widget is None:
         widget = main_window()
-    Qt.QShortcut(Qt.QKeySequence(key), widget).activated.connect(handler)
+    Qt.QShortcut(Qt.QKeySequence(key), widget).activated.connect(handler)  # type: ignore
 
 
 def fire_and_forget(f: Callable[..., T]) -> Callable[..., T]:
@@ -139,4 +139,3 @@ def set_qobject_names(obj: object) -> None:
             if not isinstance(attr, Qt.QObject):
                 continue
             attr.setObjectName(type(obj).__name__ + '.' + attr_name)
-           

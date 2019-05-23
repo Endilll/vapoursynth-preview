@@ -354,7 +354,7 @@ class Output(YAMLObject):
         try:
             name = state['name']
             if not isinstance(name, str):
-                raise TypeError()
+                raise TypeError
             self.name = name
         except (KeyError, TypeError):
             logging.warning(f'Storage loading: output {self.index}: failed to parse name.')
@@ -374,7 +374,7 @@ class Output(YAMLObject):
         try:
             play_fps = state['play_fps']
             if not isinstance(play_fps, float):
-                raise TypeError()
+                raise TypeError
             if play_fps >= 1.0:
                 self.play_fps = play_fps
         except (KeyError, TypeError):
@@ -484,7 +484,7 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_current_frame_changed(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -519,17 +519,17 @@ class AbstractToolbar(Qt.QWidget, QABC):
     )
 
     if TYPE_CHECKING:
-        notchesChanged = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable
+        notches_changed = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable
     else:
-        notchesChanged = Qt.pyqtSignal(object)
+        notches_changed = Qt.pyqtSignal(object)
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
-        super().__init__(main_window.central_widget)
-        self.main = main_window
+    def __init__(self, main: AbstractMainWindow) -> None:
+        super().__init__(main.central_widget)
+        self.main = main
 
         self.setFocusPolicy(Qt.Qt.ClickFocus)
 
-        self.notchesChanged.connect(self.main.timeline.update_notches)
+        self.notches_changed.connect(self.main.timeline.update_notches)
 
         self.toggle_button = Qt.QPushButton(self)
         self.toggle_button.setCheckable(True)

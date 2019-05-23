@@ -31,7 +31,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
     LABEL_COLUMN       = 4
     COLUMN_COUNT       = 5
 
-    def __init__(self, name: str, max_value: Optional[Frame] = None, items: Optional[List[Scene]] = None) -> None:
+    def __init__(self, name: str = '', max_value: Optional[Frame] = None, items: Optional[List[Scene]] = None) -> None:
         super().__init__()
         self.name      = name
         self.max_value = max_value if max_value is not None else Frame(2**31)
@@ -75,7 +75,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             return None
 
         if role in (Qt.Qt.DisplayRole,
-                    Qt.Qt.EditRole):
+                    Qt.Qt.   EditRole):
             if column == self.START_FRAME_COLUMN:
                 return str(self.items[row].start)
             if column == self.END_FRAME_COLUMN:
@@ -197,7 +197,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 if item in (scene.start, scene.end):
                     return True
             return False
-        raise TypeError()
+        raise TypeError
 
     def __getiter__(self) -> Iterator[Scene]:
         return iter(self.items)
@@ -407,11 +407,11 @@ class SceningListDialog(Qt.QDialog):
         'label_lineedit',
     )
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
-        super().__init__()
+    def __init__(self, main: AbstractMainWindow) -> None:
+        super().__init__(main)
 
-        self.main = main_window
-        self.scening_list = SceningList('')
+        self.main = main
+        self.scening_list = SceningList()
 
         self.setWindowTitle('Scening List View')
         self.setup_ui()
@@ -444,12 +444,12 @@ class SceningListDialog(Qt.QDialog):
         layout.addLayout(scene_layout)
 
         self.start_frame_lineedit = Qt.QLineEdit(self)
-        self.start_frame_lineedit.setPlaceholderText('Start')
+        self.start_frame_lineedit.setPlaceholderText('Start Frame')
         self.start_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
         scene_layout.addWidget(self.start_frame_lineedit)
 
         self.end_frame_lineedit = Qt.QLineEdit(self)
-        self.end_frame_lineedit.setPlaceholderText('End')
+        self.end_frame_lineedit.setPlaceholderText('End Frame')
         self.end_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
         scene_layout.addWidget(self.end_frame_lineedit)
 
@@ -518,7 +518,7 @@ class SceningListDialog(Qt.QDialog):
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
-        index = self.scening_list.index(index.row(), SceningList.END_FRAME_COLUMN)
+        index = index.siblingAtColumn(SceningList.END_FRAME_COLUMN)
         if not index.isValid():
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
@@ -554,7 +554,7 @@ class SceningListDialog(Qt.QDialog):
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
-        index = self.scening_list.index(index.row(), SceningList.START_FRAME_COLUMN)
+        index = index.siblingAtColumn(SceningList.START_FRAME_COLUMN)
         if not index.isValid():
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
@@ -610,8 +610,8 @@ class SceningToolbar(AbstractToolbar):
         'toggle_button'
     )
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
-        super().__init__(main_window)
+    def __init__(self, main: AbstractMainWindow) -> None:
+        super().__init__(main)
         self.setup_ui()
 
         self.first_frame : Optional[Frame] = None
@@ -820,7 +820,7 @@ class SceningToolbar(AbstractToolbar):
                     pass
 
         self.items_combobox.setModel(self.current_lists)
-        self.notchesChanged.emit(self)
+        self.notches_changed.emit(self)
         self.scening_list_dialog.on_current_output_changed(index, prev_index)
 
     def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
@@ -884,10 +884,10 @@ class SceningToolbar(AbstractToolbar):
 
         self.check_add_to_list_possibility()
         self.check_remove_export_possibility()
-        self.notchesChanged.emit(self)
+        self.notches_changed.emit(self)
 
     def on_list_items_changed(self, parent: Qt.QModelIndex, first: int, last: int) -> None:
-        self.notchesChanged.emit(self)
+        self.notches_changed.emit(self)
 
     def on_remove_list_clicked(self, checked: Optional[bool] = None) -> None:
         self.current_lists.remove(self.current_list_index)

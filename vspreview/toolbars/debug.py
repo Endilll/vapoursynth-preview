@@ -16,8 +16,8 @@ class DebugToolbar(AbstractToolbar):
         'toggle_button'
     )
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
-        super().__init__(main_window)
+    def __init__(self, main: AbstractMainWindow) -> None:
+        super().__init__(main)
 
         self.setup_ui()
 

@@ -32,9 +32,9 @@ class EventFilter(Qt.QObject):
         'main',
     )
 
-    def __init__(self, main_window: AbstractMainWindow) -> None:
+    def __init__(self, main: AbstractMainWindow) -> None:
         super().__init__()
-        self.main = main_window
+        self.main = main
 
     def eventFilter(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
         if   (event.type() == Qt.QEvent.Show):
@@ -62,14 +62,14 @@ class EventFilter(Qt.QObject):
         logging.debug(f'scening toolbar:  {self.main.toolbars.scening   .isVisible()}')
         logging.debug(f'misc toolbar:     {self.main.toolbars.misc      .isVisible()}')
 
-    def run_get_frame_test(self, main_window: AbstractMainWindow) -> None:
+    def run_get_frame_test(self) -> None:
         N = 10
 
         start_frame_async = 1000
         total_async = 0
         for i in range(start_frame_async, start_frame_async + N):
             s1 = perf_counter_ns()
-            f1 = main_window.current_output.vs_output.get_frame_async(i)
+            f1 = self.main.current_output.vs_output.get_frame_async(i)
             f1.result()
             s2 = perf_counter_ns()
             logging.debug(f'async test time: {s2 - s1} ns')
@@ -81,7 +81,7 @@ class EventFilter(Qt.QObject):
         total_sync = 0
         for i in range(start_frame_sync, start_frame_sync + N):
             s1 = perf_counter_ns()
-            f2 = main_window.current_output.vs_output.get_frame(i)  # pylint: disable=unused-variable
+            f2 = self.main.current_output.vs_output.get_frame(i)  # pylint: disable=unused-variable
             s2 = perf_counter_ns()
             # logging.debug(f'sync test time: {s2 - s1} ns')
             if i != start_frame_sync:
@@ -118,7 +118,7 @@ def profile_cpu(func: Callable[..., T]) -> Callable[..., T]:
     @wraps(func)
     def decorator(*args: Any, **kwargs: Any) -> T:
         from cProfile import Profile
-        from pstats   import Stats, SortKey
+        from pstats   import Stats, SortKey  # type: ignore
 
         p = Profile(perf_counter_ns, 0.000_000_001, True, False)
         ret = p.runcall(func, *args, **kwargs)
