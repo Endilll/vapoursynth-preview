@@ -105,7 +105,9 @@ class MainToolbar(AbstractToolbar):
         self.zoom_combobox.setModel(self.zoom_levels)
         self.zoom_combobox.setCurrentIndex(3)
 
-        self.save_file_types = {'Single Image (*.png)': self.save_as_png}
+        self.save_file_types = {
+            'Single Image (*.png)': self.save_as_png
+        }
 
         self.outputs_combobox.currentIndexChanged.connect(              self.main.switch_output)
         self.frame_spinbox          .valueChanged.connect(lambda f:     self.main.switch_frame(Frame(f)))
