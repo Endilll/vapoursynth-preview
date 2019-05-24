@@ -347,6 +347,12 @@ class Output(YAMLObject):
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
 
+    def to_frame(self, t: timedelta) -> Frame:
+        return Frame(round(t.total_seconds() * (self.fps_num / self.fps_den)))
+
+    def to_timedelta(self, frame: Frame) -> timedelta:
+        return timedelta(seconds=(int(frame) / (self.fps_num / self.fps_den)))
+
     def __getstate__(self) -> Mapping[str, Any]:
         return {attr_name: getattr(self, attr_name)
                 for attr_name in self.storable_attrs}
@@ -486,14 +492,6 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
 
     @abstractmethod
     def switch_frame(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def to_timedelta(self, frame: Frame) -> timedelta:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def to_frame(self, t: timedelta) -> Frame:
         raise NotImplementedError()
 
     central_widget: Qt.QWidget        = abstract_attribute()

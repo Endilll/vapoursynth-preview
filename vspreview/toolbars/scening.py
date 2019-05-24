@@ -81,10 +81,10 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 else:
                     return ''
             if column == self.START_TIME_COLUMN:
-                return strfdelta(main_window().to_timedelta(self.items[row].start), '%h:%M:%S.%Z')
+                return strfdelta(main_window().current_output.to_timedelta(self.items[row].start), '%h:%M:%S.%Z')
             if column == self.END_TIME_COLUMN:
                 if self.items[row].end != self.items[row].start:
-                    return strfdelta(main_window().to_timedelta(self.items[row].end), '%h:%M:%S.%Z')
+                    return strfdelta(main_window().current_output.to_timedelta(self.items[row].end), '%h:%M:%S.%Z')
                 else:
                     return ''
             if column == self.LABEL_COLUMN:
@@ -96,9 +96,9 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if column == self.END_FRAME_COLUMN:
                 return self.items[row].end
             if column == self.START_TIME_COLUMN:
-                return main_window().to_timedelta(self.items[row].start)
+                return main_window().current_output.to_timedelta(self.items[row].start)
             if column == self.END_TIME_COLUMN:
-                return main_window().to_timedelta(self.items[row].end)
+                return main_window().current_output.to_timedelta(self.items[row].end)
             if column == self.LABEL_COLUMN:
                 return self.items[row].label
 
@@ -134,7 +134,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         if column == self.START_TIME_COLUMN:
             if not isinstance(value, timedelta):
                 raise TypeError
-            frame = self.main.to_frame(value)
+            frame = self.main.current_output.to_frame(value)
             if frame > scene.end:
                 return False
             scene.start = frame
@@ -142,7 +142,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         if column == self.END_TIME_COLUMN:
             if not isinstance(value, timedelta):
                 raise TypeError
-            frame = self.main.to_frame(value)
+            frame = self.main.current_output.to_frame(value)
             if frame < scene.start:
                 return False
             scene.end = frame
@@ -504,8 +504,8 @@ class SceningListDialog(Qt.QDialog):
         self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        self.start_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.to_timedelta(self.main.current_output.total_frames)))
-        self.  end_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.to_timedelta(self.main.current_output.total_frames)))
+        self.start_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.current_output.to_timedelta(self.main.current_output.total_frames)))
+        self.  end_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.current_output.to_timedelta(self.main.current_output.total_frames)))
 
     def on_end_frame_changed(self, text: str) -> None:
         try:
@@ -588,8 +588,8 @@ class SceningListDialog(Qt.QDialog):
         scene = self.scening_list[index.row()]
         qt_silent_call(self.start_frame_lineedit.setText, str(scene.start))
         qt_silent_call(self.  end_frame_lineedit.setText, str(scene.end))
-        qt_silent_call(self.  start_time_spinbox.setTime, timedelta_to_qtime(self.main.to_timedelta(scene.start)))
-        qt_silent_call(self.    end_time_spinbox.setTime, timedelta_to_qtime(self.main.to_timedelta(scene.end)))
+        qt_silent_call(self.  start_time_spinbox.setTime, timedelta_to_qtime(self.main.current_output.to_timedelta(scene.start)))
+        qt_silent_call(self.    end_time_spinbox.setTime, timedelta_to_qtime(self.main.current_output.to_timedelta(scene.end)))
         qt_silent_call(self.      label_lineedit.setText,     scene.label)
 
 
@@ -1020,7 +1020,7 @@ class SceningToolbar(AbstractToolbar):
             t_start = timedelta(milliseconds=line.start)
             t_end   = timedelta(milliseconds=line.end)
             try:
-                scening_list.add(self.main.to_frame(t_start), self.main.to_frame(t_end))
+                scening_list.add(self.main.current_output.to_frame(t_start), self.main.current_output.to_frame(t_end))
             except ValueError:
                 out_of_range_count += 1
 
@@ -1050,11 +1050,11 @@ class SceningToolbar(AbstractToolbar):
             if offset is None:
                 logging.warning(f'Scening import: INDEX timestamp \'{track.offset}\' format isn\'t suported.')
                 continue
-            start = self.main.to_frame(offset)
+            start = self.main.current_output.to_frame(offset)
 
             end = None
             if track.duration is not None:
-                end = self.main.to_frame(offset + track.duration)
+                end = self.main.current_output.to_frame(offset + track.duration)
 
             label = ''
             if track.title is not None:
@@ -1091,7 +1091,7 @@ class SceningToolbar(AbstractToolbar):
             match = timestamp_pattern.match(start_element.text)
             if match is None:
                 continue
-            start =  self.main.to_frame(timedelta(
+            start =  self.main.current_output.to_frame(timedelta(
                 hours   =   int(match[1]),
                 minutes =   int(match[2]),
                 seconds = float(match[3])
@@ -1102,7 +1102,7 @@ class SceningToolbar(AbstractToolbar):
             if end_element is not None and end_element.text is not None:
                 match = timestamp_pattern.match(end_element.text)
                 if match is not None:
-                    end = self.main.to_frame(timedelta(
+                    end = self.main.current_output.to_frame(timedelta(
                         hours   =   int(match[1]),
                         minutes =   int(match[2]),
                         seconds = float(match[3])
@@ -1127,7 +1127,7 @@ class SceningToolbar(AbstractToolbar):
                 seconds = float(match[4])
             )
             try:
-                scening_list.add(self.main.to_frame(t), label=match[5])
+                scening_list.add(self.main.current_output.to_frame(t), label=match[5])
             except ValueError:
                 out_of_range_count += 1
 

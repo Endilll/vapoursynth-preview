@@ -22,7 +22,6 @@ from vspreview.widgets import ComboBox, Timeline
 # TODO: get rid of magical constants related to 'pixel' sizes (their actual units are yet to be discovered)
 # TODO: implement VSEdit-like benchmark
 # TODO: move from QGraphicsView to QLabel
-# TODO: move converters to Output
 # TODO: utilize Qt's signals
 
 
@@ -529,9 +528,9 @@ class MainWindow(AbstractMainWindow):
 
     def switch_frame(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
         if   t is     None and frame is not None:
-            t = self.to_timedelta(frame)
+            t = self.current_output.to_timedelta(frame)
         elif t is not None and frame is     None:
-            frame = self.to_frame(t)
+            frame = self.current_output.to_frame(t)
         elif t is not None and frame is not None:
             pass
         else:
@@ -642,12 +641,6 @@ class MainWindow(AbstractMainWindow):
         if (self.toolbars.misc.autosave_enabled
                 and self.save_on_exit):
             self.toolbars.misc.save()
-
-    def to_frame(self, t: timedelta) -> Frame:
-        return Frame(round(t.total_seconds() * (self.current_output.fps_num / self.current_output.fps_den)))
-
-    def to_timedelta(self, frame: Frame) -> timedelta:
-        return timedelta(seconds=(int(frame) / (self.current_output.fps_num / self.current_output.fps_den)))
 
     def __getstate__(self) -> Mapping[str, Any]:
         state = {

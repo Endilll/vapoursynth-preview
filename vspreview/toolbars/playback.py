@@ -235,10 +235,10 @@ class PlaybackToolbar(AbstractToolbar):
 
     def on_seek_frame_changed(self, frame: Union[Frame, int]) -> None:
         frame = Frame(frame)
-        qt_silent_call(self.seek_time_spinbox.setTime, timedelta_to_qtime(self.main.to_timedelta(frame)))
+        qt_silent_call(self.seek_time_spinbox.setTime, timedelta_to_qtime(self.main.current_output.to_timedelta(frame)))
 
     def on_seek_time_changed(self, qtime: Qt.QTime) -> None:
-        qt_silent_call(self.seek_frame_spinbox.setValue, self.main.to_frame(qtime_to_timedelta(qtime)))
+        qt_silent_call(self.seek_frame_spinbox.setValue, self.main.current_output.to_frame(qtime_to_timedelta(qtime)))
 
     def on_play_pause_clicked(self, checked: bool) -> None:
         if checked:
