@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from   datetime import timedelta
+from   collections import deque
+from   datetime    import timedelta
 import logging
-from   time     import perf_counter_ns
-from   typing   import Any, Deque, Mapping, Optional, Union
+from   time        import perf_counter_ns
+from   typing      import Any, cast, Deque, Mapping, Optional, Union
 
 from PyQt5 import Qt
 
@@ -25,7 +26,6 @@ class PlaybackToolbar(AbstractToolbar):
     yaml_tag = '!PlaybackToolbar'
 
     def __init__(self, main: AbstractMainWindow) -> None:
-        from collections        import deque
         from concurrent.futures import Future
 
         super().__init__(main)
@@ -145,8 +145,12 @@ class PlaybackToolbar(AbstractToolbar):
         if self.main.statusbar.label.text() == 'Ready':
             self.main.statusbar.label.setText('Playing')
 
-        self.play_buffer.clear()
-        for i in range(self.main.PLAY_BUFFER_SIZE):
+        play_buffer_size = int(min(
+            self.main.PLAY_BUFFER_SIZE,
+            self.main.current_output.total_frames - self.main.current_frame - FrameInterval(1)
+        ))
+        self.play_buffer = deque([], play_buffer_size)
+        for i in range(cast(int, self.play_buffer.maxlen)):
             future = self.main.current_output.vs_output.get_frame_async(int(self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
             self.play_buffer.appendleft(future)
 
@@ -185,6 +189,10 @@ class PlaybackToolbar(AbstractToolbar):
             self.play_end_frame = self.main.current_frame
         if self.main.statusbar.label.text() == 'Playing':
             self.main.statusbar.label.setText('Ready')
+
+        for future in self.play_buffer:
+            future.add_done_callback(lambda future: future.result())
+        self.play_buffer.clear()
 
         self.fps_history.clear()
         self.fps_timer.stop()
