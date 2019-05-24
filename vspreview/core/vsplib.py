@@ -16,8 +16,6 @@ from .better_abc  import ABCMeta, abstract_attribute
 
 # pylint: disable=pointless-statement, function-redefined
 
-# TODO: add reverse operators
-
 class FrameInterval(YAMLObject):
     __slots__ = (
         'value',
@@ -40,6 +38,9 @@ class FrameInterval(YAMLObject):
         self.value += other
         return self
 
+    def __radd__(self, other: Any) -> FrameInterval:
+        return FrameInterval(other + self.value)
+
     def __sub__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value - other)
 
@@ -47,12 +48,18 @@ class FrameInterval(YAMLObject):
         self.value -= other
         return self
 
+    def __rsub__(self, other: Any) -> FrameInterval:
+        return FrameInterval(other - self.value)
+
     def __mul__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value * other)
 
     def __imul__(self, other: Any) -> FrameInterval:
         self.value *= other
         return self
+
+    def __rmul__(self, other: Any) -> FrameInterval:
+        return FrameInterval(other * self.value)
 
     def __floordiv__(self, other: Any) -> FrameInterval:
         return FrameInterval(self.value / other)
