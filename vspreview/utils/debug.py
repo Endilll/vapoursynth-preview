@@ -399,31 +399,33 @@ class Application(Qt.QApplication):
         isex = False
         try:
             self.enter_count += 1
-            recursive_call = self.enter_count > 1
-
             ret, t = cast(Tuple[bool, float], measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event))
-            if t > -1:
-                if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
-                    event_name = qevent_info[event.type()][0]
-                else:
-                    event_name = type(event).__name__
-
-                try:
-                    obj_name = obj.objectName()
-                except RuntimeError:
-                    obj_name = ''
-
-                if obj_name == '':
-                    try:
-                        if obj.parent() is not None and obj.parent().objectName() != '':
-                            obj_name = '(parent) ' + obj.parent().objectName()
-                    except RuntimeError:
-                        pass
-                if recursive_call:
-                    print(f'R {t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
-                else:
-                    print(f'  {t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {event_name:>30}, name: {obj_name}')
             self.enter_count -= 1
+
+            if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
+                event_name = qevent_info[event.type()][0]
+            else:
+                event_name = type(event).__name__
+
+            try:
+                obj_name = obj.objectName()
+            except RuntimeError:
+                obj_name = ''
+
+            if obj_name == '':
+                try:
+                    if obj.parent() is not None and obj.parent().objectName() != '':
+                        obj_name = '(parent) ' + obj.parent().objectName()
+                except RuntimeError:
+                    pass
+
+            recursive_indent = 2 * (self.enter_count - 1)
+
+            if type(obj).__name__ != 'Timeline':
+                return ret
+
+            print(f'{t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {" " * recursive_indent + event_name:<30}, name: {obj_name}')
+
             return ret
         except Exception:  # pylint: disable=broad-except
             isex = True
