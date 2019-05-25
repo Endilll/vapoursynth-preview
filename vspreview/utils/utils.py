@@ -139,3 +139,9 @@ def set_qobject_names(obj: object) -> None:
             if not isinstance(attr, Qt.QObject):
                 continue
             attr.setObjectName(type(obj).__name__ + '.' + attr_name)
+
+
+def get_usable_cpus_count() -> int:
+    from psutil import Process
+
+    return len(Process().cpu_affinity())

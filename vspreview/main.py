@@ -12,7 +12,7 @@ import vapoursynth as     vs
 
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
 from vspreview.models  import Outputs
-from vspreview.utils   import add_shortcut, debug, qtime_to_timedelta, qt_silent_call, set_qobject_names, timedelta_to_qtime
+from vspreview.utils   import add_shortcut, debug, get_usable_cpus_count, qt_silent_call, set_qobject_names
 from vspreview.widgets import ComboBox, Timeline
 
 # TODO: design settings part
@@ -300,7 +300,7 @@ class MainWindow(AbstractMainWindow):
     LOG_LEVEL          = logging.DEBUG
     OPENGL_RENDERING           = False
     OUTPUT_INDEX               =     0
-    PLAY_BUFFER_SIZE = FrameInterval(5)
+    PLAY_BUFFER_SIZE = FrameInterval(get_usable_cpus_count())
     PNG_COMPRESSION_LEVEL      =    80  # 0 - 100
     SAVE_TEMPLATE = '{script_name}_{frame}'
     SEEK_STEP                  =     1  # frames

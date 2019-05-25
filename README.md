@@ -8,7 +8,7 @@ Vapoursynth R45
 
 pip modules:
 
-`cueparser pyqt5 pysubs2 pyyaml qdarkstyle vapoursynth`
+`cueparser psutil pyqt5 pysubs2 pyyaml qdarkstyle vapoursynth`
 
 # Usage
 
