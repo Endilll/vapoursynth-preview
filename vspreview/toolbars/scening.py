@@ -720,16 +720,22 @@ class SceningToolbar(AbstractToolbar):
         layout.addLayout(layout_line_2)
 
         self.add_single_frame_button = Qt.QPushButton(self)
-        self.add_single_frame_button.setText('Add Single Frame')
+        # self.add_single_frame_button.setText('Add Single Frame')
+        self.add_single_frame_button.setText('🆎')
+        self.add_single_frame_button.setToolTip('Add Single Frame Scene')
         layout_line_2.addWidget(self.add_single_frame_button)
 
         self.toggle_first_frame_button = Qt.QPushButton(self)
-        self.toggle_first_frame_button.setText('Frame 1')
+        # self.toggle_first_frame_button.setText('Frame 1')
+        self.toggle_first_frame_button.setText('🅰️')
+        self.toggle_first_frame_button.setToolTip('Toggle Start of New Scene')
         self.toggle_first_frame_button.setCheckable(True)
         layout_line_2.addWidget(self.toggle_first_frame_button)
 
         self.toggle_second_frame_button = Qt.QPushButton(self)
-        self.toggle_second_frame_button.setText('Frame 2')
+        # self.toggle_second_frame_button.setText('Frame 2')
+        self.toggle_second_frame_button.setText('🅱️')
+        self.toggle_second_frame_button.setToolTip('Toggle End of New Scene')
         self.toggle_second_frame_button.setCheckable(True)
         layout_line_2.addWidget(self.toggle_second_frame_button)
 
