@@ -200,8 +200,8 @@ class Timeline(Qt.QWidget):
                 anchor_rect = Qt.QRectF(line.x2(), line.y2() - self.notch_label_interval, 0, 0)
 
                 if self.mode == self.Mode.TIME:
-                    t     = cast(timedelta, notch.data)
-                    label = strfdelta(t, label_format)
+                    time  = cast(timedelta, notch.data)
+                    label = strfdelta(time, label_format)
                 if self.mode == self.Mode.FRAME:
                     label = str(notch.data)
 

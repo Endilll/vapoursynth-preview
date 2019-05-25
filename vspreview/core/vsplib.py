@@ -146,7 +146,7 @@ class Frame(YAMLObject):
 
     yaml_tag = '!Frame'
 
-    def __init__(self, value: Union[float, Frame, int]) -> None:
+    def __init__(self, value: Union[Frame, int]) -> None:
         if isinstance(value, int):
             if value < 0:
                 raise ValueError
@@ -357,8 +357,8 @@ class Output(YAMLObject):
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
 
-    def to_frame(self, t: timedelta) -> Frame:
-        return Frame(round(t.total_seconds() * (self.fps_num / self.fps_den)))
+    def to_frame(self, time: timedelta) -> Frame:
+        return Frame(round(time.total_seconds() * (self.fps_num / self.fps_den)))
 
     def to_timedelta(self, frame: Frame) -> timedelta:
         return timedelta(seconds=(int(frame) / (self.fps_num / self.fps_den)))
@@ -501,7 +501,7 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
         raise NotImplementedError()
 
     @abstractmethod
-    def switch_frame(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[timedelta] = None, render_frame: bool = True) -> None:
         raise NotImplementedError()
 
     central_widget: Qt.QWidget        = abstract_attribute()

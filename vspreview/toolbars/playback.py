@@ -54,7 +54,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_n_frames_b_button     .clicked.connect(self.seek_n_frames_b)
         self.seek_n_frames_f_button     .clicked.connect(self.seek_n_frames_f)
         self.seek_frame_control    .valueChanged.connect(self.on_seek_frame_changed)
-        self.seek_time_control     .valueChanged.connect(self.on_seek_time_changed)  # type: ignore
+        self.seek_time_control     .valueChanged.connect(self.on_seek_time_changed)
         self.fps_spinbox           .valueChanged.connect(self.on_fps_changed)
         self.fps_reset_button           .clicked.connect(self.reset_fps)
         self.fps_unlimited_checkbox.stateChanged.connect(self.on_fps_unlimited_changed)

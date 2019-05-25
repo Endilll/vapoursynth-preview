@@ -14,11 +14,11 @@ from vspreview.utils import debug
 T = TypeVar('T')
 
 
-def timedelta_to_qtime(t: timedelta) -> Qt.QTime:
-    return Qt.QTime(t.seconds      // 3600,
-                    t.seconds      //   60,
-                    t.seconds       %   60,
-                    t.microseconds // 1000)
+def timedelta_to_qtime(time: timedelta) -> Qt.QTime:
+    return Qt.QTime(time.seconds      // 3600,
+                    time.seconds      //   60,
+                    time.seconds       %   60,
+                    time.microseconds // 1000)
 
 
 def qtime_to_timedelta(qtime: Qt.QTime) -> timedelta:
@@ -39,13 +39,13 @@ class DeltaTemplate(Template):
     delimiter = '%'
 
 
-def strfdelta(t: timedelta, output_format: str) -> str:
+def strfdelta(time: timedelta, output_format: str) -> str:
     d: MutableMapping[str, str] = {}
-    hours        = t.seconds      // 3600
-    minutes      = t.seconds      //   60
-    seconds      = t.seconds       %   60
-    milliseconds = t.microseconds // 1000
-    d['D'] =   '{:d}'.format(t.days)
+    hours        = time.seconds      // 3600
+    minutes      = time.seconds      //   60
+    seconds      = time.seconds       %   60
+    milliseconds = time.microseconds // 1000
+    d['D'] =   '{:d}'.format(time.days)
     d['H'] = '{:02d}'.format(hours)
     d['M'] = '{:02d}'.format(minutes)
     d['S'] = '{:02d}'.format(seconds)
@@ -131,6 +131,7 @@ def method_dispatch(func: Callable[..., T]) -> Callable[..., T]:
     wrapper.register = dispatcher.register  # type: ignore
     update_wrapper(wrapper, dispatcher)
     return wrapper
+
 
 def set_qobject_names(obj: object) -> None:
     if hasattr(obj, '__slots__'):

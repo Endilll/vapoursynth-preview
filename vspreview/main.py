@@ -523,15 +523,13 @@ class MainWindow(AbstractMainWindow):
 
         return frame_pixmap
 
-    def switch_frame(self, frame: Optional[Frame] = None, t: Optional[timedelta] = None, render_frame: bool = True) -> None:
-        if   t is     None and frame is not None:
-            t = self.current_output.to_timedelta(frame)
-        elif t is not None and frame is     None:
-            frame = self.current_output.to_frame(t)
-        elif t is not None and frame is not None:
-            pass
+    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[timedelta] = None, render_frame: bool = True) -> None:
+        if frame is not None:
+            time = self.current_output.to_timedelta(frame)
+        elif time is not None:
+            frame = self.current_output.to_frame(time)
         else:
-            logging.debug('switch_frame(): both frame and t is None')
+            logging.debug('switch_frame(): both frame and time is None')
             return
         if frame > self.current_output.end_frame:
             # logging.debug('switch_frame(): New frame position is out of range')
@@ -540,9 +538,9 @@ class MainWindow(AbstractMainWindow):
         self.current_output.last_showed_frame = frame
 
         self.timeline.set_position(frame)
-        self.toolbars.main.on_current_frame_changed(frame, t)
+        self.toolbars.main.on_current_frame_changed(frame, time)
         for toolbar in self.toolbars:
-            toolbar.on_current_frame_changed(frame, t)
+            toolbar.on_current_frame_changed(frame, time)
 
         if render_frame:
             self.current_output.graphics_scene_item.setPixmap(self.render_frame(frame, self.current_output))

@@ -415,11 +415,11 @@ class SceningListDialog(Qt.QDialog):
         self.setup_ui()
 
         self.end_frame_control  .valueChanged.connect(self.on_end_frame_changed)
-        self.end_time_control   .valueChanged.connect(self.on_end_time_changed)  # type: ignore
+        self.end_time_control   .valueChanged.connect(self.on_end_time_changed)
         self.label_lineedit      .textChanged.connect(self.on_label_changed)
         self.name_lineedit       .textChanged.connect(self.on_name_changed)
         self.start_frame_control.valueChanged.connect(self.on_start_frame_changed)
-        self.start_time_control .valueChanged.connect(self.on_start_time_changed)  # type: ignore
+        self.start_time_control .valueChanged.connect(self.on_start_time_changed)
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
 
         set_qobject_names(self)
@@ -467,7 +467,7 @@ class SceningListDialog(Qt.QDialog):
     def on_add_clicked(self, checked: Optional[bool] = None) -> None:
         pass
 
-    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
         if not self.isVisible():
             return
         if self.tableview.selectionModel() is None:
@@ -512,14 +512,14 @@ class SceningListDialog(Qt.QDialog):
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
-    def on_end_time_changed(self, t: timedelta) -> None:
+    def on_end_time_changed(self, time: timedelta) -> None:
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
         index = index.siblingAtColumn(SceningList.END_TIME_COLUMN)
         if not index.isValid():
             return
-        self.scening_list.setData(index, t, Qt.Qt.UserRole)
+        self.scening_list.setData(index, time, Qt.Qt.UserRole)
 
     def on_label_changed(self, text: str) -> None:
         index = self.tableview.selectionModel().selectedRows()[0]
@@ -545,14 +545,14 @@ class SceningListDialog(Qt.QDialog):
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
-    def on_start_time_changed(self, t: timedelta) -> None:
+    def on_start_time_changed(self, time: timedelta) -> None:
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
         index = index.siblingAtColumn(SceningList.START_TIME_COLUMN)
         if not index.isValid():
             return
-        self.scening_list.setData(index, t, Qt.Qt.UserRole)
+        self.scening_list.setData(index, time, Qt.Qt.UserRole)
 
     def on_tableview_clicked(self, index: Qt.QModelIndex) -> None:
         if index.column() in (SceningList.START_FRAME_COLUMN,
@@ -697,10 +697,11 @@ class SceningToolbar(AbstractToolbar):
         self.import_file_button.setText('Import List')
         layout_line_1.addWidget(self.import_file_button)
 
-        separator = Qt.QFrame(self)
-        separator.setFrameShape(Qt.QFrame.VLine)
-        separator.setFrameShadow(Qt.QFrame.Sunken)
-        layout_line_1.addWidget(separator)
+        separator_line_1 = Qt.QFrame(self)
+        separator_line_1.setObjectName('SceningToolbar.setup_ui.separator_line_1')
+        separator_line_1.setFrameShape(Qt.QFrame.VLine)
+        separator_line_1.setFrameShadow(Qt.QFrame.Sunken)
+        layout_line_1.addWidget(separator_line_1)
 
         self.seek_to_prev_button = Qt.QPushButton(self)
         self.seek_to_prev_button.setText('⏪')
@@ -758,11 +759,11 @@ class SceningToolbar(AbstractToolbar):
         self.remove_at_current_frame_button.setEnabled(False)
         layout_line_2.addWidget(self.remove_at_current_frame_button)
 
-        separator = Qt.QFrame(self)
-        separator.setObjectName('SceningToolbar.setup_ui.separator')
-        separator.setFrameShape(Qt.QFrame.VLine)
-        separator.setFrameShadow(Qt.QFrame.Sunken)
-        layout_line_2.addWidget(separator)
+        separator_line_2 = Qt.QFrame(self)
+        separator_line_2.setObjectName('SceningToolbar.setup_ui.separator_line_2')
+        separator_line_2.setFrameShape(Qt.QFrame.VLine)
+        separator_line_2.setFrameShadow(Qt.QFrame.Sunken)
+        layout_line_2.addWidget(separator_line_2)
 
         self.export_template_lineedit = Qt.QLineEdit(self)
         # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
@@ -811,9 +812,9 @@ class SceningToolbar(AbstractToolbar):
         self.notches_changed.emit(self)
         self.scening_list_dialog.on_current_output_changed(index, prev_index)
 
-    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
         self.check_remove_export_possibility()
-        self.scening_list_dialog.on_current_frame_changed(frame, t)
+        self.scening_list_dialog.on_current_frame_changed(frame, time)
 
     def get_notches(self) -> Notches:
         marks = Notches()
@@ -1112,13 +1113,13 @@ class SceningToolbar(AbstractToolbar):
     def import_ogm_chapters(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         pattern = re.compile(r'(CHAPTER\d+)=(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)\n\1NAME=(.*)', re.RegexFlag.MULTILINE)
         for match in pattern.finditer(path.read_text()):
-            t = timedelta(
+            time = timedelta(
                 hours   =   int(match[2]),
                 minutes =   int(match[3]),
                 seconds = float(match[4])
             )
             try:
-                scening_list.add(self.main.current_output.to_frame(t), label=match[5])
+                scening_list.add(self.main.current_output.to_frame(time), label=match[5])
             except ValueError:
                 out_of_range_count += 1
 

@@ -4,7 +4,7 @@ from   functools import wraps
 import inspect
 import logging
 import re
-from   time      import perf_counter_ns, time
+from   time      import perf_counter_ns
 from   typing    import Any, Callable, cast, Dict, Type, TypeVar, Tuple, Union
 
 from pprint import pprint
@@ -46,7 +46,6 @@ class EventFilter(Qt.QObject):
             self.print_toolbars_state()
         elif (event.type() == Qt.QEvent.Hide):
             logging.debug( '--------------------------------')
-            logging.debug(f'[{time()}]')
             logging.debug(f'{obj.objectName()}')
             logging.debug( 'event:       Hide')
             logging.debug(f'spontaneous: {event.spontaneous()}')
@@ -399,7 +398,7 @@ class Application(Qt.QApplication):
         isex = False
         try:
             self.enter_count += 1
-            ret, t = cast(Tuple[bool, float], measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event))
+            ret, time = cast(Tuple[bool, float], measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event))
             self.enter_count -= 1
 
             if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
@@ -424,7 +423,7 @@ class Application(Qt.QApplication):
             if type(obj).__name__ != 'Timeline':
                 return ret
 
-            print(f'{t:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {" " * recursive_indent + event_name:<30}, name: {obj_name}')
+            print(f'{time:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {" " * recursive_indent + event_name:<30}, name: {obj_name}')
 
             return ret
         except Exception:  # pylint: disable=broad-except
