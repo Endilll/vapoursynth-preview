@@ -597,7 +597,7 @@ class SceningToolbar(AbstractToolbar):
     )
 
     def __init__(self, main: AbstractMainWindow) -> None:
-        super().__init__(main)
+        super().__init__(main, 'Scening')
         self.setup_ui()
 
         self.first_frame : Optional[Frame] = None
@@ -621,7 +621,6 @@ class SceningToolbar(AbstractToolbar):
             'XviD Log (*.txt)'              : self.import_xvid,
         }
 
-        self.toggle_button                 .clicked.connect(self.on_toggle)
         self.add_list_button               .clicked.connect(self.on_add_list_clicked)
         self.add_single_frame_button       .clicked.connect(self.on_add_single_frame_clicked)
         self.add_to_list_button            .clicked.connect(self.on_add_to_list_clicked)
@@ -784,9 +783,6 @@ class SceningToolbar(AbstractToolbar):
         self.status_label.setVisible(False)
         self.main.statusbar.addPermanentWidget(self.status_label)
 
-        # switch button for main layout
-
-        self.toggle_button.setText('Scening')
 
     def on_toggle(self, new_state: bool) -> None:
         # if new_state is True:

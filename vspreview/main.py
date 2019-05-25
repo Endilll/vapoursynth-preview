@@ -92,7 +92,7 @@ class MainToolbar(AbstractToolbar):
     def __init__(self, main_window: AbstractMainWindow) -> None:
         from vspreview.models import ZoomLevels
 
-        super().__init__(main_window)
+        super().__init__(main_window, 'Main')
         self.setup_ui()
 
         self.outputs = Outputs()
@@ -128,6 +128,7 @@ class MainToolbar(AbstractToolbar):
         set_qobject_names(self)
 
     def setup_ui(self) -> None:
+        self.setVisible(True)
         layout = Qt.QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 

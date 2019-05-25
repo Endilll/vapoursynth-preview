@@ -532,7 +532,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
     else:
         notches_changed = Qt.pyqtSignal(object)
 
-    def __init__(self, main: AbstractMainWindow) -> None:
+    def __init__(self, main: AbstractMainWindow, name: str) -> None:
         super().__init__(main.central_widget)
         self.main = main
 
@@ -542,13 +542,18 @@ class AbstractToolbar(Qt.QWidget, QABC):
 
         self.toggle_button = Qt.QPushButton(self)
         self.toggle_button.setCheckable(True)
+        self.toggle_button.setText(name)
+        self.toggle_button.clicked.connect(self.on_toggle)
+
+        self.setVisible(False)
+
 
     def on_toggle(self, new_state: bool) -> None:
         # invoking order matters
         self.setVisible(new_state)
         self.resize_main_window(new_state)
 
-    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
         pass
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:

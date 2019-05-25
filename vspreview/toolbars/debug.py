@@ -17,11 +17,10 @@ class DebugToolbar(AbstractToolbar):
     )
 
     def __init__(self, main: AbstractMainWindow) -> None:
-        super().__init__(main)
+        super().__init__(main, 'Debug')
 
         self.setup_ui()
 
-        self.toggle_button.clicked.connect(self.on_toggle)
         self.  test_button.clicked.connect(self.test_button_clicked)
         self.  exec_button.clicked.connect(self.exec_button_clicked)
         self.exec_lineedit.editingFinished.connect(self.exec_button_clicked)
@@ -35,7 +34,6 @@ class DebugToolbar(AbstractToolbar):
         set_qobject_names(self)
 
     def setup_ui(self) -> None:
-        self.setVisible(False)
         layout = Qt.QHBoxLayout(self)
         layout.setObjectName('DebugToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
@@ -54,9 +52,6 @@ class DebugToolbar(AbstractToolbar):
 
         layout.addStretch()
 
-        # switch button for main toolbar
-
-        self.toggle_button.setText('Debug')
         self.toggle_button.setVisible(False)
 
 

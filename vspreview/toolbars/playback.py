@@ -29,7 +29,7 @@ class PlaybackToolbar(AbstractToolbar):
     def __init__(self, main: AbstractMainWindow) -> None:
         from concurrent.futures import Future
 
-        super().__init__(main)
+        super().__init__(main, 'Playback')
         self.setup_ui()
 
         self.play_buffer: Deque[Future] = deque()
@@ -48,7 +48,6 @@ class PlaybackToolbar(AbstractToolbar):
         self.play_end_time = 0
         self.play_end_frame = Frame(0)
 
-        self.toggle_button              .clicked.connect(self.on_toggle)
         self.play_pause_button          .clicked.connect(self.on_play_pause_clicked)
         self.seek_to_prev_button        .clicked.connect(self.seek_to_prev)
         self.seek_to_next_button        .clicked.connect(self.seek_to_next)
@@ -69,7 +68,6 @@ class PlaybackToolbar(AbstractToolbar):
         set_qobject_names(self)
 
     def setup_ui(self) -> None:
-        self.setVisible(False)
         layout = Qt.QHBoxLayout(self)
         layout.setObjectName('PlaybackToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
@@ -123,10 +121,6 @@ class PlaybackToolbar(AbstractToolbar):
         layout.addWidget(self.fps_unlimited_checkbox)
 
         layout.addStretch()
-
-        # switch button for main toolbar
-
-        self.toggle_button.setText('Playback')
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.seek_frame_control.setMaximum    , self.main.current_output.end_frame)

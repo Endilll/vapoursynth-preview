@@ -24,7 +24,7 @@ class MiscToolbar(AbstractToolbar):
     ]
 
     def __init__(self, main: AbstractMainWindow) -> None:
-        super().__init__(main)
+        super().__init__(main, 'Misc')
         self.setup_ui()
 
         self.save_template_lineedit.setText(self.main.SAVE_TEMPLATE)
@@ -33,7 +33,6 @@ class MiscToolbar(AbstractToolbar):
         self.autosave_timer = Qt.QTimer()
         self.autosave_timer.timeout.connect(self.save)
 
-        self.       toggle_button.     clicked.connect(        self.on_toggle)
         self.reload_script_button.     clicked.connect(lambda: self.main.reload_script())  # pylint: disable=unnecessary-lambda
         self.         save_button.     clicked.connect(lambda: self.save(manually=True))
         self.   autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
@@ -46,7 +45,6 @@ class MiscToolbar(AbstractToolbar):
         set_qobject_names(self)
 
     def setup_ui(self) -> None:
-        self.setVisible(False)
         layout = Qt.QHBoxLayout(self)
         layout.setObjectName('MiscToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
@@ -83,10 +81,6 @@ class MiscToolbar(AbstractToolbar):
         self.show_debug_checkbox = Qt.QCheckBox(self)
         self.show_debug_checkbox.setText('Show Debug Toolbar')
         layout.addWidget(self.show_debug_checkbox)
-
-        # switch button for main layout
-
-        self.toggle_button.setText('Misc')
 
 
     @fire_and_forget
