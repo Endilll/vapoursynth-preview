@@ -318,7 +318,8 @@ class Output(YAMLObject):
     )
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
-        'format', 'total_frames', 'duration', 'graphics_scene_item'
+        'format', 'total_frames', 'duration', 'graphics_scene_item',
+        'end_frame', 'end_time',
     )
 
     yaml_tag = '!Output'
@@ -337,6 +338,8 @@ class Output(YAMLObject):
         self.format       = pixel_format
         self.total_frames = Frame(self.vs_output.num_frames)
         self.duration     = timedelta(seconds=(int(self.total_frames) / (self.fps_num / self.fps_den)))
+        self.end_frame    = self.total_frames - FrameInterval(1)
+        self.end_time     = self.to_timedelta(self.end_frame)
 
         # set by load_script() when it prepares graphics scene item based on last showed frame
 
@@ -347,7 +350,7 @@ class Output(YAMLObject):
         if not hasattr(self, 'name'):
             self.name = 'Output ' + str(self.index)
         if (not hasattr(self, 'last_showed_frame')
-                or self.last_showed_frame >= self.total_frames):
+                or self.last_showed_frame > self.end_frame):
             self.last_showed_frame: Frame = Frame(0)
         if not hasattr(self, 'scening_lists'):
             self.scening_lists: SceningLists = SceningLists()

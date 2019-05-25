@@ -10,9 +10,9 @@ from   typing   import Any, Callable, cast, Dict, Iterator, List, Mapping, Optio
 from PyQt5 import Qt
 
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, QYAMLObject, Scene
-from vspreview.utils   import (add_shortcut, debug, main_window, fire_and_forget, qtime_to_timedelta,
-                               qt_silent_call, set_qobject_names, set_status_label, strfdelta, timedelta_to_qtime)
-from vspreview.widgets import ComboBox, Notches
+from vspreview.utils   import (add_shortcut, debug, main_window, fire_and_forget,
+                               qt_silent_call, set_qobject_names, set_status_label, strfdelta)
+from vspreview.widgets import ComboBox, Notches, TimeEdit
 
 
 class SceningList(Qt.QAbstractTableModel, QYAMLObject):
@@ -352,7 +352,7 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
 
     def add(self, name: Optional[str] = None, max_value: Optional[Frame] = None, i: Optional[int] = None) -> Tuple[SceningList, int]:
         if max_value is None:
-            max_value = self.main.current_output.total_frames - FrameInterval(1)
+            max_value = self.main.current_output.end_frame
         if i is None:
             i = len(self.items)
 
@@ -400,7 +400,8 @@ class SceningListDialog(Qt.QDialog):
     __slots__ = (
         'main', 'scening_list',
         'name_lineedit', 'tableview',
-        'start_frame_lineedit', 'end_frame_lineedit',
+        'start_frame_control', 'end_frame_control',
+        'start_time_control', 'end_time_control',
         'label_lineedit',
     )
 
@@ -413,12 +414,12 @@ class SceningListDialog(Qt.QDialog):
         self.setWindowTitle('Scening List View')
         self.setup_ui()
 
-        self.end_frame_lineedit  .textChanged.connect(self.on_end_frame_changed)
-        self.end_time_spinbox    .timeChanged.connect(lambda qtime: self.on_end_time_changed(qtime_to_timedelta(qtime)))  # type: ignore
+        self.end_frame_control  .valueChanged.connect(self.on_end_frame_changed)
+        self.end_time_control   .valueChanged.connect(self.on_end_time_changed)  # type: ignore
         self.label_lineedit      .textChanged.connect(self.on_label_changed)
         self.name_lineedit       .textChanged.connect(self.on_name_changed)
-        self.start_frame_lineedit.textChanged.connect(self.on_start_frame_changed)
-        self.start_time_spinbox  .timeChanged.connect(lambda qtime: self.on_start_time_changed(qtime_to_timedelta(qtime)))  # type: ignore
+        self.start_frame_control.valueChanged.connect(self.on_start_frame_changed)
+        self.start_time_control .valueChanged.connect(self.on_start_time_changed)  # type: ignore
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
 
         set_qobject_names(self)
@@ -440,27 +441,19 @@ class SceningListDialog(Qt.QDialog):
         scene_layout.setObjectName('SceningListDialog.setup_ui.scene_layout')
         layout.addLayout(scene_layout)
 
-        self.start_frame_lineedit = Qt.QLineEdit(self)
-        self.start_frame_lineedit.setPlaceholderText('Start Frame')
-        self.start_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
-        scene_layout.addWidget(self.start_frame_lineedit)
+        self.start_frame_control = Qt.QSpinBox(self)
+        self.start_frame_control.setMinimum(0)
+        scene_layout.addWidget(self.start_frame_control)
 
-        self.end_frame_lineedit = Qt.QLineEdit(self)
-        self.end_frame_lineedit.setPlaceholderText('End Frame')
-        self.end_frame_lineedit.setValidator(Qt.QRegExpValidator(Qt.QRegExp(r'\d+')))
-        scene_layout.addWidget(self.end_frame_lineedit)
+        self.end_frame_control = Qt.QSpinBox(self)
+        self.end_frame_control.setMinimum(0)
+        scene_layout.addWidget(self.end_frame_control)
 
-        self.start_time_spinbox = Qt.QTimeEdit(self)
-        self.start_time_spinbox.setMinimumTime(Qt.QTime())
-        self.start_time_spinbox.setDisplayFormat('H:mm:ss.zzz')
-        self.start_time_spinbox.setButtonSymbols(Qt.QTimeEdit.NoButtons)
-        scene_layout.addWidget(self.start_time_spinbox)
+        self.start_time_control = TimeEdit(self)
+        scene_layout.addWidget(self.start_time_control)
 
-        self.end_time_spinbox = Qt.QTimeEdit(self)
-        self.end_time_spinbox.setMinimumTime(Qt.QTime())
-        self.end_time_spinbox.setDisplayFormat('H:mm:ss.zzz')
-        self.end_time_spinbox.setButtonSymbols(Qt.QTimeEdit.NoButtons)
-        scene_layout.addWidget(self.end_time_spinbox)
+        self.end_time_control = TimeEdit(self)
+        scene_layout.addWidget(self.end_time_control)
 
         self.label_lineedit = Qt.QLineEdit(self)
         self.label_lineedit.setPlaceholderText('Label')
@@ -504,14 +497,13 @@ class SceningListDialog(Qt.QDialog):
         self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        self.start_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.current_output.to_timedelta(self.main.current_output.total_frames)))
-        self.  end_time_spinbox.setMaximumTime(timedelta_to_qtime(self.main.current_output.to_timedelta(self.main.current_output.total_frames)))
+        self.start_frame_control.setMaximum(int(self.main.current_output.end_frame))
+        self.  end_frame_control.setMaximum(int(self.main.current_output.end_frame))
+        self. start_time_control.setMaximumTime(self.main.current_output.end_time)
+        self.   end_time_control.setMaximumTime(self.main.current_output.end_time)
 
-    def on_end_frame_changed(self, text: str) -> None:
-        try:
-            frame = Frame(int(self.end_frame_lineedit.text()))
-        except ValueError:
-            return
+    def on_end_frame_changed(self, value: Union[Frame, int]) -> None:
+        frame = Frame(value)
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
@@ -543,11 +535,8 @@ class SceningListDialog(Qt.QDialog):
         index = self.main.current_output.scening_lists.index(i)
         self.main.current_output.scening_lists.setData(index, text, Qt.Qt.UserRole)
 
-    def on_start_frame_changed(self, text: str) -> None:
-        try:
-            frame = Frame(int(self.start_frame_lineedit.text()))
-        except ValueError:
-            return
+    def on_start_frame_changed(self, value: Union[Frame, int]) -> None:
+        frame = Frame(value)
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
@@ -586,11 +575,11 @@ class SceningListDialog(Qt.QDialog):
             return
         index = selected.indexes()[0]
         scene = self.scening_list[index.row()]
-        qt_silent_call(self.start_frame_lineedit.setText, str(scene.start))
-        qt_silent_call(self.  end_frame_lineedit.setText, str(scene.end))
-        qt_silent_call(self.  start_time_spinbox.setTime, timedelta_to_qtime(self.main.current_output.to_timedelta(scene.start)))
-        qt_silent_call(self.    end_time_spinbox.setTime, timedelta_to_qtime(self.main.current_output.to_timedelta(scene.end)))
-        qt_silent_call(self.      label_lineedit.setText,     scene.label)
+        qt_silent_call(self.start_frame_control.setValue, scene.start)
+        qt_silent_call(self.  end_frame_control.setValue, scene.end)
+        qt_silent_call(self. start_time_control.setTime, self.main.current_output.to_timedelta(scene.start))
+        qt_silent_call(self.   end_time_control.setTime, self.main.current_output.to_timedelta(scene.end))
+        qt_silent_call(self.     label_lineedit.setText,     scene.label)
 
 
 class SceningToolbar(AbstractToolbar):

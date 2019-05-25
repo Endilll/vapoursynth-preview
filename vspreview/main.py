@@ -13,7 +13,7 @@ import vapoursynth as     vs
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
 from vspreview.models  import Outputs
 from vspreview.utils   import add_shortcut, debug, get_usable_cpus_count, qt_silent_call, set_qobject_names
-from vspreview.widgets import ComboBox, Timeline
+from vspreview.widgets import ComboBox, TimeEdit, Timeline
 
 # TODO: design settings part
 # TODO: deisgn keyboard layout
@@ -84,8 +84,8 @@ class ScriptErrorDialog(Qt.QDialog):
 class MainToolbar(AbstractToolbar):
     __slots__ = (
         'outputs', 'save_file_types', 'zoom_levels',
-        'outputs_combobox', 'frame_spinbox', 'copy_frame_button',
-        'time_spinbox', 'copy_timestamp_button',
+        'outputs_combobox', 'frame_control', 'copy_frame_button',
+        'time_control', 'copy_timestamp_button',
         'zoom_combobox', 'save_as_button', 'switch_timeline_mode_button',
     )
 
@@ -98,8 +98,6 @@ class MainToolbar(AbstractToolbar):
         self.outputs = Outputs()
 
         self.outputs_combobox.setModel(self.outputs)
-        self.frame_spinbox.setMinimum(0)
-        self.time_spinbox.setMinimumTime(Qt.QTime())
         self.zoom_levels = ZoomLevels([0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0])
         self.zoom_combobox.setModel(self.zoom_levels)
         self.zoom_combobox.setCurrentIndex(3)
@@ -108,14 +106,14 @@ class MainToolbar(AbstractToolbar):
             'Single Image (*.png)': self.save_as_png
         }
 
-        self.outputs_combobox.currentIndexChanged.connect(              self.main.switch_output)
-        self.frame_spinbox          .valueChanged.connect(lambda f:     self.main.switch_frame(Frame(f)))
-        self.time_spinbox            .timeChanged.connect(lambda qtime: self.main.switch_frame(t=qtime_to_timedelta(qtime)))  # type: ignore
-        self.copy_frame_button           .clicked.connect(              self.on_copy_frame_button_clicked)
-        self.copy_timestamp_button       .clicked.connect(              self.on_copy_timestamp_button_clicked)
-        self.zoom_combobox    .currentTextChanged.connect(              self.on_zoom_changed)
-        self.save_as_button              .clicked.connect(              self.on_save_as_clicked)
-        self.switch_timeline_mode_button .clicked.connect(              self.on_switch_timeline_mode_clicked)
+        self.outputs_combobox.currentIndexChanged.connect(          self.main.switch_output)
+        self.frame_control          .valueChanged.connect(lambda f: self.main.switch_frame(f=Frame(f)))
+        self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(t=t))  # type: ignore
+        self.copy_frame_button           .clicked.connect(          self.on_copy_frame_button_clicked)
+        self.copy_timestamp_button       .clicked.connect(          self.on_copy_timestamp_button_clicked)
+        self.zoom_combobox    .currentTextChanged.connect(          self.on_zoom_changed)
+        self.save_as_button              .clicked.connect(          self.on_save_as_clicked)
+        self.switch_timeline_mode_button .clicked.connect(          self.on_switch_timeline_mode_clicked)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_1, lambda: self.main.switch_output(0))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_2, lambda: self.main.switch_output(1))
@@ -140,18 +138,16 @@ class MainToolbar(AbstractToolbar):
         self.outputs_combobox.setSizeAdjustPolicy(Qt.QComboBox.AdjustToContents)
         layout.addWidget(self.outputs_combobox)
 
-        self.frame_spinbox = Qt.QSpinBox(self)
-        self.frame_spinbox.setMinimum(0)
-        layout.addWidget(self.frame_spinbox)
+        self.frame_control = Qt.QSpinBox(self)
+        self.frame_control.setMinimum(0)
+        layout.addWidget(self.frame_control)
 
         self.copy_frame_button = Qt.QPushButton(self)
         self.copy_frame_button.setText('⎘')
         layout.addWidget(self.copy_frame_button)
 
-        self.time_spinbox = Qt.QTimeEdit(self)
-        self.time_spinbox.setDisplayFormat('H:mm:ss.zzz')
-        self.time_spinbox.setButtonSymbols(Qt.QTimeEdit.NoButtons)
-        layout.addWidget(self.time_spinbox)
+        self.time_control = TimeEdit(self)
+        layout.addWidget(self.time_control)
 
         self.copy_timestamp_button = Qt.QPushButton(self)
         self.copy_timestamp_button.setText('⎘')
@@ -173,14 +169,14 @@ class MainToolbar(AbstractToolbar):
 
         self.toggle_button.setVisible(False)
 
-    def on_current_frame_changed(self, frame: Frame, t: timedelta) -> None:
-        qt_silent_call(self.frame_spinbox.setValue, frame)
-        qt_silent_call(self. time_spinbox.setTime, timedelta_to_qtime(t))
+    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
+        qt_silent_call(self.frame_control.setValue, frame)
+        qt_silent_call(self. time_control.setTime,  time)
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.outputs_combobox.setCurrentIndex, index)
-        qt_silent_call(self.   frame_spinbox.setMaximum     ,                    self.main.current_output.total_frames - FrameInterval(1))
-        qt_silent_call(self.    time_spinbox.setMaximumTime , timedelta_to_qtime(self.main.current_output.duration))
+        qt_silent_call(self.   frame_control.setMaximum     , self.main.current_output.end_frame)
+        qt_silent_call(self.    time_control.setMaximumTime , self.main.current_output.end_time)
 
 
     def rescan_outputs(self) -> None:
@@ -193,7 +189,7 @@ class MainToolbar(AbstractToolbar):
         self.main.statusbar.showMessage('Current frame number copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
     def on_copy_timestamp_button_clicked(self, checked: Optional[bool] = None) -> None:
-        self.main.clipboard.setText(self.time_spinbox.text())
+        self.main.clipboard.setText(self.time_control.text())
         self.main.statusbar.showMessage('Current timestamp copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
 
     def on_switch_timeline_mode_clicked(self, checked: Optional[bool] = None) -> None:
@@ -536,7 +532,7 @@ class MainWindow(AbstractMainWindow):
         else:
             logging.debug('switch_frame(): both frame and t is None')
             return
-        if frame >= self.current_output.total_frames:
+        if frame > self.current_output.end_frame:
             # logging.debug('switch_frame(): New frame position is out of range')
             return
 

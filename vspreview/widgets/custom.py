@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from   datetime import timedelta
 import logging
-from   typing import Optional
+from   typing   import Optional
 
 from PyQt5 import Qt
 
-from vspreview.utils import debug
+from vspreview.utils import debug, qtime_to_timedelta, timedelta_to_qtime
 
 
 class GraphicsView(Qt.QGraphicsView):
@@ -66,3 +67,39 @@ class ComboBox(Qt.QComboBox):
     def _indexChanged(self, nextIndex: int) -> None:
         self.indexChanged.emit(nextIndex, self.prevIndex)
         self.prevIndex = nextIndex
+
+
+class TimeEdit(Qt.QTimeEdit):
+    valueChanged = Qt.pyqtSignal(timedelta, timedelta)
+
+    def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
+        super().__init__(parent)
+
+        self.setDisplayFormat('H:mm:ss.zzz')
+        self.setButtonSymbols(Qt.QTimeEdit.NoButtons)
+        self.setMinimumTime(timedelta())
+
+        self.prevValue = self.time()
+        self.timeChanged.connect(self._valueChanged)
+
+    def _valueChanged(self, new_value: Qt.QTime) -> None:
+        self.valueChanged.emit(self.time(), self.prevValue)
+        self.prevValue = self.time()
+
+    def time(self) -> timedelta:
+        return qtime_to_timedelta(super().time())
+
+    def setTime(self, new_value: timedelta) -> None:
+        super().setTime(timedelta_to_qtime(new_value))
+
+    def minimumTime(self) -> timedelta:
+        return qtime_to_timedelta(super().minimumTime())
+
+    def setMinimumTime(self, new_value: timedelta) -> None:
+        super().setMinimumTime(timedelta_to_qtime(new_value))
+
+    def maximumTime(self) -> timedelta:
+        return qtime_to_timedelta(super().maximumTime())
+
+    def setMaximumTime(self, new_value: timedelta) -> None:
+        super().setMaximumTime(timedelta_to_qtime(new_value))
