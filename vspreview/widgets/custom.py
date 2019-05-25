@@ -103,3 +103,21 @@ class TimeEdit(Qt.QTimeEdit):
 
     def setMaximumTime(self, new_value: timedelta) -> None:
         super().setMaximumTime(timedelta_to_qtime(new_value))
+
+
+class StatusBar(Qt.QStatusBar):
+    def __init__(self, parent: Qt.QWidget) -> None:
+        super().__init__(parent)
+
+        self.permament_start_index = 0
+
+    def addPermanentWidget(self, widget: Qt.QWidget, stretch: int = 0) -> int:
+        return self.insertPermanentWidget(self.permament_start_index, widget, stretch)
+
+    def addWidget(self, widget: Qt.QWidget, stretch: int = 0) -> int:
+        self.permament_start_index += 1
+        return super().addWidget(widget, stretch)
+
+    def insertWidget(self, index: int, widget: Qt.QWidget, stretch: int = 0) -> int:
+        self.permament_start_index += 1
+        return super().addWidget(index, widget, stretch)

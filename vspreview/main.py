@@ -13,7 +13,7 @@ import vapoursynth as     vs
 from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
 from vspreview.models  import Outputs
 from vspreview.utils   import add_shortcut, debug, get_usable_cpus_count, qt_silent_call, set_qobject_names
-from vspreview.widgets import ComboBox, TimeEdit, Timeline
+from vspreview.widgets import ComboBox, StatusBar, TimeEdit, Timeline
 
 # TODO: design settings part
 # TODO: deisgn keyboard layout
@@ -399,7 +399,7 @@ class MainWindow(AbstractMainWindow):
 
         # status bar
 
-        self.statusbar = Qt.QStatusBar(self.central_widget)
+        self.statusbar = StatusBar(self.central_widget)
 
         self.statusbar.total_frames_label = Qt.QLabel(self.central_widget)
         self.statusbar.total_frames_label.setObjectName('MainWindow.statusbar.total_frames_label')
