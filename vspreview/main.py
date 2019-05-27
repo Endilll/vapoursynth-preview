@@ -18,8 +18,11 @@ from vspreview.widgets import ComboBox, StatusBar, TimeEdit, Timeline
 # TODO: design settings part
 # TODO: deisgn keyboard layout
 # TODO: VFR support
-# TODO: move to pyside2, but it lacks single Qt namespace with everything imported and isn't type annotated. https://bugreports.qt.io/browse/PYSIDE-735
-# TODO: get rid of magical constants related to 'pixel' sizes (their actual units are yet to be discovered)
+# TODO: move to pyside2, but it lacks single Qt namespace
+#       with everything imported and isn't type annotated.
+#       See https://bugreports.qt.io/browse/PYSIDE-735
+# TODO: get rid of magical constants related to 'pixel' sizes
+#       (their actual units are yet to be discovered)
 # TODO: implement VSEdit-like benchmark
 # TODO: move from QGraphicsView to QLabel
 # TODO: utilize Qt's signals
@@ -98,7 +101,9 @@ class MainToolbar(AbstractToolbar):
         self.outputs = Outputs()
 
         self.outputs_combobox.setModel(self.outputs)
-        self.zoom_levels = ZoomLevels([0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0])
+        self.zoom_levels = ZoomLevels([
+            0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0
+        ])
         self.zoom_combobox.setModel(self.zoom_levels)
         self.zoom_combobox.setCurrentIndex(3)
 
@@ -550,12 +555,9 @@ class MainWindow(AbstractMainWindow):
             # TODO: consider returning False
             return
 
-        # print(index)
-        # print_stack()
-
         prev_index = self.toolbars.main.outputs_combobox.currentIndex()
         if index < 0 or index >= len(self.outputs):
-            logging.info('Output switching: output index is out of range. Switching to first output')
+            logging.info(f'Output switching: output {index} is out of range. Switching to first output')
             index = 0
 
         self.toolbars.playback.stop()
@@ -574,7 +576,7 @@ class MainWindow(AbstractMainWindow):
             toolbar.on_current_output_changed(index, prev_index)
         self.update_statusbar_output_info()
 
-    @property
+    @property  # type: ignore
     def current_output(self) -> Output:  # type: ignore
         output = cast(Output, self.toolbars.main.outputs_combobox.currentData())
         # check currentData() return on empty combobox

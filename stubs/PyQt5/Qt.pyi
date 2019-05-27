@@ -5,7 +5,7 @@
 
 from .QtCore import *
 from .QtDBus import *
-from .QtGui import * # type: ignore
+from .QtGui import *  # type: ignore
 from .QtNetwork import *
 from .QtOpenGL import *
 from .QtPrintSupport import *

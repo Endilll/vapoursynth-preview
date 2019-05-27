@@ -11,8 +11,9 @@ from PyQt5       import Qt, sip
 from yaml        import add_constructor, add_representer, Dumper, Loader, Node, YAMLObject, YAMLObjectMetaclass
 from vapoursynth import Format, VideoNode
 
-from .better_abc  import ABCMeta, abstract_attribute
-# project modules couldn't be imported at top level since it'll cause cyclic import
+from .better_abc import ABCMeta, abstract_attribute
+# project modules couldn't be imported at top level
+# since it'll cause cyclic import
 
 # pylint: disable=pointless-statement, function-redefined
 
@@ -341,7 +342,8 @@ class Output(YAMLObject):
         self.end_frame    = self.total_frames - FrameInterval(1)
         self.end_time     = self.to_timedelta(self.end_frame)
 
-        # set by load_script() when it prepares graphics scene item based on last showed frame
+        # set by load_script() when it prepares graphics scene item
+        # based on last showed frame
 
         self.graphics_scene_item: Qt.QGraphicsPixmapItem
 

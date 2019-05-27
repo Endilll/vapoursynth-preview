@@ -364,7 +364,7 @@ class Timeline(Qt.QWidget):
         elif isinstance(pos, int):
             self.cursor_x = pos
         else:
-            raise TypeError(f'Timeline.set_position(): pos of type {type(pos)} isn\'t supported.')
+            raise TypeError
         self.update()
 
     def t_to_x(self, t: timedelta) -> int:
