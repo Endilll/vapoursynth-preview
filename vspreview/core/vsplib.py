@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-from   abc       import abstractmethod
-from   datetime  import timedelta
-from   functools import total_ordering
+from   abc      import abstractmethod
+from   datetime import timedelta
 import logging
-from   pathlib   import Path
-from   typing    import Any, cast, Dict, Iterator, Mapping, no_type_check, Optional, overload, Type, TypeVar, TYPE_CHECKING, Tuple, Union
+from   pathlib  import Path
+from   typing   import (
+    Any, cast, Dict, Iterator, Mapping, no_type_check, Optional,
+    overload, Type, TypeVar, TYPE_CHECKING, Tuple, Union,
+)
 
-from PyQt5       import Qt, sip
-from yaml        import add_constructor, add_representer, Dumper, Loader, Node, YAMLObject, YAMLObjectMetaclass
+from PyQt5 import Qt, sip
+from yaml import (
+    add_constructor, add_representer, Dumper, Loader, Node, YAMLObject,
+    YAMLObjectMetaclass,
+)
 from vapoursynth import Format, VideoNode
 
 from .better_abc import ABCMeta, abstract_attribute
@@ -17,127 +22,8 @@ from .better_abc import ABCMeta, abstract_attribute
 
 # pylint: disable=pointless-statement, function-redefined
 
-class FrameInterval(YAMLObject):
-    __slots__ = (
-        'value',
-    )
-
-    yaml_tag = '!FrameInterval'
-
-    def __init__(self, value: Union[float, FrameInterval, int]) -> None:
-        if isinstance(value, (float, int)):
-            self.value = int(value)
-        elif isinstance(value, FrameInterval):
-            self.value = value.value
-        else:
-            raise TypeError
-
-    def __add__(self, other: Any) -> FrameInterval:
-        return FrameInterval(self.value + other)
-
-    def __iadd__(self, other: Any) -> FrameInterval:
-        self.value += other
-        return self
-
-    def __radd__(self, other: Any) -> FrameInterval:
-        return FrameInterval(other + self.value)
-
-    def __sub__(self, other: Any) -> FrameInterval:
-        return FrameInterval(self.value - other)
-
-    def __isub__(self, other: Any) -> FrameInterval:
-        self.value -= other
-        return self
-
-    def __rsub__(self, other: Any) -> FrameInterval:
-        return FrameInterval(other - self.value)
-
-    def __mul__(self, other: Any) -> FrameInterval:
-        return FrameInterval(self.value * other)
-
-    def __imul__(self, other: Any) -> FrameInterval:
-        self.value *= other
-        return self
-
-    def __rmul__(self, other: Any) -> FrameInterval:
-        return FrameInterval(other * self.value)
-
-    def __floordiv__(self, other: Any) -> FrameInterval:
-        return FrameInterval(self.value / other)
-
-    def __ifloordiv__(self, other: Any) -> FrameInterval:
-        self.value //= other
-        return self
-
-    def __int__(self) -> int:
-        return self.value
-
-    def __index__(self) -> int:
-        return int(self)
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    def __repr__(self) -> str:
-        return f'FrameInterval({self.value})'
-
-    def __eq__(self, other: Union[FrameInterval, int]) -> bool:  # type: ignore
-        if isinstance(other, int):
-            return self.value == other
-        if isinstance(other, FrameInterval):
-            return self.value == other.value
-        return TypeError
-
-    def __ne__(self, other: Union[FrameInterval, int]) -> bool:  # type: ignore
-        if isinstance(other, int):
-            return self.value != other
-        if isinstance(other, FrameInterval):
-            return self.value != other.value
-        return TypeError
-
-    def __le__(self, other: Union[FrameInterval, int]) -> bool:
-        if isinstance(other, int):
-            return self.value <= other
-        if isinstance(other, FrameInterval):
-            return self.value <= other.value
-        return TypeError
-
-    def __ge__(self, other: Union[FrameInterval, int]) -> bool:
-        if isinstance(other, int):
-            return self.value >= other
-        if isinstance(other, FrameInterval):
-            return self.value >= other.value
-        return TypeError
-
-    def __lt__(self, other: Union[FrameInterval, int]) -> bool:
-        if isinstance(other, int):
-            return self.value < other
-        if isinstance(other, FrameInterval):
-            return self.value < other.value
-        return TypeError
-
-    def __gt__(self, other: Union[FrameInterval, int]) -> bool:
-        if isinstance(other, int):
-            return self.value > other
-        if isinstance(other, FrameInterval):
-            return self.value > other.value
-        return TypeError
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {
-            name: getattr(self, name)
-            for name in self.__slots__
-        }
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            value = state['value']
-            if not isinstance(value, int):
-                raise TypeError('Value of FrameInterval isn\'t an integer. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('FrameInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
-
-        self.__init__(value)  # type: ignore
+# TODO: consider making FrameInterval non-negative
+# TODO: consider storing assosiated Output in Frame and others
 
 
 class Frame(YAMLObject):
@@ -147,13 +33,18 @@ class Frame(YAMLObject):
 
     yaml_tag = '!Frame'
 
-    def __init__(self, value: Union[Frame, int]) -> None:
-        if isinstance(value, int):
-            if value < 0:
+    def __init__(self, init_value: Union[Frame, int, Time]) -> None:
+        from vspreview.utils import main_window
+
+        if isinstance(init_value, int):
+            if init_value < 0:
                 raise ValueError
-            self.value = int(value)
-        elif isinstance(value, Frame):
-            self.value = value.value
+            self.value = init_value
+        elif isinstance(init_value, Frame):
+            self.value = init_value.value
+        elif isinstance(init_value, Time):
+            self.value = main_window().current_output.to_frame(
+                init_value).value
         else:
             raise TypeError
 
@@ -195,20 +86,21 @@ class Frame(YAMLObject):
     def __eq__(self, other: Frame) -> bool:  # type: ignore
         return self.value == other.value
 
-    def __ne__(self, other: Frame) -> bool:  # type: ignore
-        return self.value != other.value
-
-    def __le__(self, other: Frame) -> bool:
-        return self.value <= other.value
-
-    def __ge__(self, other: Frame) -> bool:
-        return self.value >= other.value
-
-    def __lt__(self, other: Frame) -> bool:
-        return self.value < other.value
-
     def __gt__(self, other: Frame) -> bool:
         return self.value > other.value
+
+    def __ne__(self, other: Frame) -> bool:  # type: ignore
+        return not self.__eq__(other)
+
+    def __le__(self, other: Frame) -> bool:
+        return not self.__gt__(other)
+
+    def __ge__(self, other: Frame) -> bool:
+        return self.__eq__(other) or self.__gt__(other)
+
+    def __lt__(self, other: Frame) -> bool:
+        return not self.__ge__(other)
+
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
@@ -227,7 +119,301 @@ class Frame(YAMLObject):
         self.__init__(value)  # type: ignore
 
 
-@total_ordering
+class FrameInterval(YAMLObject):
+    __slots__ = (
+        'value',
+    )
+
+    yaml_tag = '!FrameInterval'
+
+    def __init__(self, init_value: Union[FrameInterval, int, TimeInterval]) -> None:
+        from vspreview.utils import main_window
+
+        if isinstance(init_value, int):
+            self.value = init_value
+        elif isinstance(init_value, FrameInterval):
+            self.value = init_value.value
+        elif isinstance(init_value, TimeInterval):
+            self.value = main_window().current_output.to_frame_interval(
+                init_value).value
+        else:
+            raise TypeError
+
+    def __add__(self, other: FrameInterval) -> FrameInterval:
+        return FrameInterval(self.value + other.value)
+
+    def __iadd__(self, other: FrameInterval) -> FrameInterval:
+        self.value += other.value
+        return self
+
+    def __sub__(self, other: FrameInterval) -> FrameInterval:
+        return FrameInterval(self.value - other.value)
+
+    def __isub__(self, other: FrameInterval) -> FrameInterval:
+        self.value -= other.value
+        return self
+
+    def __mul__(self, other: int) -> FrameInterval:
+        return FrameInterval(self.value * other)
+
+    def __imul__(self, other: int) -> FrameInterval:
+        self.value *= other
+        return self
+
+    def __rmul__(self, other: int) -> FrameInterval:
+        return FrameInterval(other * self.value)
+
+    def __floordiv__(self, other: float) -> FrameInterval:
+        return FrameInterval(int(self.value // other))
+
+    def __ifloordiv__(self, other: float) -> FrameInterval:
+        self.value = int(self.value // other)
+        return self
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __index__(self) -> int:
+        return int(self)
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __repr__(self) -> str:
+        return f'FrameInterval({self.value})'
+
+    def __eq__(self, other: FrameInterval) -> bool:  # type: ignore
+        return self.value == other.value
+
+    def __gt__(self, other: FrameInterval) -> bool:
+        return self.value > other.value
+
+    def __ne__(self, other: FrameInterval) -> bool:  # type: ignore
+        return not self.__eq__(other)
+
+    def __le__(self, other: FrameInterval) -> bool:
+        return not self.__gt__(other)
+
+    def __ge__(self, other: FrameInterval) -> bool:
+        return self.__eq__(other) or self.__gt__(other)
+
+    def __lt__(self, other: FrameInterval) -> bool:
+        return not self.__ge__(other)
+
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try:
+            value = state['value']
+            if not isinstance(value, int):
+                raise TypeError('Value of FrameInterval isn\'t an integer. It\'s most probably corrupted.')
+        except KeyError:
+            raise KeyError('FrameInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+
+        self.__init__(value)  # type: ignore
+
+
+FrameType = TypeVar('FrameType', Frame, FrameInterval)
+
+
+class Time(YAMLObject):
+    __slots__ = (
+        'value',
+    )
+
+    yaml_tag = '!Time'
+
+    def __init__(self, init_value: Optional[Union[Time, timedelta, Frame]] = None, **kwargs: Any):
+        from vspreview.utils import main_window
+
+        if isinstance(init_value, timedelta):
+            self.value = init_value
+        elif isinstance(init_value, Time):
+            self.value = init_value.value
+        elif isinstance(init_value, Frame):
+            self.value = main_window().current_output.to_time(
+                init_value).value
+        elif any(kwargs):
+            self.value = timedelta(**kwargs)
+        elif init_value is None:
+            self.value = timedelta()
+        else:
+            raise TypeError
+
+    def __add__(self, other: TimeInterval) -> Time:
+        return Time(self.value + other.value)
+
+    def __iadd__(self, other: TimeInterval) -> Time:
+        self.value += other.value
+        return self
+
+    @overload
+    def __sub__(self, other: TimeInterval) -> Time: ...
+    @overload
+    def __sub__(self, other: Time) -> TimeInterval: ...
+
+    def __sub__(self, other):  # type: ignore
+        if isinstance(other, Time):
+            return TimeInterval(self.value - other.value)
+        if isinstance(other, TimeInterval):
+            return Time(self.value - other.value)
+        raise TypeError
+
+    def __isub__(self, other: TimeInterval) -> Time:  # type: ignore
+        self.value -= other.value
+        return self
+
+    def __str__(self) -> str:
+        from vspreview.utils import strfdelta
+
+        return strfdelta(self, '%h:%M:%S.%Z')
+
+    def __repr__(self) -> str:
+        return f'Time({self.value})'
+
+    def __eq__(self, other: Time) -> bool:  # type: ignore
+        return self.value == other.value
+
+    def __gt__(self, other: Time) -> bool:
+        return self.value > other.value
+
+    def __ne__(self, other: Time) -> bool:  # type: ignore
+        return not self.__eq__(other)
+
+    def __le__(self, other: Time) -> bool:
+        return not self.__gt__(other)
+
+    def __ge__(self, other: Time) -> bool:
+        return self.__eq__(other) or self.__gt__(other)
+
+    def __lt__(self, other: Time) -> bool:
+        return not self.__ge__(other)
+
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try:
+            value = state['value']
+            if not isinstance(value, timedelta):
+                raise TypeError('Value of Time isn\'t an timedelta. It\'s most probably corrupted.')
+        except KeyError:
+            raise KeyError('Time lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+
+        self.__init__(value)  # type: ignore
+
+
+class TimeInterval(YAMLObject):
+    __slots__ = (
+        'value',
+    )
+
+    yaml_tag = '!TimeInterval'
+
+    def __init__(self, init_value: Optional[Union[TimeInterval, timedelta, FrameInterval]] = None, **kwargs: Any):
+        from vspreview.utils import main_window
+
+        if isinstance(init_value, timedelta):
+            self.value = init_value
+        elif isinstance(init_value, TimeInterval):
+            self.value = init_value.value
+        elif isinstance(init_value, FrameInterval):
+            self.value = main_window().current_output.to_time_interval(
+                init_value).value
+        elif any(kwargs):
+            self.value = timedelta(**kwargs)
+        elif init_value is None:
+            self.value = timedelta()
+        else:
+            raise TypeError()
+
+    def __add__(self, other: TimeInterval) -> TimeInterval:
+        return TimeInterval(self.value + other.value)
+
+    def __iadd__(self, other: TimeInterval) -> TimeInterval:
+        self.value += other.value
+        return self
+
+    def __sub__(self, other: TimeInterval) -> TimeInterval:
+        return TimeInterval(self.value - other.value)
+
+    def __isub__(self, other: TimeInterval) -> TimeInterval:
+        self.value -= other.value
+        return self
+
+    def __mul__(self, other: int) -> TimeInterval:
+        return TimeInterval(self.value * other)
+
+    def __imul__(self, other: int) -> TimeInterval:
+        self.value *= other
+        return self
+
+    def __rmul__(self, other: int) -> TimeInterval:
+        return TimeInterval(other * self.value)
+
+    def __truediv__(self, other: float) -> TimeInterval:
+        return TimeInterval(self.value / other)
+
+    def __itruediv__(self, other: float) -> TimeInterval:
+        self.value /= other
+        return self
+
+    def __str__(self) -> str:
+        from vspreview.utils import strfdelta
+
+        return strfdelta(self, '%h:%M:%S.%Z')
+
+    def __repr__(self) -> str:
+        return f'TimeInterval({self.value})'
+
+    def __eq__(self, other: TimeInterval) -> bool:  # type: ignore
+        return self.value == other.value
+
+    def __gt__(self, other: TimeInterval) -> bool:
+        return self.value > other.value
+
+    def __ne__(self, other: TimeInterval) -> bool:  # type: ignore
+        return not self.__eq__(other)
+
+    def __le__(self, other: TimeInterval) -> bool:
+        return not self.__gt__(other)
+
+    def __ge__(self, other: TimeInterval) -> bool:
+        return self.__eq__(other) or self.__gt__(other)
+
+    def __lt__(self, other: TimeInterval) -> bool:
+        return not self.__ge__(other)
+
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            name: getattr(self, name)
+            for name in self.__slots__
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try:
+            value = state['value']
+            if not isinstance(value, timedelta):
+                raise TypeError('Value of TimeInterval isn\'t an timedelta. It\'s most probably corrupted.')
+        except KeyError:
+            raise KeyError('TimeInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+
+        self.__init__(value)  # type: ignore
+
+
+TimeType = TypeVar('TimeType', Time, TimeInterval)
+
+
 class Scene(YAMLObject):
     __slots__ = (
         'start', 'end', 'label'
@@ -269,23 +455,31 @@ class Scene(YAMLObject):
     def __repr__(self) -> str:
         return 'Scene({}, {}, \'{}\')'.format(self.start, self.end, self.label)
 
+    def __eq__(self, other: Scene) -> bool:  # type: ignore
+        return self.start == other.start and self.end == other.end
+
     def __gt__(self, other: Scene) -> bool:
         if self.start != other.start:
             return self.start > other.start
         else:
             return self.end   > other.end
 
-    def __eq__(self, other: Scene) -> bool:  # type: ignore
-        if not isinstance(other, Scene):
-            raise TypeError
-        return self.start == other.start and self.end == other.end
+    def __ne__(self, other: Scene) -> bool:  # type: ignore
+        return not self.__eq__(other)
+
+    def __le__(self, other: Scene) -> bool:
+        return not self.__gt__(other)
+
+    def __ge__(self, other: Scene) -> bool:
+        return self.__eq__(other) or self.__gt__(other)
+
+    def __lt__(self, other: Scene) -> bool:
+        return not self.__ge__(other)
 
     def duration(self) -> FrameInterval:
         return self.end - self.start
 
     def __contains__(self, frame: Frame) -> bool:
-        if not isinstance(frame, Frame):
-            raise TypeError
         return self.start <= frame <= self.end
 
     def __getstate__(self) -> Mapping[str, Any]:
@@ -319,14 +513,14 @@ class Output(YAMLObject):
     )
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
-        'format', 'total_frames', 'duration', 'graphics_scene_item',
-        'end_frame', 'end_time',
+        'format', 'total_frames', 'total_time', 'graphics_scene_item',
+        'end_frame', 'end_time', 'fps'
     )
 
     yaml_tag = '!Output'
 
     def __init__(self, vs_output: VideoNode, index: int, pixel_format: Format) -> None:
-        from vspreview.toolbars.scening import SceningLists
+        from vspreview.models import SceningLists
 
         # runtime attributes
 
@@ -336,11 +530,12 @@ class Output(YAMLObject):
         self.height       = self.vs_output.height
         self.fps_num      = self.vs_output.fps.numerator
         self.fps_den      = self.vs_output.fps.denominator
+        self.fps          = self.fps_num / self.fps_den
         self.format       = pixel_format
-        self.total_frames = Frame(self.vs_output.num_frames)
-        self.duration     = timedelta(seconds=(int(self.total_frames) / (self.fps_num / self.fps_den)))
-        self.end_frame    = self.total_frames - FrameInterval(1)
-        self.end_time     = self.to_timedelta(self.end_frame)
+        self.total_frames = FrameInterval(self.vs_output.num_frames)
+        self.total_time   = self.to_time_interval(self.total_frames - FrameInterval(1))
+        self.end_frame    = Frame(self.total_frames.value - 1)
+        self.end_time     = self.to_time(self.end_frame)
 
         # set by load_script() when it prepares graphics scene item
         # based on last showed frame
@@ -359,11 +554,23 @@ class Output(YAMLObject):
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
 
-    def to_frame(self, time: timedelta) -> Frame:
-        return Frame(round(time.total_seconds() * (self.fps_num / self.fps_den)))
+    def _calculate_frame(self, seconds: float) -> int:
+        return round(seconds * self.fps)
 
-    def to_timedelta(self, frame: Frame) -> timedelta:
-        return timedelta(seconds=(int(frame) / (self.fps_num / self.fps_den)))
+    def _calculate_seconds(self, frame_num: int) -> float:
+        return frame_num / self.fps
+
+    def to_frame(self, time: Time) -> Frame:
+        return Frame(self._calculate_frame(time.value.total_seconds()))
+
+    def to_time(self, frame: Frame) -> Time:
+        return Time(seconds=self._calculate_seconds(int(frame)))
+
+    def to_frame_interval(self, time_interval: TimeInterval) -> FrameInterval:
+        return FrameInterval(self._calculate_frame(time_interval.value.total_seconds()))
+
+    def to_time_interval(self, frame_interval: FrameInterval) -> TimeInterval:
+        return TimeInterval(seconds=self._calculate_seconds(int(frame_interval)))
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {attr_name: getattr(self, attr_name)
@@ -499,11 +706,11 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
         raise NotImplementedError()
 
     @abstractmethod
-    def switch_output(self, index: int) -> None:
+    def switch_output(self, value: Union[int, Output]) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[timedelta] = None, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
         raise NotImplementedError()
 
     central_widget: Qt.QWidget        = abstract_attribute()
@@ -555,7 +762,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
         self.setVisible(new_state)
         self.resize_main_window(new_state)
 
-    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
         pass
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:

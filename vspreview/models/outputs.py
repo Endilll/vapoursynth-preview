@@ -43,6 +43,9 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
     def __len__(self) -> int:
         return len(self.items)
 
+    def index_of(self, item: Output) -> int:
+        return self.items.index(item)
+
     def __getiter__(self) -> Iterator[Output]:
         return iter(self.items)
 

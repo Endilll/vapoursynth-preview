@@ -1,28 +1,32 @@
 from __future__ import annotations
 
-from   datetime  import timedelta
-from   functools import partial, wraps
+from   functools import lru_cache, partial, wraps
 import logging
 from   string    import Template
-from   typing    import Any, Callable, MutableMapping, Optional, TYPE_CHECKING, TypeVar
+from   typing    import (
+    Any, Callable, MutableMapping, Optional, Type, TYPE_CHECKING, TypeVar,
+    Union
+)
 
 from PyQt5 import Qt
 
+from vspreview.core  import Time, TimeInterval, TimeType
 from vspreview.utils import debug
 
 
 T = TypeVar('T')
 
 
-def timedelta_to_qtime(time: timedelta) -> Qt.QTime:
-    return Qt.QTime(time.seconds      // 3600,
-                    time.seconds      //   60,
-                    time.seconds       %   60,
-                    time.microseconds // 1000)
+def to_qtime(time: Union[TimeType]) -> Qt.QTime:
+    td = time.value
+    return Qt.QTime(td.seconds      // 3600,
+                    td.seconds      //   60,
+                    td.seconds       %   60,
+                    td.microseconds // 1000)
 
 
-def qtime_to_timedelta(qtime: Qt.QTime) -> timedelta:
-    return timedelta(milliseconds=qtime.msecsSinceStartOfDay())
+def from_qtime(qtime: Qt.QTime, t: Type[TimeType]) -> TimeType:
+    return t(milliseconds=qtime.msecsSinceStartOfDay())
 
 
 # it is a BuiltinMethodType at the same time
@@ -39,18 +43,19 @@ class DeltaTemplate(Template):
     delimiter = '%'
 
 
-def strfdelta(time: timedelta, output_format: str) -> str:
+def strfdelta(time: Union[TimeType], output_format: str) -> str:
     d: MutableMapping[str, str] = {}
-    hours        = time.seconds      // 3600
-    minutes      = time.seconds      //   60
-    seconds      = time.seconds       %   60
-    milliseconds = time.microseconds // 1000
-    d['D'] =   '{:d}'.format(time.days)
+    td = time.value
+    hours        = td.seconds      // 3600
+    minutes      = td.seconds      //   60
+    seconds      = td.seconds       %   60
+    milliseconds = td.microseconds // 1000
+    d['D'] =   '{:d}'.format(td.days)
     d['H'] = '{:02d}'.format(hours)
     d['M'] = '{:02d}'.format(minutes)
     d['S'] = '{:02d}'.format(seconds)
     d['Z'] = '{:03d}'.format(milliseconds)
-    d['h'] =  '{:2d}'.format(hours)
+    d['h'] =   '{:d}'.format(hours)
     d['m'] =  '{:2d}'.format(minutes)
     d['s'] =  '{:2d}'.format(seconds)
 
@@ -62,6 +67,7 @@ if TYPE_CHECKING:
     from vspreview.core import AbstractMainWindow
 
 
+@lru_cache()
 def main_window() -> AbstractMainWindow:
     from vspreview.core import AbstractMainWindow  # pylint: disable=redefined-outer-name
 

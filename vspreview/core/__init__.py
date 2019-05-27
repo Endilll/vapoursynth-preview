@@ -1,5 +1,6 @@
 from .vsplib import (
-    Frame, FrameInterval, Output, Scene,
+    Frame, FrameInterval, Time, TimeInterval, Output, Scene,
     AbstractToolbar, AbstractToolbars, AbstractMainWindow,
-    Singleton, QSingleton, QYAMLObject, QYAMLObjectSingleton
+    Singleton, QSingleton, QYAMLObject, QYAMLObjectSingleton,
+    FrameType, TimeType
 )

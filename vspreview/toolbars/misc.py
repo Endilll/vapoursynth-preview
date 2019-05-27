@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from   datetime import timedelta
 import logging
 from   pathlib  import Path
 from   typing   import Any, Mapping, Optional
@@ -8,7 +7,9 @@ from   typing   import Any, Mapping, Optional
 from PyQt5 import Qt
 
 from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame
-from vspreview.utils import add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label
+from vspreview.utils import (
+    add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label
+)
 
 
 class MiscToolbar(AbstractToolbar):

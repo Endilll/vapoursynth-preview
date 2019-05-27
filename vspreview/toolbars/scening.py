@@ -1,399 +1,25 @@
 from __future__ import annotations
 
-from   bisect   import bisect_left, bisect_right
-from   datetime import timedelta
 import logging
 from   pathlib  import Path
 import re
-from   typing   import Any, Callable, cast, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
+from   typing   import (
+    Any, Callable, cast, Dict, Iterator, List, Mapping, Optional, Set, Tuple,
+    Union
+)
 
 from PyQt5 import Qt
 
-from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, QYAMLObject, Scene
-from vspreview.utils   import (add_shortcut, debug, main_window, fire_and_forget,
-                               qt_silent_call, set_qobject_names, set_status_label, strfdelta)
-from vspreview.widgets import ComboBox, Notches, TimeEdit
-
-
-class SceningList(Qt.QAbstractTableModel, QYAMLObject):
-    __slots__ = (
-        'name', 'items', 'max_value'
-    )
-    yaml_tag = '!SceningList'
-
-    START_FRAME_COLUMN = 0
-    END_FRAME_COLUMN   = 1
-    START_TIME_COLUMN  = 2
-    END_TIME_COLUMN    = 3
-    LABEL_COLUMN       = 4
-    COLUMN_COUNT       = 5
-
-    def __init__(self, name: str = '', max_value: Optional[Frame] = None, items: Optional[List[Scene]] = None) -> None:
-        super().__init__()
-        self.name      = name
-        self.max_value = max_value if max_value is not None else Frame(2**31)
-        self.items     =     items if     items is not None else []
-
-        self.main = main_window()
-
-    def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
-        return len(self.items)
-
-    def columnCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
-        return self.COLUMN_COUNT
-
-    def headerData(self, section: int, orientation: Qt.Qt.Orientation, role: int = Qt.Qt.DisplayRole) -> Any:
-        if role != Qt.Qt.DisplayRole:
-            return None
-
-        if orientation == Qt.Qt.Horizontal:
-            if section == self.START_FRAME_COLUMN:
-                return 'Start'
-            if section == self.END_FRAME_COLUMN:
-                return 'End'
-            if section == self.START_TIME_COLUMN:
-                return 'Start'
-            if section == self.END_TIME_COLUMN:
-                return 'End'
-            if section == self.LABEL_COLUMN:
-                return 'Label'
-        if orientation == Qt.Qt.Vertical:
-            return section + 1
-        return None
-
-    def data(self, index: Qt.QModelIndex, role: int = Qt.Qt.UserRole) -> Any:
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row >= len(self.items):
-            return None
-        column = index.column()
-        if column >= self.COLUMN_COUNT:
-            return None
-
-        if role in (Qt.Qt.DisplayRole,
-                    Qt.Qt.   EditRole):
-            if column == self.START_FRAME_COLUMN:
-                return str(self.items[row].start)
-            if column == self.END_FRAME_COLUMN:
-                if self.items[row].end != self.items[row].start:
-                    return str(self.items[row].end)
-                else:
-                    return ''
-            if column == self.START_TIME_COLUMN:
-                return strfdelta(main_window().current_output.to_timedelta(self.items[row].start), '%h:%M:%S.%Z')
-            if column == self.END_TIME_COLUMN:
-                if self.items[row].end != self.items[row].start:
-                    return strfdelta(main_window().current_output.to_timedelta(self.items[row].end), '%h:%M:%S.%Z')
-                else:
-                    return ''
-            if column == self.LABEL_COLUMN:
-                return str(self.items[row].label)
-
-        if role == Qt.Qt.UserRole:
-            if column == self.START_FRAME_COLUMN:
-                return self.items[row].start
-            if column == self.END_FRAME_COLUMN:
-                return self.items[row].end
-            if column == self.START_TIME_COLUMN:
-                return main_window().current_output.to_timedelta(self.items[row].start)
-            if column == self.END_TIME_COLUMN:
-                return main_window().current_output.to_timedelta(self.items[row].end)
-            if column == self.LABEL_COLUMN:
-                return self.items[row].label
-
-        return None
-
-    def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
-        from copy import deepcopy
-
-        if not index.isValid():
-            return False
-        if role not in (Qt.Qt.EditRole,
-                        Qt.Qt.UserRole):
-            return False
-
-        row    = index.row()
-        column = index.column()
-        scene  = deepcopy(self.items[row])
-
-        if column == self.START_FRAME_COLUMN:
-            if not isinstance(value, Frame):
-                raise TypeError
-            if value > scene.end:
-                return False
-            scene.start = value
-            proper_update = True
-        elif column == self.END_FRAME_COLUMN:
-            if not isinstance(value, Frame):
-                raise TypeError
-            if value < scene.start:
-                return False
-            scene.end = value
-            proper_update = True
-        if column == self.START_TIME_COLUMN:
-            if not isinstance(value, timedelta):
-                raise TypeError
-            frame = self.main.current_output.to_frame(value)
-            if frame > scene.end:
-                return False
-            scene.start = frame
-            proper_update = True
-        if column == self.END_TIME_COLUMN:
-            if not isinstance(value, timedelta):
-                raise TypeError
-            frame = self.main.current_output.to_frame(value)
-            if frame < scene.start:
-                return False
-            scene.end = frame
-            proper_update = True
-        elif column == self.LABEL_COLUMN:
-            if not isinstance(value, str):
-                raise TypeError
-            scene.label = value
-            proper_update = False
-
-        if proper_update is True:
-            i = bisect_right(self.items, scene)
-            if i >= row:
-                i -= 1
-            if i != row:
-                self.beginMoveRows(self.createIndex(row, 0), row, row, self.createIndex(i, 0), i)
-                del self.items[row]
-                self.items.insert(i, scene)
-                self.endMoveRows()
-            else:
-                self.items[index.row()] = scene
-                self.dataChanged.emit(index, index)
-        else:
-            self.items[index.row()] = scene
-            self.dataChanged.emit(index, index)
-        return True
-
-    def __len__(self) -> int:
-        return len(self.items)
-
-    def __getitem__(self, i: int) -> Scene:
-        return self.items[i]
-
-    def __setitem__(self, i: int, value: Scene) -> None:
-        if i >= len(self.items):
-            raise IndexError
-
-        self.items[i] = value
-        self.dataChanged.emit(
-            self.createIndex(i, 0),
-            self.createIndex(i, self.COLUMN_COUNT - 1)
-        )
-
-    def __contains__(self, item: Union[Scene, Frame]) -> bool:
-        if isinstance(item, Scene):
-            return item in self.items
-        if isinstance(item, Frame):
-            for scene in self.items:
-                if item in (scene.start, scene.end):
-                    return True
-            return False
-        raise TypeError
-
-    def __getiter__(self) -> Iterator[Scene]:
-        return iter(self.items)
-
-    def add(self, start: Frame, end: Optional[Frame] = None, label: str = '') -> Scene:
-        scene = Scene(start, end, label)
-
-        if scene in self.items:
-            return scene
-
-        if scene.end > self.max_value:
-            raise ValueError('New Scene is out of bounds of output')
-
-        index = bisect_right(self.items, scene)
-        self.beginInsertRows(Qt.QModelIndex(), index, index)
-        self.items.insert(index, scene)
-        self.endInsertRows()
-
-        return scene
-
-    def remove(self, i: Union[int, Scene]) -> None:
-        if isinstance(i, Scene):
-            i = self.items.index(i)
-
-        if i >= 0 and i < len(self.items):
-            self.beginRemoveRows(Qt.QModelIndex(), i, i)
-            del(self.items[i])
-            self.endRemoveRows()
-        else:
-            raise IndexError
-
-    def get_next_frame(self, initial: Frame) -> Optional[Frame]:
-        result       = None
-        result_delta = FrameInterval(int(self.max_value))
-        for scene in self.items:
-            if 0 < scene.start - initial < result_delta:
-                result = scene.start
-                result_delta = scene.start - initial
-            if 0 < scene.end - initial < result_delta:
-                result = scene.end
-                result_delta = scene.end - initial
-
-        return result
-
-    def get_prev_frame(self, initial: Frame) -> Optional[Frame]:
-        result       = None
-        result_delta = FrameInterval(int(self.max_value))
-        for scene in self.items:
-            if 0 < initial - scene.start < result_delta:
-                result = scene.start
-                result_delta = scene.start - initial
-            if 0 < initial - scene.end < result_delta:
-                result = scene.end
-                result_delta = scene.end - initial
-
-        return result
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {name: getattr(self, name)
-                for name in self.__slots__}
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            max_value = state['max_value']
-            if not isinstance(max_value, Frame):
-                raise TypeError('\'max_value\' of a SceningList is not a Frame. It\'s most probably corrupted.')
-
-            name = state['name']
-            if not isinstance(name, str):
-                raise TypeError('\'name\' of a SceningList is not a Frame. It\'s most probably corrupted.')
-
-            items = state['items']
-            if not isinstance(items, list):
-                raise TypeError('\'items\' of a SceningList is not a List. It\'s most probably corrupted.')
-            for item in items:
-                if not isinstance(item, Scene):
-                    raise TypeError('One of the items of SceningList is not a Scene. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('SceningList lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
-
-        self.__init__(name, max_value, items)  # type: ignore
-
-
-class SceningLists(Qt.QAbstractListModel, QYAMLObject):
-    __slots__ = (
-        'items',
-    )
-    yaml_tag = '!SceningLists'
-
-    def __init__(self, items: Optional[List[SceningList]] = None) -> None:
-        super().__init__()
-        self.main = main_window()
-        self.items = items if items is not None else []
-
-    def __getitem__(self, i: int) -> SceningList:
-        return self.items[i]
-
-    def __len__(self) -> int:
-        return len(self.items)
-
-    def __getiter__(self) -> Iterator[SceningList]:
-        return iter(self.items)
-
-    def index_of(self, item: SceningList, start_i: int = 0, end_i: int = 0) -> int:
-        if end_i == 0:
-            end_i = len(self.items)
-        return self.items.index(item, start_i, end_i)
-
-    def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
-        return len(self.items)
-
-    def data(self, index: Qt.QModelIndex, role: int = Qt.Qt.UserRole) -> Any:
-        if not index.isValid():
-            return None
-        if index.row() >= len(self.items):
-            return None
-
-        if role in (Qt.Qt.DisplayRole,
-                    Qt.Qt.EditRole):
-            return self.items[index.row()].name
-        if role == Qt.Qt.UserRole:
-            return self.items[index.row()]
-        return None
-
-    def flags(self, index: Qt.QModelIndex) -> Qt.Qt.ItemFlags:
-        if not index.isValid():
-            return cast(Qt.Qt.ItemFlags, Qt.Qt.ItemIsEnabled)
-
-        return cast(Qt.Qt.ItemFlags, super().flags(index) | Qt.Qt.ItemIsEditable)
-
-    def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
-        if not index.isValid():
-            return False
-        if role not in (Qt.Qt.EditRole,
-                        Qt.Qt.UserRole):
-            return False
-        if not isinstance(value, str):
-            return False
-
-        self.items[index.row()].name = value
-        self.dataChanged.emit(index, index)
-        return True
-
-    def insertRow(self, i: int, parent: Qt.QModelIndex = Qt.QModelIndex()) -> bool:
-        self.add(i=i)
-        return True
-
-    def removeRow(self, i: int, parent: Qt.QModelIndex = Qt.QModelIndex()) -> bool:
-        try:
-            self.remove(i)
-        except IndexError:
-            return False
-
-        return True
-
-    def add(self, name: Optional[str] = None, max_value: Optional[Frame] = None, i: Optional[int] = None) -> Tuple[SceningList, int]:
-        if max_value is None:
-            max_value = self.main.current_output.end_frame
-        if i is None:
-            i = len(self.items)
-
-        self.beginInsertRows(Qt.QModelIndex(), i, i)
-        if name is None:
-            self.items.insert(i, SceningList('List {}'.format(len(self.items) + 1), max_value))
-        else:
-            self.items.insert(i, SceningList(name, max_value))
-        self.endInsertRows()
-        return self.items[i], i
-
-    def remove(self, item: Union[int, SceningList]) -> None:
-        i = item
-        if isinstance(i, SceningList):
-            i = self.items.index(i)
-
-        if i >= 0 and i < len(self.items):
-            self.beginRemoveRows(Qt.QModelIndex(), i, i)
-            del(self.items[i])
-            self.endRemoveRows()
-        else:
-            raise IndexError
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {
-            name: getattr(self, name)
-            for name in self.__slots__
-        }
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            items = state['items']
-            if not isinstance(items, list):
-                raise TypeError('\'items\' of a SceningLists is not a List. It\'s most probably corrupted.')
-            for item in items:
-                if not isinstance(item, SceningList):
-                    raise TypeError('One of the items of a SceningLists is not a SceningList. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('SceningLists lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
-
-        self.__init__(items)  # type: ignore
+from vspreview.core import (
+    AbstractMainWindow, AbstractToolbar, Frame, FrameInterval,
+    Scene, Time, TimeInterval
+)
+from vspreview.models import SceningList, SceningLists
+from vspreview.utils import (
+    add_shortcut, debug, main_window, fire_and_forget, qt_silent_call,
+    set_qobject_names, set_status_label
+)
+from vspreview.widgets import ComboBox, Notches, TimeEdit, FrameEdit
 
 
 class SceningListDialog(Qt.QDialog):
@@ -441,18 +67,16 @@ class SceningListDialog(Qt.QDialog):
         scene_layout.setObjectName('SceningListDialog.setup_ui.scene_layout')
         layout.addLayout(scene_layout)
 
-        self.start_frame_control = Qt.QSpinBox(self)
-        self.start_frame_control.setMinimum(0)
+        self.start_frame_control = FrameEdit[Frame](self)
         scene_layout.addWidget(self.start_frame_control)
 
-        self.end_frame_control = Qt.QSpinBox(self)
-        self.end_frame_control.setMinimum(0)
+        self.end_frame_control = FrameEdit[Frame](self)
         scene_layout.addWidget(self.end_frame_control)
 
-        self.start_time_control = TimeEdit(self)
+        self.start_time_control = TimeEdit[Time](self)
         scene_layout.addWidget(self.start_time_control)
 
-        self.end_time_control = TimeEdit(self)
+        self.end_time_control = TimeEdit[Time](self)
         scene_layout.addWidget(self.end_time_control)
 
         self.label_lineedit = Qt.QLineEdit(self)
@@ -467,7 +91,7 @@ class SceningListDialog(Qt.QDialog):
     def on_add_clicked(self, checked: Optional[bool] = None) -> None:
         pass
 
-    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
         if not self.isVisible():
             return
         if self.tableview.selectionModel() is None:
@@ -497,10 +121,10 @@ class SceningListDialog(Qt.QDialog):
         self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        self.start_frame_control.setMaximum(int(self.main.current_output.end_frame))
-        self.  end_frame_control.setMaximum(int(self.main.current_output.end_frame))
-        self. start_time_control.setMaximumTime(self.main.current_output.end_time)
-        self.   end_time_control.setMaximumTime(self.main.current_output.end_time)
+        self.start_frame_control.setMaximum(self.main.current_output.end_frame)
+        self.  end_frame_control.setMaximum(self.main.current_output.end_frame)
+        self. start_time_control.setMaximum(self.main.current_output.end_time)
+        self.   end_time_control.setMaximum(self.main.current_output.end_time)
 
     def on_end_frame_changed(self, value: Union[Frame, int]) -> None:
         frame = Frame(value)
@@ -512,7 +136,7 @@ class SceningListDialog(Qt.QDialog):
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
-    def on_end_time_changed(self, time: timedelta) -> None:
+    def on_end_time_changed(self, time: Time) -> None:
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
@@ -545,7 +169,7 @@ class SceningListDialog(Qt.QDialog):
             return
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
-    def on_start_time_changed(self, time: timedelta) -> None:
+    def on_start_time_changed(self, time: Time) -> None:
         index = self.tableview.selectionModel().selectedRows()[0]
         if not index.isValid():
             return
@@ -575,11 +199,11 @@ class SceningListDialog(Qt.QDialog):
             return
         index = selected.indexes()[0]
         scene = self.scening_list[index.row()]
-        qt_silent_call(self.start_frame_control.setValue, scene.start)
-        qt_silent_call(self.  end_frame_control.setValue, scene.end)
-        qt_silent_call(self. start_time_control.setTime, self.main.current_output.to_timedelta(scene.start))
-        qt_silent_call(self.   end_time_control.setTime, self.main.current_output.to_timedelta(scene.end))
-        qt_silent_call(self.     label_lineedit.setText,     scene.label)
+        qt_silent_call(self.start_frame_control.setValue,     scene.start)
+        qt_silent_call(self.  end_frame_control.setValue,     scene.end)
+        qt_silent_call(self. start_time_control.setValue, Time(scene.start))
+        qt_silent_call(self.   end_time_control.setValue, Time(scene.end))
+        qt_silent_call(self.     label_lineedit.setText,      scene.label)
 
 
 class SceningToolbar(AbstractToolbar):
@@ -628,7 +252,7 @@ class SceningToolbar(AbstractToolbar):
         self.export_single_line_button     .clicked.connect(self.export_single_line)
         self.export_template_lineedit  .textChanged.connect(self.check_remove_export_possibility)
         self.import_file_button            .clicked.connect(self.on_import_file_clicked)
-        self.items_combobox           .indexChanged.connect(self.on_current_list_changed)
+        self.items_combobox           .valueChanged.connect(self.on_current_list_changed)
         self.remove_at_current_frame_button.clicked.connect(self.on_remove_at_current_frame_clicked)
         self.remove_last_from_list_button  .clicked.connect(self.on_remove_last_from_list_clicked)
         self.remove_list_button            .clicked.connect(self.on_remove_list_clicked)
@@ -672,9 +296,7 @@ class SceningToolbar(AbstractToolbar):
         layout_line_1.setObjectName('SceningToolbar.setup_ui.layout_line_1')
         layout.addLayout(layout_line_1)
 
-        self.items_combobox = ComboBox(self)
-        # self.items_combobox.setEditable(True)
-        # self.items_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
+        self.items_combobox = ComboBox[SceningList](self)
         self.items_combobox.setDuplicatesEnabled(True)
         self.items_combobox.setMinimumContentsLength(4)
         layout_line_1.addWidget(self.items_combobox)
@@ -812,7 +434,7 @@ class SceningToolbar(AbstractToolbar):
         self.notches_changed.emit(self)
         self.scening_list_dialog.on_current_output_changed(index, prev_index)
 
-    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
         self.check_remove_export_possibility()
         self.scening_list_dialog.on_current_frame_changed(frame, time)
 
@@ -826,12 +448,11 @@ class SceningToolbar(AbstractToolbar):
 
     @property
     def current_list(self) -> Optional[SceningList]:
-        return cast(Optional[SceningList], self.items_combobox.currentData())
+        return self.items_combobox.currentValue()
 
     @current_list.setter
     def current_list(self, item: SceningList) -> None:
-        i = self.current_lists.index(item)
-        self.current_list_index = i
+        self.items_combobox.setCurrentValue(item)
 
     @property
     def current_lists(self) -> SceningLists:
@@ -853,21 +474,21 @@ class SceningToolbar(AbstractToolbar):
         _, i = self.current_lists.add()
         self.current_list_index = i
 
-    def on_current_list_changed(self, new_index: int, old_index: int) -> None:
-        if new_index == -1:
+    def on_current_list_changed(self, new_value: SceningList, old_value: SceningList) -> None:
+        if new_value is not None:
             self.remove_list_button.setEnabled(False)
             self.  view_list_button.setEnabled(False)
         else:
             self.remove_list_button.setEnabled(True)
             self.  view_list_button.setEnabled(True)
-            self.current_list.rowsInserted.connect(self._on_list_items_changed)  # type: ignore
-            self.current_list.rowsRemoved .connect(self._on_list_items_changed)  # type: ignore
-            self.scening_list_dialog.on_current_list_changed(self.current_list)
+            new_value.rowsInserted.connect(self._on_list_items_changed)
+            new_value.rowsRemoved .connect(self._on_list_items_changed)
+            self.scening_list_dialog.on_current_list_changed(new_value)
 
-        if old_index != -1:
+        if old_value is not None:
             try:
-                self.current_lists[old_index].rowsInserted.disconnect(self._on_list_items_changed)  # type: ignore
-                self.current_lists[old_index].rowsRemoved .disconnect(self._on_list_items_changed)  # type: ignore
+                old_value.rowsInserted.disconnect(self._on_list_items_changed)  # type: ignore
+                old_value.rowsRemoved .disconnect(self._on_list_items_changed)  # type: ignore
             except (IndexError, TypeError):
                 pass
 
@@ -1009,24 +630,24 @@ class SceningToolbar(AbstractToolbar):
 
         subs = pysubs2.load(str(path))
         for line in subs:
-            t_start = timedelta(milliseconds=line.start)
-            t_end   = timedelta(milliseconds=line.end)
+            t_start = Time(milliseconds=line.start)
+            t_end   = Time(milliseconds=line.end)
             try:
-                scening_list.add(self.main.current_output.to_frame(t_start), self.main.current_output.to_frame(t_end))
+                scening_list.add(Frame(t_start), Frame(t_end))
             except ValueError:
                 out_of_range_count += 1
 
     def import_cue(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         from cueparser import CueSheet
 
-        def offset_to_timedelta(offset: str) -> Optional[timedelta]:
+        def offset_to_time(offset: str) -> Optional[Time]:
             pattern = re.compile(r'(\d{1,2}):(\d{1,2}):(\d{1,2})')
             match = pattern.match(offset)
             if match is None:
                 return None
-            return timedelta(
-                minutes = int(match[1]),
-                seconds = int(match[2]),
+            return Time(
+                minutes      = int(match[1]),
+                seconds      = int(match[2]),
                 milliseconds = int(match[3]) / 75 * 1000
             )
 
@@ -1038,15 +659,15 @@ class SceningToolbar(AbstractToolbar):
         for track in cue_sheet.tracks:
             if track.offset is None:
                 continue
-            offset = offset_to_timedelta(track.offset)
+            offset = offset_to_time(track.offset)
             if offset is None:
                 logging.warning(f'Scening import: INDEX timestamp \'{track.offset}\' format isn\'t suported.')
                 continue
-            start = self.main.current_output.to_frame(offset)
+            start = Frame(offset)
 
             end = None
             if track.duration is not None:
-                end = self.main.current_output.to_frame(offset + track.duration)
+                end = Frame(offset + TimeInterval(track.duration))
 
             label = ''
             if track.title is not None:
@@ -1083,7 +704,7 @@ class SceningToolbar(AbstractToolbar):
             match = timestamp_pattern.match(start_element.text)
             if match is None:
                 continue
-            start =  self.main.current_output.to_frame(timedelta(
+            start =  Frame(Time(
                 hours   =   int(match[1]),
                 minutes =   int(match[2]),
                 seconds = float(match[3])
@@ -1094,7 +715,7 @@ class SceningToolbar(AbstractToolbar):
             if end_element is not None and end_element.text is not None:
                 match = timestamp_pattern.match(end_element.text)
                 if match is not None:
-                    end = self.main.current_output.to_frame(timedelta(
+                    end = Frame(Time(
                         hours   =   int(match[1]),
                         minutes =   int(match[2]),
                         seconds = float(match[3])
@@ -1113,13 +734,13 @@ class SceningToolbar(AbstractToolbar):
     def import_ogm_chapters(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         pattern = re.compile(r'(CHAPTER\d+)=(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)\n\1NAME=(.*)', re.RegexFlag.MULTILINE)
         for match in pattern.finditer(path.read_text()):
-            time = timedelta(
+            time = Time(
                 hours   =   int(match[2]),
                 minutes =   int(match[3]),
                 seconds = float(match[4])
             )
             try:
-                scening_list.add(self.main.current_output.to_frame(time), label=match[5])
+                scening_list.add(Frame(time), label=match[5])
             except ValueError:
                 out_of_range_count += 1
 
@@ -1141,10 +762,10 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_matroska_timestamps_v2(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
-        timestamps: List[timedelta] = []
+        timestamps: List[Time] = []
         for line in path.read_text().splitlines():
             try:
-                timestamps.append(timedelta(milliseconds=float(line)))
+                timestamps.append(Time(milliseconds=float(line)))
             except ValueError:
                 continue
 
@@ -1160,12 +781,14 @@ class SceningToolbar(AbstractToolbar):
         scene_start = Frame(0)
         scene_end: Optional[Frame] = None
         for i in range(1, len(deltas)):
-            if abs(round((deltas[i] - scene_delta).total_seconds(), 6)) <= 0.000_001:
+            if abs(round((deltas[i] - scene_delta).value.total_seconds(), 6)) <= 0.000_001:
                 continue
             # TODO: investigate, why offset by -1 is necessary here
             scene_end = Frame(i - 1)
             try:
-                scening_list.add(scene_start, scene_end, '{:.3f} fps'.format(1 / scene_delta.total_seconds()))
+                scening_list.add(
+                    scene_start, scene_end,
+                    '{:.3f} fps'.format(1 / scene_delta.value.total_seconds()))
             except ValueError:
                 out_of_range_count += 1
             scene_start = Frame(i)
@@ -1174,7 +797,10 @@ class SceningToolbar(AbstractToolbar):
 
         if scene_end is None:
             try:
-                scening_list.add(scene_start, Frame(len(timestamps) - 1), '{:.3f} fps'.format(1 / scene_delta.total_seconds()))
+                scening_list.add(
+                    scene_start, Frame(len(timestamps) - 1),
+                    '{:.3f} fps'.format(1 / scene_delta.value.total_seconds())
+                )
             except ValueError:
                 out_of_range_count += 1
 

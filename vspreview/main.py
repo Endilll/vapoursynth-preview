@@ -1,19 +1,26 @@
 from __future__ import annotations
 
-from   datetime import timedelta
 import logging
 import os
 from   pathlib  import Path
 import sys
-from   typing   import Any, cast, Mapping, Optional
+from   typing   import Any, cast, Mapping, Optional, Union
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
 
-from vspreview.core    import AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame, FrameInterval, Output
-from vspreview.models  import Outputs
-from vspreview.utils   import add_shortcut, debug, get_usable_cpus_count, qt_silent_call, set_qobject_names
-from vspreview.widgets import ComboBox, StatusBar, TimeEdit, Timeline
+from vspreview.core import (
+    AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame,
+    FrameInterval, Output, Time, TimeInterval
+)
+from vspreview.models import Outputs
+from vspreview.utils import (
+    add_shortcut, debug, get_usable_cpus_count, qt_silent_call,
+    set_qobject_names
+)
+from vspreview.widgets import (
+    ComboBox, StatusBar, TimeEdit, Timeline, FrameEdit
+)
 
 # TODO: design settings part
 # TODO: deisgn keyboard layout
@@ -111,14 +118,14 @@ class MainToolbar(AbstractToolbar):
             'Single Image (*.png)': self.save_as_png
         }
 
-        self.outputs_combobox.currentIndexChanged.connect(          self.main.switch_output)
-        self.frame_control          .valueChanged.connect(lambda f: self.main.switch_frame(f=Frame(f)))
-        self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(t=t))  # type: ignore
-        self.copy_frame_button           .clicked.connect(          self.on_copy_frame_button_clicked)
-        self.copy_timestamp_button       .clicked.connect(          self.on_copy_timestamp_button_clicked)
-        self.zoom_combobox    .currentTextChanged.connect(          self.on_zoom_changed)
-        self.save_as_button              .clicked.connect(          self.on_save_as_clicked)
-        self.switch_timeline_mode_button .clicked.connect(          self.on_switch_timeline_mode_clicked)
+        self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
+        self.frame_control          .valueChanged.connect(self.main.switch_frame)
+        self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
+        self.copy_frame_button           .clicked.connect(self.on_copy_frame_button_clicked)
+        self.copy_timestamp_button       .clicked.connect(self.on_copy_timestamp_button_clicked)
+        self.zoom_combobox    .currentTextChanged.connect(self.on_zoom_changed)
+        self.save_as_button              .clicked.connect(self.on_save_as_clicked)
+        self.switch_timeline_mode_button .clicked.connect(self.on_switch_timeline_mode_clicked)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_1, lambda: self.main.switch_output(0))
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_2, lambda: self.main.switch_output(1))
@@ -137,29 +144,28 @@ class MainToolbar(AbstractToolbar):
         layout = Qt.QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.outputs_combobox = ComboBox(self)
+        self.outputs_combobox = ComboBox[Output](self)
         self.outputs_combobox.setEditable(True)
         self.outputs_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.outputs_combobox.setDuplicatesEnabled(True)
         self.outputs_combobox.setSizeAdjustPolicy(Qt.QComboBox.AdjustToContents)
         layout.addWidget(self.outputs_combobox)
 
-        self.frame_control = Qt.QSpinBox(self)
-        self.frame_control.setMinimum(0)
+        self.frame_control = FrameEdit[Frame](self)
         layout.addWidget(self.frame_control)
 
         self.copy_frame_button = Qt.QPushButton(self)
         self.copy_frame_button.setText('⎘')
         layout.addWidget(self.copy_frame_button)
 
-        self.time_control = TimeEdit(self)
+        self.time_control = TimeEdit[Time](self)
         layout.addWidget(self.time_control)
 
         self.copy_timestamp_button = Qt.QPushButton(self)
         self.copy_timestamp_button.setText('⎘')
         layout.addWidget(self.copy_timestamp_button)
 
-        self.zoom_combobox = ComboBox(self)
+        self.zoom_combobox = ComboBox[float](self)
         self.zoom_combobox.setMinimumContentsLength(4)
         layout.addWidget(self.zoom_combobox)
 
@@ -175,14 +181,14 @@ class MainToolbar(AbstractToolbar):
 
         self.toggle_button.setVisible(False)
 
-    def on_current_frame_changed(self, frame: Frame, time: timedelta) -> None:
+    def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
         qt_silent_call(self.frame_control.setValue, frame)
-        qt_silent_call(self. time_control.setTime,  time)
+        qt_silent_call(self. time_control.setValue,  time)
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.outputs_combobox.setCurrentIndex, index)
-        qt_silent_call(self.   frame_control.setMaximum     , self.main.current_output.end_frame)
-        qt_silent_call(self.    time_control.setMaximumTime , self.main.current_output.end_time)
+        qt_silent_call(self.   frame_control.setMaximum, self.main.current_output.end_frame)
+        qt_silent_call(self.    time_control.setMaximum, self.main.current_output.end_time)
 
 
     def rescan_outputs(self) -> None:
@@ -528,11 +534,11 @@ class MainWindow(AbstractMainWindow):
 
         return frame_pixmap
 
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[timedelta] = None, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
         if frame is not None:
-            time = self.current_output.to_timedelta(frame)
+            time = Time(frame)
         elif time is not None:
-            frame = self.current_output.to_frame(time)
+            frame = Frame(time)
         else:
             logging.debug('switch_frame(): both frame and time is None')
             return
@@ -550,10 +556,14 @@ class MainWindow(AbstractMainWindow):
         if render_frame:
             self.current_output.graphics_scene_item.setPixmap(self.render_frame(frame, self.current_output))
 
-    def switch_output(self, index: int) -> None:
+    def switch_output(self, value: Union[int, Output]) -> None:
         if len(self.outputs) == 0:
             # TODO: consider returning False
             return
+        if isinstance(value, Output):
+            index = self.outputs.index_of(value)
+        else:
+            index = value
 
         prev_index = self.toolbars.main.outputs_combobox.currentIndex()
         if index < 0 or index >= len(self.outputs):
@@ -564,7 +574,7 @@ class MainWindow(AbstractMainWindow):
 
         # current_output relies on outputs_combobox
         self.toolbars.main.on_current_output_changed(index, prev_index)
-        self.timeline.set_duration(self.current_output.total_frames, self.current_output.duration)
+        self.timeline.set_end_frame(self.current_output.end_frame)
         self.current_frame = self.current_output.last_showed_frame
 
         for output in self.outputs:
@@ -584,6 +594,10 @@ class MainWindow(AbstractMainWindow):
         #    return cast(Output, data)
         # return None
         return output
+
+    @current_output.setter
+    def current_output(self, value: Output) -> None:
+        self.switch_output(self.outputs.index_of(value))
 
     @property  # type: ignore
     def current_frame(self) -> Frame:  # type: ignore
@@ -614,13 +628,11 @@ class MainWindow(AbstractMainWindow):
         self.toolbars.main.zoom_combobox.setCurrentIndex(new_index)
 
     def update_statusbar_output_info(self, output: Optional[Output] = None) -> None:
-        from vspreview.utils import strfdelta
-
         if output is None:
             output = self.current_output
 
         self.statusbar.total_frames_label.setText('{} frames '.format(output.total_frames))
-        self.    statusbar.duration_label.setText('{} '       .format(strfdelta(output.duration, '%H:%M:%S.%Z')))
+        self.    statusbar.duration_label.setText('{} '       .format(output.total_time))
         self.  statusbar.resolution_label.setText('{}x{} '    .format(output.width, output.height))
         self.statusbar.pixel_format_label.setText('{} '       .format(output.format.name))
         if output.fps_den != 0:

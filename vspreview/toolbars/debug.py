@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing   import Optional
 
 from PyQt5 import Qt

@@ -389,6 +389,7 @@ qevent_info = {
     65535: ('MaxUser', 'last user event id'),
 }
 
+
 class Application(Qt.QApplication):
     enter_count = 0
 
@@ -419,9 +420,6 @@ class Application(Qt.QApplication):
                     pass
 
             recursive_indent = 2 * (self.enter_count - 1)
-
-            if type(obj).__name__ != 'Timeline':
-                return ret
 
             print(f'{time:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {" " * recursive_indent + event_name:<30}, name: {obj_name}')
 

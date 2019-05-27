@@ -26,6 +26,9 @@ class ZoomLevels(Qt.QAbstractListModel):
     def __getiter__(self) -> Iterator[float]:
         return iter(self.levels)
 
+    def index_of(self, item: float) -> int:
+        return self.levels.index(item)
+
     def data(self, index: Qt.QModelIndex, role: int = Qt.Qt.UserRole) -> Any:
         if (not index.isValid()
                 or index.row() >= len(self.levels)):

@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 from   collections import deque
-from   datetime    import timedelta
 import logging
 from   time        import perf_counter_ns
 from   typing      import Any, cast, Deque, Mapping, Optional, Union
 
 from PyQt5 import Qt
 
-from vspreview.core    import AbstractMainWindow, AbstractToolbar, Frame, FrameInterval
-from vspreview.utils   import add_shortcut, debug, qt_silent_call, set_qobject_names
-from vspreview.widgets import TimeEdit
+from vspreview.core import (
+    AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, Time,
+    TimeInterval
+)
+from vspreview.utils import (
+    add_shortcut, debug, qt_silent_call, set_qobject_names
+)
+from vspreview.widgets import FrameEdit, TimeEdit
 
 
 class PlaybackToolbar(AbstractToolbar):
@@ -20,8 +24,8 @@ class PlaybackToolbar(AbstractToolbar):
         'seek_to_next_button', 'seek_n_frames_f_button',
         'seek_frame_control', 'seek_time_control',
         'fps_spinbox', 'fps_unlimited_checkbox', 'fps_reset_button',
-        'play_start_time', 'play_start_frame', 'play_end_time', 'play_end_frame',
-        'play_buffer', 'toggle_button',
+        'play_start_time', 'play_start_frame', 'play_end_time',
+        'play_end_frame', 'play_buffer', 'toggle_button',
     )
 
     yaml_tag = '!PlaybackToolbar'
@@ -98,16 +102,16 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_n_frames_f_button.setToolTip('Seek N Frames Forward')
         layout.addWidget(self.seek_n_frames_f_button)
 
-        self.seek_frame_control = Qt.QSpinBox(self)
-        self.seek_frame_control.setMinimum(1)
+        self.seek_frame_control = FrameEdit[FrameInterval](self)
+        self.seek_frame_control.setMinimum(FrameInterval(1))
         self.seek_frame_control.setToolTip('Seek N Frames Step')
         layout.addWidget(self.seek_frame_control)
 
-        self.seek_time_control = TimeEdit(self)
+        self.seek_time_control = TimeEdit[TimeInterval](self)
         layout.addWidget(self.seek_time_control)
 
         self.fps_spinbox = Qt.QDoubleSpinBox(self)
-        self.fps_spinbox.setRange(1.0, 9999.0)
+        self.fps_spinbox.setRange(0.001, 9999.0)
         self.fps_spinbox.setDecimals(3)
         self.fps_spinbox.setSuffix(' fps')
         layout.addWidget(self.fps_spinbox)
@@ -123,9 +127,10 @@ class PlaybackToolbar(AbstractToolbar):
         layout.addStretch()
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        qt_silent_call(self.seek_frame_control.setMaximum    , self.main.current_output.end_frame)
-        qt_silent_call(self. seek_time_control.setMaximumTime, self.main.current_output.end_time)
-        qt_silent_call(self.       fps_spinbox.setValue      , self.main.current_output.play_fps)
+        qt_silent_call(self.seek_frame_control.setMaximum, self.main.current_output.total_frames)
+        qt_silent_call(self. seek_time_control.setMaximum, self.main.current_output.total_time)
+        qt_silent_call(self. seek_time_control.setMinimum, TimeInterval(FrameInterval(1)))
+        qt_silent_call(self.       fps_spinbox.setValue  , self.main.current_output.play_fps)
 
 
     def play(self) -> None:
@@ -223,12 +228,11 @@ class PlaybackToolbar(AbstractToolbar):
         self.stop()
         self.main.current_frame = new_pos
 
-    def on_seek_frame_changed(self, frame: Union[Frame, int]) -> None:
-        frame = Frame(frame)
-        qt_silent_call(self.seek_time_control.setTime, self.main.current_output.to_timedelta(frame))
+    def on_seek_frame_changed(self, frame: FrameInterval) -> None:
+        qt_silent_call(self.seek_time_control.setValue, TimeInterval(frame))
 
-    def on_seek_time_changed(self, time: timedelta) -> None:
-        qt_silent_call(self.seek_frame_control.setValue, self.main.current_output.to_frame(time))
+    def on_seek_time_changed(self, time: TimeInterval) -> None:
+        qt_silent_call(self.seek_frame_control.setValue, FrameInterval(time))
 
     def on_play_pause_clicked(self, checked: bool) -> None:
         if checked:
@@ -283,7 +287,7 @@ class PlaybackToolbar(AbstractToolbar):
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
             seek_interval_frame = state['seek_interval_frame']
-            if not isinstance(seek_interval_frame, int):
+            if not isinstance(seek_interval_frame, FrameInterval):
                 raise TypeError
             self.seek_frame_control.setValue(seek_interval_frame)
         except (KeyError, TypeError):
