@@ -640,6 +640,12 @@ class MainWindow(AbstractMainWindow):
         else:
             self.statusbar.fps_label.setText('{}/{} fps '         .format(output.fps_num, output.fps_den))
 
+    def event(self, event: Qt.QEvent) -> bool:
+        if event.type() == Qt.QEvent.LayoutRequest:
+            self.timeline.full_repaint()
+
+        return super().event(event)
+
     # misc methods
 
     def showEvent(self, event: Qt.QShowEvent) -> None:
