@@ -149,6 +149,11 @@ def set_qobject_names(obj: object) -> None:
 
 
 def get_usable_cpus_count() -> int:
-    from psutil import Process
+    from psutil import cpu_count, Process
 
-    return len(Process().cpu_affinity())
+    try:
+        count = len(Process().cpu_affinity())
+    except AttributeError:
+        count = cpu_count()
+
+    return count
