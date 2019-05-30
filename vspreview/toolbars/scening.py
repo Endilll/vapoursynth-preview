@@ -781,14 +781,14 @@ class SceningToolbar(AbstractToolbar):
         scene_start = Frame(0)
         scene_end: Optional[Frame] = None
         for i in range(1, len(deltas)):
-            if abs(round((deltas[i] - scene_delta).value.total_seconds(), 6)) <= 0.000_001:
+            if abs(round(float(deltas[i] - scene_delta), 6)) <= 0.000_001:
                 continue
             # TODO: investigate, why offset by -1 is necessary here
             scene_end = Frame(i - 1)
             try:
                 scening_list.add(
                     scene_start, scene_end,
-                    '{:.3f} fps'.format(1 / scene_delta.value.total_seconds()))
+                    '{:.3f} fps'.format(1 / float(scene_delta)))
             except ValueError:
                 out_of_range_count += 1
             scene_start = Frame(i)
@@ -799,7 +799,7 @@ class SceningToolbar(AbstractToolbar):
             try:
                 scening_list.add(
                     scene_start, Frame(len(timestamps) - 1),
-                    '{:.3f} fps'.format(1 / scene_delta.value.total_seconds())
+                    '{:.3f} fps'.format(1 / float(scene_delta))
                 )
             except ValueError:
                 out_of_range_count += 1

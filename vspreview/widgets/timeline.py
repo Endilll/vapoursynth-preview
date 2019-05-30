@@ -387,24 +387,24 @@ class Timeline(Qt.QWidget):
     def t_to_x(self, t: TimeType) -> int:
         width = self.rect_f.width()
         try:
-            x = round(t.value.total_seconds() / self.end_t.value.total_seconds() * width)
+            x = round(float(t) / float(self.end_t) * width)
         except ZeroDivisionError:
             x = 0
         return x
 
     def x_to_t(self, x: int, ty: Type[TimeType]) -> TimeType:
         width = self.rect_f.width()
-        return ty(seconds=(x * self.end_t.value.total_seconds() / width))
+        return ty(seconds=(x * float(self.end_t) / width))
 
     def f_to_x(self, f: FrameType) -> int:
         width = self.rect_f.width()
         try:
-            x = round(f.value / self.end_f.value * width)
+            x = round(int(f) / int(self.end_f) * width)
         except ZeroDivisionError:
             x = 0
         return x
 
     def x_to_f(self, x: int, ty: Type[FrameType]) -> FrameType:
         width = self.rect_f.width()
-        value = round(x / width * self.end_f.value)
+        value = round(x / width * int(self.end_f))
         return ty(value)

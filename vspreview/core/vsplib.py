@@ -74,6 +74,9 @@ class Frame(YAMLObject):
     def __int__(self) -> int:
         return self.value
 
+    def __float__(self) -> float:
+        return float(self.value)
+
     def __index__(self) -> int:
         return int(self)
 
@@ -172,6 +175,9 @@ class FrameInterval(YAMLObject):
 
     def __int__(self) -> int:
         return self.value
+
+    def __float__(self) -> float:
+        return float(self.value)
 
     def __index__(self) -> int:
         return int(self)
@@ -273,6 +279,9 @@ class Time(YAMLObject):
 
         return strfdelta(self, '%h:%M:%S.%Z')
 
+    def __float__(self) -> float:
+        return self.value.total_seconds()
+
     def __repr__(self) -> str:
         return f'Time({self.value})'
 
@@ -371,6 +380,9 @@ class TimeInterval(YAMLObject):
         from vspreview.utils import strfdelta
 
         return strfdelta(self, '%h:%M:%S.%Z')
+
+    def __float__(self) -> float:
+        return self.value.total_seconds()
 
     def __repr__(self) -> str:
         return f'TimeInterval({self.value})'
@@ -534,7 +546,7 @@ class Output(YAMLObject):
         self.format       = pixel_format
         self.total_frames = FrameInterval(self.vs_output.num_frames)
         self.total_time   = self.to_time_interval(self.total_frames - FrameInterval(1))
-        self.end_frame    = Frame(self.total_frames.value - 1)
+        self.end_frame    = Frame(int(self.total_frames) - 1)
         self.end_time     = self.to_time(self.end_frame)
 
         # set by load_script() when it prepares graphics scene item
@@ -561,13 +573,13 @@ class Output(YAMLObject):
         return frame_num / self.fps
 
     def to_frame(self, time: Time) -> Frame:
-        return Frame(self._calculate_frame(time.value.total_seconds()))
+        return Frame(self._calculate_frame(float(time)))
 
     def to_time(self, frame: Frame) -> Time:
         return Time(seconds=self._calculate_seconds(int(frame)))
 
     def to_frame_interval(self, time_interval: TimeInterval) -> FrameInterval:
-        return FrameInterval(self._calculate_frame(time_interval.value.total_seconds()))
+        return FrameInterval(self._calculate_frame(float(time_interval)))
 
     def to_time_interval(self, frame_interval: FrameInterval) -> TimeInterval:
         return TimeInterval(seconds=self._calculate_seconds(int(frame_interval)))

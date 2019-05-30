@@ -170,19 +170,19 @@ class FrameEdit(Qt.QSpinBox, Generic[FrameType]):
         return self.type(super().value())
 
     def setValue(self, newValue: FrameType) -> None:  # type: ignore
-        super().setValue(newValue.value)
+        super().setValue(int(newValue))
 
     def minimum(self) -> FrameType:  # type: ignore
         return self.type(super().minimum())
 
     def setMinimum(self, newValue: FrameType) -> None:  # type: ignore
-        super().setMinimum(newValue.value)
+        super().setMinimum(int(newValue))
 
     def maximum(self) -> FrameType:  # type: ignore
         return self.type(super().maximum())
 
     def setMaximum(self, newValue: FrameType) -> None:  # type: ignore
-        super().setMaximum(newValue.value)
+        super().setMaximum(int(newValue))
 
 
 class _FrameEdit_Frame(FrameEdit):
