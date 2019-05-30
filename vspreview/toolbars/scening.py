@@ -476,14 +476,14 @@ class SceningToolbar(AbstractToolbar):
 
     def on_current_list_changed(self, new_value: SceningList, old_value: SceningList) -> None:
         if new_value is not None:
-            self.remove_list_button.setEnabled(False)
-            self.  view_list_button.setEnabled(False)
-        else:
             self.remove_list_button.setEnabled(True)
             self.  view_list_button.setEnabled(True)
-            new_value.rowsInserted.connect(self._on_list_items_changed)
-            new_value.rowsRemoved .connect(self._on_list_items_changed)
+            new_value.rowsInserted.connect(self._on_list_items_changed)  # type: ignore
+            new_value.rowsRemoved .connect(self._on_list_items_changed)  # type: ignore
             self.scening_list_dialog.on_current_list_changed(new_value)
+        else:
+            self.remove_list_button.setEnabled(False)
+            self.  view_list_button.setEnabled(False)
 
         if old_value is not None:
             try:
