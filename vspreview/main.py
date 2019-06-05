@@ -22,17 +22,20 @@ from vspreview.widgets import (
     ComboBox, StatusBar, TimeEdit, Timeline, FrameEdit
 )
 
-# TODO: design settings part
+
+# TODO: design settings
 # TODO: deisgn keyboard layout
 # TODO: VFR support
 # TODO: move to pyside2, but it lacks single Qt namespace
-#       with everything imported and isn't type annotated.
+#       with everything imported and it isn't type annotated.
 #       See https://bugreports.qt.io/browse/PYSIDE-735
 # TODO: get rid of magical constants related to 'pixel' sizes
 #       (their actual units are yet to be discovered)
-# TODO: implement VSEdit-like benchmark
 # TODO: move from QGraphicsView to QLabel
 # TODO: utilize Qt's signals
+# TODO: save window position
+# TODO: make use of alpha channel of outputs
+# TODO: respect cursor position when zooming in and out
 
 
 class ScriptErrorDialog(Qt.QDialog):
