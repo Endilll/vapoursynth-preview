@@ -57,7 +57,8 @@ class DebugToolbar(AbstractToolbar):
 
 
     def test_button_clicked(self, checked: Optional[bool] = None) -> None:
-        pass
+        from vspreview.utils import vs_clear_cache
+        # vs_clear_cache()
 
     def exec_button_clicked(self, checked: Optional[bool] = None) -> None:
         try:

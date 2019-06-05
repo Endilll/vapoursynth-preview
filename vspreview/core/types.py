@@ -104,14 +104,12 @@ class Frame(YAMLObject):
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            value = state['value']
-            if not isinstance(value, int):
-                raise TypeError('Value of Frame isn\'t an integer. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('Frame lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+        from vspreview.utils import try_load
 
-        self.__init__(value)  # type: ignore
+        try_load(
+            state, 'value', int, self.__init__,  # type: ignore
+            'Failed to load Frame instance'
+        )
 
 
 class FrameInterval(YAMLObject):
@@ -206,14 +204,12 @@ class FrameInterval(YAMLObject):
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            value = state['value']
-            if not isinstance(value, int):
-                raise TypeError('Value of FrameInterval isn\'t an integer. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('FrameInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+        from vspreview.utils import try_load
 
-        self.__init__(value)  # type: ignore
+        try_load(
+            state, 'value', int, self.__init__,  # type: ignore
+            'Failed to load FrameInterval instance'
+        )
 
 
 FrameType = TypeVar('FrameType', Frame, FrameInterval)
@@ -303,14 +299,12 @@ class Time(YAMLObject):
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            value = state['value']
-            if not isinstance(value, timedelta):
-                raise TypeError('Value of Time isn\'t an timedelta. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('Time lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+        from vspreview.utils import try_load
 
-        self.__init__(value)  # type: ignore
+        try_load(
+            state, 'value', timedelta, self.__init__,  # type: ignore
+            'Failed to load Time instance'
+        )
 
 
 class TimeInterval(YAMLObject):
@@ -335,7 +329,7 @@ class TimeInterval(YAMLObject):
         elif init_value is None:
             self.value = timedelta()
         else:
-            raise TypeError()
+            raise TypeError
 
     def __add__(self, other: TimeInterval) -> TimeInterval:
         return TimeInterval(self.value + other.value)
@@ -405,14 +399,12 @@ class TimeInterval(YAMLObject):
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            value = state['value']
-            if not isinstance(value, timedelta):
-                raise TypeError('Value of TimeInterval isn\'t an timedelta. It\'s most probably corrupted.')
-        except KeyError:
-            raise KeyError('TimeInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+        from vspreview.utils import try_load
 
-        self.__init__(value)  # type: ignore
+        try_load(
+            state, 'value', timedelta, self.__init__,  # type: ignore
+            'Failed to load TimeInterval instance'
+        )
 
 
 TimeType = TypeVar('TimeType', Time, TimeInterval)
@@ -692,7 +684,7 @@ class Output(YAMLObject):
         if not hasattr(self, 'name'):
             self.name = 'Output ' + str(self.index)
         if (not hasattr(self, 'last_showed_frame')
-                or self.last_showed_frame > self.end_frame):
+                or self.last_showed_frame > self.end_frame):  # pylint: disable=access-member-before-definition
             self.last_showed_frame: Frame = Frame(0)
         if not hasattr(self, 'scening_lists'):
             self.scening_lists: SceningLists = SceningLists()
@@ -717,7 +709,7 @@ class Output(YAMLObject):
 
         vs_output = vs.core.std.FlipVertical(vs_output)
 
-        if vs_output.format == vs.COMPATBGR32:
+        if vs_output.format == vs.COMPATBGR32:  # type: ignore
             return vs_output
 
         is_subsampled = vs_output.format.subsampling_w != 0 or vs_output.format.subsampling_h != 0
@@ -750,35 +742,41 @@ class Output(YAMLObject):
         return TimeInterval(seconds=self._calculate_seconds(int(frame_interval)))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {attr_name: getattr(self, attr_name)
-                for attr_name in self.storable_attrs}
+        return {
+            attr_name: getattr(self, attr_name)
+            for attr_name in self.storable_attrs
+        }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            name = state['name']
-            if not isinstance(name, str):
-                raise TypeError
-            self.name = name
-        except (KeyError, TypeError):
-            logging.warning(f'Storage loading: output {self.index}: failed to parse name.')
+        from vspreview.models import SceningLists
+        from vspreview.utils  import try_load
 
+        self.name = ''
+        try_load(
+            state, 'name', str, self.name,
+            'Storage loading: Output: failed to parse name.'
+        )
+
+        self.last_showed_frame = Frame(0)
         try:
-            self.last_showed_frame = state['last_showed_frame']
-        except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: failed to parse last showed frame.')
+            try_load(
+                state, 'last_showed_frame', Frame, self.last_showed_frame,
+                'Storage loading: Output: failed to parse last showed frame.'
+            )
         except IndexError:
-            logging.warning(f'Storage loading: Output: last showed frame is out of range.')
+            logging.warning('Storage loading: Output: last showed frame is out of range.')
 
-        try:
-            self.scening_lists = state['scening_lists']
-        except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: scening lists weren\'t parsed successfully.')
+        self.scening_lists = SceningLists()
+        try_load(
+            state, 'scening_lists', SceningLists, self.scening_lists,
+            'Storage loading: Output: scening lists weren\'t parsed successfully.'
+        )
 
         try:
             play_fps = state['play_fps']
             if not isinstance(play_fps, float):
                 raise TypeError
-            if play_fps >= 1.0:
+            if play_fps > 0:
                 self.play_fps = play_fps
         except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: play fps weren\'t parsed successfully.')
+            logging.warning('Storage loading: Output: play fps weren\'t parsed successfully.')

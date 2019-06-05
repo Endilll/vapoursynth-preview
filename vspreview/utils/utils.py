@@ -4,8 +4,8 @@ from   functools import lru_cache, partial, wraps
 import logging
 from   string    import Template
 from   typing    import (
-    Any, Callable, MutableMapping, Optional, Type, TYPE_CHECKING, TypeVar,
-    Union
+    Any, Callable, Mapping, MutableMapping, Optional, Type, TYPE_CHECKING,
+    TypeVar, Union,
 )
 
 from PyQt5 import Qt
@@ -140,12 +140,21 @@ def method_dispatch(func: Callable[..., T]) -> Callable[..., T]:
 
 
 def set_qobject_names(obj: object) -> None:
-    if hasattr(obj, '__slots__'):
-        for attr_name in obj.__slots__:
-            attr = getattr(obj, attr_name)
-            if not isinstance(attr, Qt.QObject):
-                continue
-            attr.setObjectName(type(obj).__name__ + '.' + attr_name)
+    from vspreview.core import AbstractToolbar
+
+    if not hasattr(obj, '__slots__'):
+        return
+
+    slots = list(obj.__slots__)
+
+    if isinstance(obj, AbstractToolbar) and 'main' in slots:
+        slots.remove('main')
+
+    for attr_name in slots:
+        attr = getattr(obj, attr_name)
+        if not isinstance(attr, Qt.QObject):
+            continue
+        attr.setObjectName(type(obj).__name__ + '.' + attr_name)
 
 
 def get_usable_cpus_count() -> int:
@@ -169,3 +178,17 @@ def vs_clear_cache() -> None:
         output = output.clip
     output.get_frame(0)
     vs.core.max_cache_size = cache_size
+
+
+def try_load(state: Mapping[str, Any], name: str, ty: Type[T], receiver: Union[T, Callable[[T], Any]], error_msg: str) -> None:
+    try:
+        value = state[name]
+        if not isinstance(value, ty):
+            raise TypeError
+    except (KeyError, TypeError):
+        logging.warning(error_msg)
+    else:
+        if isinstance(receiver, ty):
+            receiver = value
+        if callable(receiver):
+            receiver(value)

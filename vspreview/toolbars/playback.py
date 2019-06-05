@@ -9,12 +9,15 @@ from PyQt5 import Qt
 
 from vspreview.core import (
     AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, Time,
-    TimeInterval
+    TimeInterval, QYAMLObjectSingleton
 )
 from vspreview.utils import (
-    add_shortcut, debug, qt_silent_call, set_qobject_names
+    add_shortcut, debug, qt_silent_call, set_qobject_names, try_load,
 )
 from vspreview.widgets import FrameEdit, TimeEdit
+
+
+# TODO: check if DEBUG_PLAY_FPS mode is still necessary
 
 
 class PlaybackToolbar(AbstractToolbar):
@@ -285,10 +288,8 @@ class PlaybackToolbar(AbstractToolbar):
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            seek_interval_frame = state['seek_interval_frame']
-            if not isinstance(seek_interval_frame, FrameInterval):
-                raise TypeError
-            self.seek_frame_control.setValue(seek_interval_frame)
-        except (KeyError, TypeError):
-            logging.warning('Storage loading: PlaybackToolbar: failed to parse seek_interval_frame')
+        try_load(
+            state, 'seek_interval_frame', FrameInterval,
+            self.seek_frame_control.setValue,
+            'Storage loading: PlaybackToolbar: failed to parse seek_interval_frame'
+        )

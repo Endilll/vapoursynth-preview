@@ -25,37 +25,42 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
 
     @abstractmethod
     def load_script(self, script_path: Path) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def reload_script(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def init_outputs(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def switch_output(self, value: Union[int, Output]) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
-    central_widget: Qt.QWidget        = abstract_attribute()
-    clipboard     : Qt.QClipboard     = abstract_attribute()
-    current_frame : Frame             = abstract_attribute()
-    current_output: Output            = abstract_attribute()
-    display_scale : float             = abstract_attribute()
-    graphics_scene: Qt.QGraphicsScene = abstract_attribute()
-    graphics_view : Qt.QGraphicsView  = abstract_attribute()
-    outputs       : Outputs           = abstract_attribute()
-    timeline      : Timeline          = abstract_attribute()
-    toolbars      : AbstractToolbars  = abstract_attribute()  # pylint: disable=used-before-assignment
-    save_on_exit  : bool              = abstract_attribute()
-    script_path   : Path              = abstract_attribute()
-    statusbar     : Qt.QStatusBar     = abstract_attribute()
+    @abstractmethod
+    def show_message(self, message: str) -> None:
+        raise NotImplementedError
+
+    app_settings  : AbstractAppSettings = abstract_attribute()  # pylint: disable=used-before-assignment
+    central_widget: Qt.QWidget          = abstract_attribute()
+    clipboard     : Qt.QClipboard       = abstract_attribute()
+    current_frame : Frame               = abstract_attribute()
+    current_output: Output              = abstract_attribute()
+    display_scale : float               = abstract_attribute()
+    graphics_scene: Qt.QGraphicsScene   = abstract_attribute()
+    graphics_view : Qt.QGraphicsView    = abstract_attribute()
+    outputs       : Outputs             = abstract_attribute()
+    timeline      : Timeline            = abstract_attribute()
+    toolbars      : AbstractToolbars    = abstract_attribute()  # pylint: disable=used-before-assignment
+    save_on_exit  : bool                = abstract_attribute()
+    script_path   : Path                = abstract_attribute()
+    statusbar     : Qt.QStatusBar       = abstract_attribute()
 
 
 class AbstractToolbar(Qt.QWidget, QABC):
@@ -63,7 +68,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
         from vspreview.widgets import Notches
 
     __slots__ = (
-        'main', 'toggle_button'
+        'main', 'toggle_button',
     )
 
     if TYPE_CHECKING:
@@ -71,10 +76,12 @@ class AbstractToolbar(Qt.QWidget, QABC):
     else:
         notches_changed = Qt.pyqtSignal(object)
 
-    def __init__(self, main: AbstractMainWindow, name: str) -> None:
+    def __init__(self, main: AbstractMainWindow, name: str, settings: Optional[Qt.QWidget] = None) -> None:
         super().__init__(main.central_widget)
-        self.main = main
+        self.main     = main
+        self.settings = settings if settings is not None else Qt.QWidget()
 
+        self.main.app_settings.addTab(self.settings, name)
         self.setFocusPolicy(Qt.Qt.ClickFocus)
 
         self.notches_changed.connect(self.main.timeline.update_notches)
@@ -118,11 +125,18 @@ class AbstractToolbar(Qt.QWidget, QABC):
             self.main.resize(self.main.width(), self.main.height() - self.height() - round(6 * self.main.display_scale))
             self.main.timeline.full_repaint()
 
+
     def __getstate__(self) -> Mapping[str, Any]:
         return {}
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         pass
+
+
+class AbstractAppSettings(Qt.QDialog, QABC):
+    @abstractmethod
+    def addTab(self, widget: Qt.QWidget, label: str) -> int:
+        raise NotImplementedError
 
 
 class AbstractToolbars(AbstractYAMLObjectSingleton):
@@ -145,7 +159,7 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     def __getitem__(self, index: int) -> AbstractToolbar:
         if index >= len(self.toolbars_names):
-            raise IndexError()
+            raise IndexError
         return cast(AbstractToolbar, getattr(self, self.toolbars_names[index]))
 
     def __len__(self) -> int:
@@ -153,11 +167,11 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     @abstractmethod
     def __getstate__(self) -> Mapping[str, Any]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     if TYPE_CHECKING:
         # https://github.com/python/mypy/issues/2220

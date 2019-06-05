@@ -4,17 +4,17 @@ from   collections import deque
 from   concurrent.futures import Future
 import logging
 from   time        import perf_counter
-from   typing      import Deque, Optional, Union
+from   typing      import Any, Deque, Mapping, Optional, Union
 
 from PyQt5 import Qt
 
 from vspreview.core import (
     AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, Time,
-    TimeInterval
+    TimeInterval, QYAMLObjectSingleton,
 )
 from vspreview.utils import (
     debug, get_usable_cpus_count, qt_silent_call, set_qobject_names,
-    vs_clear_cache
+    vs_clear_cache, try_load,
 )
 from vspreview.widgets import FrameEdit, TimeEdit
 
@@ -22,8 +22,105 @@ from vspreview.widgets import FrameEdit, TimeEdit
 # TODO: think of proper fix for frame data sharing issue
 
 
-class BenchmarkToolbar(AbstractToolbar):
+class BenchmarkSettings(Qt.QWidget, QYAMLObjectSingleton):
+    yaml_tag = '!BenchmarkSettings'
+
     __slots__ = (
+        'clear_cache_checkbox', 'refresh_interval_label',
+        'refresh_interval_control', 'frame_data_sharing_fix_checkbox',
+    )
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.setup_ui()
+
+        self.set_defaults()
+
+        set_qobject_names(self)
+
+    def setup_ui(self) -> None:
+        layout = Qt.QVBoxLayout(self)
+        layout.setObjectName('BenchmarkSettings.setup_ui.layout')
+
+
+        self.clear_cache_checkbox = Qt.QCheckBox(self)
+        self.clear_cache_checkbox.setText(
+            'Clear VS frame caches before each run'
+        )
+        layout.addWidget(self.clear_cache_checkbox)
+
+
+        refresh_interval_layout = Qt.QHBoxLayout()
+        refresh_interval_layout.setObjectName(
+            'BenchmarkSettings.setup_ui.refresh_interval_layout'
+        )
+        layout.addLayout(refresh_interval_layout)
+
+        self.refresh_interval_label = Qt.QLabel(self)
+        self.refresh_interval_label.setText('Refresh interval')
+        refresh_interval_layout.addWidget(self.refresh_interval_label)
+
+        self.refresh_interval_control = TimeEdit[TimeInterval](self)
+        refresh_interval_layout.addWidget(self.refresh_interval_control)
+
+
+        self.frame_data_sharing_fix_checkbox = Qt.QCheckBox(self)
+        self.frame_data_sharing_fix_checkbox.setText(
+            '(Debug) Enable frame data sharing fix'
+        )
+        layout.addWidget(self.frame_data_sharing_fix_checkbox)
+
+    def set_defaults(self) -> None:
+        self.clear_cache_checkbox.setChecked(False)
+        self.refresh_interval_control.setValue(TimeInterval(milliseconds=150))
+        self.frame_data_sharing_fix_checkbox.setChecked(True)
+
+
+    @property
+    def clear_cache_enabled(self) -> bool:
+        return self.clear_cache_checkbox.isChecked()
+
+    @property
+    def refresh_interval(self) -> TimeInterval:
+        return self.refresh_interval_control.value()
+
+    @property
+    def frame_data_sharing_fix_enabled(self) -> bool:
+        return self.frame_data_sharing_fix_checkbox.isChecked()
+
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            'clear_cache_enabled': self.clear_cache_enabled,
+            'refresh_interval'   : self.refresh_interval,
+            'frame_data_sharing_fix_enabled':
+            self.frame_data_sharing_fix_enabled,
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try_load(
+            state, 'clear_cache_enabled', bool,
+            self.clear_cache_checkbox.setChecked,
+            'Storage loading: Benchmark settings: failed to parse clear cache flag.'
+        )
+        try_load(
+            state, 'refresh_interval', TimeInterval,
+            self.refresh_interval_control.setValue,
+            'Storage loading: Benchmark settings: failed to parse refresh interval.'
+        )
+        try_load(
+            state, 'frame_data_sharing_fix_enabled', bool,
+            self.frame_data_sharing_fix_checkbox.setChecked,
+            'Storage loading: Benchmark settings: failed to parse frame_data_sharing_fix_enabled flag.'
+        )
+
+
+class BenchmarkToolbar(AbstractToolbar):
+    _storable_attrs = [
+        'settings',
+    ]
+    __slots__ = _storable_attrs + [
         'start_frame_control', 'start_time_control',
         'end_frame_control', 'end_time_control',
         'total_frames_control', 'total_time_control',
@@ -32,10 +129,11 @@ class BenchmarkToolbar(AbstractToolbar):
         'running', 'unsequenced', 'run_start_time',
         'start_frame', 'end_frame', 'total_frames',
         'frames_left', 'buffer', 'update_info_timer',
-    )
+        'sequenced_timer',
+    ]
 
     def __init__(self, main: AbstractMainWindow) -> None:
-        super().__init__(main, 'Benchmark')
+        super().__init__(main, 'Benchmark', BenchmarkSettings())
 
         self.setup_ui()
 
@@ -54,7 +152,6 @@ class BenchmarkToolbar(AbstractToolbar):
 
         self.update_info_timer = Qt.QTimer()
         self.update_info_timer.setTimerType(Qt.Qt.PreciseTimer)
-        self.update_info_timer.setInterval(self.main.BENCHMARK_REFRESH_INTERVAL)
 
         self. start_frame_control.valueChanged.connect(lambda value: self.update_controls(start=value))
         self.  start_time_control.valueChanged.connect(lambda value: self.update_controls(start=Frame(value)))
@@ -152,9 +249,9 @@ class BenchmarkToolbar(AbstractToolbar):
 
         from vapoursynth import VideoFrame
 
-        if self.main.BENCHMARK_CLEAR_CACHE:
+        if self.settings.clear_cache_enabled:
             vs_clear_cache()
-        if self.main.BENCHMARK_FRAME_DATA_SHARING_FIX:
+        if self.settings.frame_data_sharing_fix_enabled:
             self.main.current_output.graphics_scene_item.setPixmap(
                 self.main.current_output.graphics_scene_item.pixmap().copy()
             )
@@ -184,6 +281,9 @@ class BenchmarkToolbar(AbstractToolbar):
                 future = self.main.current_output.vs_output.get_frame_async(int(frame))
                 self.buffer.appendleft(future)
 
+        self.update_info_timer.setInterval(
+            round(float(self.settings.refresh_interval) * 1000)
+        )
         self.update_info_timer.start()
 
     def abort(self) -> None:
@@ -298,3 +398,16 @@ class BenchmarkToolbar(AbstractToolbar):
 
         info_str = "{}/{} frames in {}, {:.3f} fps".format(frames_done, self.total_frames, run_time, fps)
         self.info_label.setText(info_str)
+
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            attr_name: getattr(self, attr_name)
+            for attr_name in self._storable_attrs
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try_load(
+            state, 'settings', BenchmarkSettings, self.settings,
+            'Storage loading: Benchmark toolbar: failed to parse settings.'
+        )

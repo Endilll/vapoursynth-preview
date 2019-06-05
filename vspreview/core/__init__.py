@@ -1,5 +1,6 @@
 from .abstracts import (
-    AbstractMainWindow, AbstractToolbar, AbstractToolbars
+    AbstractMainWindow, AbstractToolbar, AbstractToolbars,
+    AbstractAppSettings,
 )
 from .bases import (
     AbstractYAMLObject, AbstractYAMLObjectSingleton,

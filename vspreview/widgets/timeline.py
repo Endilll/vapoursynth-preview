@@ -318,7 +318,7 @@ class Timeline(Qt.QWidget):
     )
 
     def calculate_notch_interval_t(self, target_interval_x: int) -> TimeInterval:
-        margin = 1 + self.main.TIMELINE_LABEL_NOTCHES_MARGIN / 100
+        margin = 1 + self.main.settings.timeline_label_notches_margin / 100
         target_interval_t = self.x_to_t(target_interval_x, TimeInterval)
         if target_interval_t >= self.notch_intervals_t[-1] * margin:
             return self.notch_intervals_t[-1]
@@ -349,7 +349,7 @@ class Timeline(Qt.QWidget):
     )
 
     def calculate_notch_interval_f(self, target_interval_x: int) -> FrameInterval:
-        margin = 1 + self.main.TIMELINE_LABEL_NOTCHES_MARGIN / 100
+        margin = 1 + self.main.settings.timeline_label_notches_margin / 100
         target_interval_f = self.x_to_f(target_interval_x, FrameInterval)
         if target_interval_f >= FrameInterval(round(int(self.notch_intervals_f[-1]) * margin)):
             return self.notch_intervals_f[-1]
