@@ -157,3 +157,15 @@ def get_usable_cpus_count() -> int:
         count = cpu_count()
 
     return count
+
+
+def vs_clear_cache() -> None:
+    import vapoursynth as vs
+
+    cache_size = vs.core.max_cache_size
+    vs.core.max_cache_size = 1
+    output = list(vs.get_outputs().values())[0]
+    if isinstance(output, vs.AlphaOutputTuple):
+        output = output.clip
+    output.get_frame(0)
+    vs.core.max_cache_size = cache_size
