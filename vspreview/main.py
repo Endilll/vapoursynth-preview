@@ -316,6 +316,15 @@ class MainWindow(AbstractMainWindow):
     # it's allowed to stretch target interval betweewn notches by 20% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE              = 'frame'
+    # would be used for formats with subsampling
+    VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
+    VS_OUTPUT_MATRIX          = Output.Matrix.BT709
+    VS_OUTPUT_TRANSFER        = Output.Transfer.BT709
+    VS_OUTPUT_PRIMARIES       = Output.Primaries.BT709
+    VS_OUTPUT_RANGE           = Output.Range.LIMITED
+    VS_OUTPUT_CHROMALOC       = Output.ChromaLoc.LEFT
+    VS_OUTPUT_PREFER_PROPS    = True
+    VS_OUTPUT_RESIZER_KWARGS  = {}  # type: Mapping[str, str]
 
     DEBUG_PLAY_FPS                    = False
     DEBUG_TOOLBAR                     = False

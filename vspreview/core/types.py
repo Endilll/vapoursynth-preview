@@ -1,37 +1,29 @@
 from __future__ import annotations
 
-from   abc      import abstractmethod
 from   datetime import timedelta
 import logging
-from   pathlib  import Path
 from   typing   import (
-    Any, cast, Dict, Iterator, Mapping, no_type_check, Optional,
-    overload, Type, TypeVar, TYPE_CHECKING, Tuple, Union,
+    Any, Mapping, Optional,
+    overload, TypeVar, Union,
 )
 
-from PyQt5 import Qt, sip
-from yaml import (
-    add_constructor, add_representer, Dumper, Loader, Node, YAMLObject,
-    YAMLObjectMetaclass,
-)
-from vapoursynth import Format, VideoNode
+from   PyQt5       import Qt
+from   yaml        import YAMLObject
+import vapoursynth as     vs
 
-from .better_abc import ABCMeta, abstract_attribute
-# project modules couldn't be imported at top level
-# since it'll cause cyclic import
 
-# pylint: disable=pointless-statement, function-redefined
+# pylint: disable=function-redefined
 
 # TODO: consider making FrameInterval non-negative
 # TODO: consider storing assosiated Output in Frame and others
 
 
 class Frame(YAMLObject):
+    yaml_tag = '!Frame'
+
     __slots__ = (
         'value',
     )
-
-    yaml_tag = '!Frame'
 
     def __init__(self, init_value: Union[Frame, int, Time]) -> None:
         from vspreview.utils import main_window
@@ -123,11 +115,11 @@ class Frame(YAMLObject):
 
 
 class FrameInterval(YAMLObject):
+    yaml_tag = '!FrameInterval'
+
     __slots__ = (
         'value',
     )
-
-    yaml_tag = '!FrameInterval'
 
     def __init__(self, init_value: Union[FrameInterval, int, TimeInterval]) -> None:
         from vspreview.utils import main_window
@@ -228,11 +220,11 @@ FrameType = TypeVar('FrameType', Frame, FrameInterval)
 
 
 class Time(YAMLObject):
+    yaml_tag = '!Time'
+
     __slots__ = (
         'value',
     )
-
-    yaml_tag = '!Time'
 
     def __init__(self, init_value: Optional[Union[Time, timedelta, Frame]] = None, **kwargs: Any):
         from vspreview.utils import main_window
@@ -322,11 +314,11 @@ class Time(YAMLObject):
 
 
 class TimeInterval(YAMLObject):
+    yaml_tag = '!TimeInterval'
+
     __slots__ = (
         'value',
     )
-
-    yaml_tag = '!TimeInterval'
 
     def __init__(self, init_value: Optional[Union[TimeInterval, timedelta, FrameInterval]] = None, **kwargs: Any):
         from vspreview.utils import main_window
@@ -427,11 +419,11 @@ TimeType = TypeVar('TimeType', Time, TimeInterval)
 
 
 class Scene(YAMLObject):
+    yaml_tag = '!Scene'
+
     __slots__ = (
         'start', 'end', 'label'
     )
-
-    yaml_tag = '!Scene'
 
     def __init__(self, start: Optional[Frame] = None, end: Optional[Frame] = None, label: str = '') -> None:
         if start is not None and end is not None:
@@ -520,30 +512,171 @@ class Scene(YAMLObject):
 
 
 class Output(YAMLObject):
+    yaml_tag = '!Output'
+
+    class Resizer:
+        Bilinear = vs.core.resize.Bilinear
+        Bicubic  = vs.core.resize.Bicubic
+        Point    = vs.core.resize.Point
+        Lanczos  = vs.core.resize.Lanczos
+        Spline16 = vs.core.resize.Spline16
+        Spline36 = vs.core.resize.Spline36
+
+    class Matrix:
+        values = {
+            0:  'rgb',
+            1:  '709',
+            2:  'unspec',
+            # 3:  'reserved',
+            4:  'fcc',
+            5:  '470bg',
+            6:  '170m',
+            7:  '240m',
+            8:  'ycgco',
+            9:  '2020ncl',
+            10: '2020cl',
+            # 11: 'reserved',
+            12: 'chromancl',
+            13: 'chromacl',
+            14: 'ictcp',
+        }
+
+        RGB        = values[ 0]
+        BT709      = values[ 1]
+        UNSPEC     = values[ 2]
+        BT470_BG   = values[ 5]
+        ST170_M    = values[ 6]
+        ST240_M    = values[ 7]
+        FCC        = values[ 4]
+        YCGCO      = values[ 8]
+        BT2020_NCL = values[ 9]
+        BT2020_CL  = values[10]
+        CHROMA_CL  = values[13]
+        CHROMA_NCL = values[12]
+        ICTCP      = values[14]
+
+    class Transfer:
+        values = {
+            # 0:  'reserved',
+            1:  '709',
+            2:  'unspec',
+            # 3:  'reserved',
+            4:  '470m',
+            5:  '470bg',
+            6:  '601',
+            7:  '240m',
+            8:  'linear',
+            9:  'log100',
+            10: 'log316',
+            11: 'xvycc',  # IEC 61966-2-4
+            # 12: 'reserved',
+            13: 'srgb',  # IEC 61966-2-1
+            14: '2020_10',
+            15: '2020_12',
+            16: 'st2084',
+            # 17: 'st428',  # not supported by zimg 2.8
+            18: 'std-b67',
+        }
+
+        BT709         = values[ 1]
+        UNSPEC        = values[ 2]
+        BT601         = values[ 6]
+        LINEAR        = values[ 8]
+        BT2020_10     = values[14]
+        BT2020_12     = values[15]
+        ST240_M       = values[ 7]
+        BT470_M       = values[ 4]
+        BT470_BG      = values[ 5]
+        LOG_100       = values[ 9]
+        LOG_316       = values[10]
+        ST2084        = values[16]
+        ARIB_B67      = values[18]
+        SRGB          = values[13]
+        XV_YCC        = values[11]
+        IEC_61966_2_4 = XV_YCC
+        IEC_61966_2_1 = SRGB
+
+    class Primaries:
+        values = {
+            # 0:  'reserved',
+            1:  '709',
+            2:  'unspec',
+            # 3:  'reserved',
+            4:  '470m',
+            5:  '470bg',
+            6:  '170m',
+            7:  '240m',
+            8:  'film',
+            9:  '2020',
+            10: 'st428',  # or 'xyz'
+            11: 'st431-2',
+            12: 'st431-1',
+            22: 'jedec-p22',
+        }
+
+        BT709     = values[ 1]
+        UNSPEC    = values[ 2]
+        ST170_M   = values[ 6]
+        ST240_M   = values[ 7]
+        BT470_M   = values[ 4]
+        BT470_BG  = values[ 5]
+        FILM      = values[ 8]
+        BT2020    = values[ 9]
+        ST428     = values[10]
+        XYZ       = ST428
+        ST431_2   = values[11]
+        ST431_1   = values[12]
+        JEDEC_P22 = values[22]
+        EBU3213_E = JEDEC_P22
+
+    class Range:
+        values = {
+            0: 'full',
+            1: 'limited'
+        }
+
+        LIMITED = values[1]
+        FULL    = values[0]
+
+    class ChromaLoc:
+        values = {
+            0: 'left',
+            1: 'center',
+            2: 'top_left',
+            3: 'top',
+            4: 'bottom_left',
+            5: 'bottom',
+        }
+
+        LEFT        = values[0]
+        CENTER      = values[1]
+        TOP_LEFT    = values[2]
+        TOP         = values[3]
+        BOTTOM_LEFT = values[4]
+        BOTTOM      = values[5]
+
     storable_attrs = (
-        'name', 'last_showed_frame', 'scening_lists', 'play_fps'
+        'name', 'last_showed_frame', 'scening_lists', 'play_fps',
     )
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
         'format', 'total_frames', 'total_time', 'graphics_scene_item',
-        'end_frame', 'end_time', 'fps'
+        'end_frame', 'end_time', 'fps',
     )
 
-    yaml_tag = '!Output'
-
-    def __init__(self, vs_output: VideoNode, index: int, pixel_format: Format) -> None:
+    def __init__(self, vs_output: vs.VideoNode, index: int) -> None:
         from vspreview.models import SceningLists
 
         # runtime attributes
 
-        self.vs_output    = vs_output
+        self.format       = vs_output.format  # changed after preparing vs ouput
         self.index        = index
+        self.vs_output    = self.prepare_vs_output(vs_output)
         self.width        = self.vs_output.width
         self.height       = self.vs_output.height
         self.fps_num      = self.vs_output.fps.numerator
         self.fps_den      = self.vs_output.fps.denominator
         self.fps          = self.fps_num / self.fps_den
-        self.format       = pixel_format
         self.total_frames = FrameInterval(self.vs_output.num_frames)
         self.total_time   = self.to_time_interval(self.total_frames - FrameInterval(1))
         self.end_frame    = Frame(int(self.total_frames) - 1)
@@ -565,6 +698,38 @@ class Output(YAMLObject):
             self.scening_lists: SceningLists = SceningLists()
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
+
+    def prepare_vs_output(self, vs_output: vs.VideoNode) -> vs.VideoNode:
+        from vspreview.utils import main_window
+
+        main = main_window()
+
+        resizer = main.VS_OUTPUT_RESIZER
+        resizer_kwargs = {
+            'format'        : vs.COMPATBGR32,
+            'matrix_in_s'   : main.VS_OUTPUT_MATRIX,
+            'transfer_in_s' : main.VS_OUTPUT_TRANSFER,
+            'primaries_in_s': main.VS_OUTPUT_PRIMARIES,
+            'range_in_s'    : main.VS_OUTPUT_RANGE,
+            'chromaloc_in_s': main.VS_OUTPUT_CHROMALOC,
+            'prefer_props'  : main.VS_OUTPUT_PREFER_PROPS,
+        }
+
+        vs_output = vs.core.std.FlipVertical(vs_output)
+
+        if vs_output.format == vs.COMPATBGR32:
+            return vs_output
+
+        is_subsampled = vs_output.format.subsampling_w != 0 or vs_output.format.subsampling_h != 0
+        if not is_subsampled:
+            resizer = self.Resizer.Point
+
+        if vs_output.format.color_family == vs.RGB:
+            del resizer_kwargs['matrix_in_s']
+
+        vs_output = resizer(vs_output, **resizer_kwargs, **main.VS_OUTPUT_RESIZER_KWARGS)
+
+        return vs_output
 
     def _calculate_frame(self, seconds: float) -> int:
         return round(seconds * self.fps)
@@ -617,229 +782,3 @@ class Output(YAMLObject):
                 self.play_fps = play_fps
         except (KeyError, TypeError):
             logging.warning(f'Storage loading: Output: play fps weren\'t parsed successfully.')
-
-
-T = TypeVar('T')
-
-
-class SingletonMeta(type):
-    def __init__(cls: Type[T], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> None:
-        super().__init__(name, bases, dct)
-        cls.instance: Optional[T] = None  # type: ignore
-
-    def __call__(cls, *args: Any, **kwargs: Any) -> T:
-        if cls.instance is None:
-            cls.instance = super().__call__(*args, **kwargs)
-        return cls.instance
-
-    def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> type:
-        subcls = super(SingletonMeta, cls).__new__(cls, name, bases, dct)
-        singleton_new = None
-        for entry in subcls.__mro__:
-            if entry.__class__ is SingletonMeta:
-                singleton_new = entry.__new__
-        if subcls.__new__ is not singleton_new:
-            subcls.__default_new__ = subcls.__new__  # type: ignore
-            subcls.__new__ = singleton_new  # type: ignore
-        return subcls
-class Singleton(metaclass=SingletonMeta):
-    @no_type_check
-    def __new__(cls: Type[T], *args: Any, **kwargs: Any) -> T:
-        if cls.instance is None:
-            if hasattr(cls, '__default_new__'):
-                cls.instance = cls.__default_new__(cls, *args, **kwargs)  # pylint: disable=no-member
-            else:
-                cls.instance = super(Singleton, cls).__new__(cls)
-        return cls.instance
-
-class AbstractYAMLObjectMeta(YAMLObjectMetaclass, ABCMeta):
-    pass
-class AbstractYAMLObject(YAMLObject, metaclass=AbstractYAMLObjectMeta):
-    pass
-
-class AbstractYAMLObjectSingletonMeta(SingletonMeta, AbstractYAMLObjectMeta):
-    pass
-class AbstractYAMLObjectSingleton(AbstractYAMLObject, Singleton, metaclass=AbstractYAMLObjectSingletonMeta):
-    pass
-
-class QABCMeta(sip.wrappertype, ABCMeta):  # type: ignore
-    pass
-class QABC(metaclass=QABCMeta):
-    pass
-
-class QSingletonMeta(SingletonMeta, sip.wrappertype):  # type: ignore
-    pass
-class QSingleton(Singleton, metaclass=QSingletonMeta):
-    pass
-
-class QAbstractSingletonMeta(QSingletonMeta, QABCMeta):
-    pass
-class QAbstractSingleton(Singleton, metaclass=QAbstractSingletonMeta):
-    pass
-
-class QYAMLObjectMeta(YAMLObjectMetaclass, sip.wrappertype):  # type: ignore
-    pass
-class QYAMLObject(YAMLObject, metaclass=QYAMLObjectMeta):
-    pass
-
-class QAbstractYAMLObjectMeta(QYAMLObjectMeta, QABC):
-    pass
-class QAbstractYAMLObject(YAMLObject, metaclass=QAbstractYAMLObjectMeta):
-    pass
-
-class QYAMLObjectSingletonMeta(QSingletonMeta, QYAMLObjectMeta):
-    pass
-class QYAMLObjectSingleton(QYAMLObject, Singleton, metaclass=QYAMLObjectSingletonMeta):
-    pass
-
-class QAbstractYAMLObjectSingletonMeta(QYAMLObjectSingletonMeta, QABCMeta):
-    pass
-class QAbstractYAMLObjectSingleton(QYAMLObjectSingleton, metaclass=QAbstractYAMLObjectSingletonMeta):
-    pass
-
-
-class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
-    if TYPE_CHECKING:
-        from vspreview.models  import Outputs
-        from vspreview.widgets import Timeline
-
-    __slots__ = ()
-
-    @abstractmethod
-    def load_script(self, script_path: Path) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def reload_script(self) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def init_outputs(self) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def switch_output(self, value: Union[int, Output]) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
-        raise NotImplementedError()
-
-    central_widget: Qt.QWidget        = abstract_attribute()
-    clipboard     : Qt.QClipboard     = abstract_attribute()
-    current_frame : Frame             = abstract_attribute()
-    current_output: Output            = abstract_attribute()
-    display_scale : float             = abstract_attribute()
-    graphics_scene: Qt.QGraphicsScene = abstract_attribute()
-    graphics_view : Qt.QGraphicsView  = abstract_attribute()
-    outputs       : Outputs           = abstract_attribute()
-    timeline      : Timeline          = abstract_attribute()
-    toolbars      : AbstractToolbars  = abstract_attribute()  # pylint: disable=used-before-assignment
-    save_on_exit  : bool              = abstract_attribute()
-    script_path   : Path              = abstract_attribute()
-    statusbar     : Qt.QStatusBar     = abstract_attribute()
-
-
-class AbstractToolbar(Qt.QWidget, QABC):
-    if TYPE_CHECKING:
-        from vspreview.widgets import Notches
-
-    __slots__ = (
-        'main', 'toggle_button'
-    )
-
-    if TYPE_CHECKING:
-        notches_changed = Qt.pyqtSignal(AbstractToolbar)  # pylint: disable=undefined-variable
-    else:
-        notches_changed = Qt.pyqtSignal(object)
-
-    def __init__(self, main: AbstractMainWindow, name: str) -> None:
-        super().__init__(main.central_widget)
-        self.main = main
-
-        self.setFocusPolicy(Qt.Qt.ClickFocus)
-
-        self.notches_changed.connect(self.main.timeline.update_notches)
-
-        self.toggle_button = Qt.QPushButton(self)
-        self.toggle_button.setCheckable(True)
-        self.toggle_button.setText(name)
-        self.toggle_button.clicked.connect(self.on_toggle)
-
-        self.setVisible(False)
-
-
-    def on_toggle(self, new_state: bool) -> None:
-        # invoking order matters
-        self.setVisible(new_state)
-        self.resize_main_window(new_state)
-
-    def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
-        pass
-
-    def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        pass
-
-
-    def get_notches(self) -> Notches:
-        from vspreview.widgets import Notches
-
-        return Notches()
-
-    def is_notches_visible(self) -> bool:
-        return self.isVisible()
-
-    def resize_main_window(self, expanding: bool) -> None:
-        if self.main.windowState() in (Qt.Qt.WindowMaximized,
-                                       Qt.Qt.WindowFullScreen):
-            return
-
-        if expanding:
-            self.main.resize(self.main.width(), self.main.height() + self.height() + round(6 * self.main.display_scale))
-        if not expanding:
-            self.main.resize(self.main.width(), self.main.height() - self.height() - round(6 * self.main.display_scale))
-            self.main.timeline.full_repaint()
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {}
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        pass
-
-
-class AbstractToolbars(AbstractYAMLObjectSingleton):
-    __slots__ = ()
-
-    yaml_tag: str = abstract_attribute()
-
-    # special toolbar ignored by len() and not accessible via subscription and 'in' operator
-    main     : AbstractToolbar = abstract_attribute()
-
-    playback : AbstractToolbar = abstract_attribute()
-    scening  : AbstractToolbar = abstract_attribute()
-    misc     : AbstractToolbar = abstract_attribute()
-    debug    : AbstractToolbar = abstract_attribute()
-
-    toolbars_names = ('playback', 'scening', 'misc', 'debug')
-    # 'main' should be the first
-    all_toolbars_names = ['main'] + list(toolbars_names)
-
-    def __getitem__(self, index: int) -> AbstractToolbar:
-        if index >= len(self.toolbars_names):
-            raise IndexError()
-        return cast(AbstractToolbar, getattr(self, self.toolbars_names[index]))
-
-    def __len__(self) -> int:
-        return len(self.toolbars_names)
-
-    @abstractmethod
-    def __getstate__(self) -> Mapping[str, Any]:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        raise NotImplementedError()
-
-    if TYPE_CHECKING:
-        # https://github.com/python/mypy/issues/2220
-        def __iter__(self) -> Iterator[AbstractToolbar]: ...

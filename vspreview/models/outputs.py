@@ -6,14 +6,16 @@ from   typing  import Any, cast, Iterator, List, Mapping, Optional
 from   PyQt5       import Qt
 import vapoursynth as     vs
 
-from vspreview.core  import Output, QYAMLObject
+from vspreview.core  import Output, QYAMLObjectSingleton
 from vspreview.utils import debug
 
-# TODO: consider converting it to singleton
 
+# TODO: support non-YUV outputs
+
+
+class Outputs(Qt.QAbstractListModel, QYAMLObjectSingleton):
     yaml_tag = '!Outputs'
 
-class Outputs(Qt.QAbstractListModel, QYAMLObject):
     __slots__ = (
         'items',
     )
@@ -24,15 +26,14 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
 
         local_storage = local_storage if local_storage is not None else {}
         for i, vs_output in vs.get_outputs().items():
-            pixel_format = vs_output.format
-            vs_output    = vs.core.resize.Bicubic(vs_output, format=vs.COMPATBGR32, matrix_in_s='709', chromaloc=0, prefer_props=1)
-            vs_output    = vs.core.std.FlipVertical(vs_output)
+            if isinstance(vs_output, vs.AlphaOutputTuple):
+                vs_output = vs_output.clip
 
             try:
                 output = local_storage[str(i)]
-                output.__init__(vs_output, i, pixel_format)  # type: ignore
+                output.__init__(vs_output, i)  # type: ignore
             except KeyError:
-                output = Output(vs_output, i, pixel_format)
+                output = Output(vs_output, i)
 
             self.items.append(output)
 
