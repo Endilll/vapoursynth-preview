@@ -7,8 +7,9 @@ import re
 from   time      import perf_counter_ns
 from   typing    import Any, Callable, cast, Dict, Type, TypeVar, Tuple, Union
 
-from pprint import pprint
-from PyQt5  import Qt, sip
+from   pprint      import pprint
+from   PyQt5       import Qt, sip
+import vapoursynth as     vs
 
 from vspreview.core import AbstractMainWindow
 
@@ -127,6 +128,18 @@ def profile_cpu(func: Callable[..., T]) -> Callable[..., T]:
         s.print_stats(10)
         return ret
     return decorator
+
+
+def print_vs_output_colorspace_info(vs_output: vs.VideoNode) -> None:
+    from vspreview.core import Output
+
+    props = vs_output.get_frame(0).props
+    logging.debug('Matrix: {}, Transfer: {}, Primaries: {}, Range: {}'.format(
+        Output.Matrix   .values[props['_Matrix']]     if '_Matrix'     in props else None,
+        Output.Transfer .values[props['_Transfer']]   if '_Transfer'   in props else None,
+        Output.Primaries.values[props['_Primaries']]  if '_Primaries'  in props else None,
+        Output.Range    .values[props['_ColorRange']] if '_ColorRange' in props else None,
+    ))
 
 
 class DebugMeta(sip.wrappertype):  # type: ignore
