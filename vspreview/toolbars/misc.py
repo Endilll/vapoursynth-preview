@@ -68,12 +68,15 @@ class MiscToolbar(AbstractToolbar):
         layout.addWidget(self.keep_on_top_checkbox)
 
         save_template_label = Qt.QLabel(self)
-        save_template_label.setObjectName('MiscToolbar.setup_ui.save_template_label')
+        save_template_label.setObjectName(
+            'MiscToolbar.setup_ui.save_template_label')
         save_template_label.setText('Save file name template:')
         layout.addWidget(save_template_label)
 
         self.save_template_lineedit = Qt.QLineEdit(self)
-        self.save_template_lineedit.setToolTip(r'Use {script_name} and {frame} as placeholders.')
+        self.save_template_lineedit.setToolTip(
+            r'Use {script_name} and {frame} as placeholders.'
+        )
         layout.addWidget(self.save_template_lineedit)
 
         layout.addStretch()

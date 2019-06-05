@@ -320,7 +320,8 @@ class SceningToolbar(AbstractToolbar):
         layout_line_1.addWidget(self.import_file_button)
 
         separator_line_1 = Qt.QFrame(self)
-        separator_line_1.setObjectName('SceningToolbar.setup_ui.separator_line_1')
+        separator_line_1.setObjectName(
+            'SceningToolbar.setup_ui.separator_line_1')
         separator_line_1.setFrameShape(Qt.QFrame.VLine)
         separator_line_1.setFrameShadow(Qt.QFrame.Sunken)
         layout_line_1.addWidget(separator_line_1)
@@ -382,14 +383,19 @@ class SceningToolbar(AbstractToolbar):
         layout_line_2.addWidget(self.remove_at_current_frame_button)
 
         separator_line_2 = Qt.QFrame(self)
-        separator_line_2.setObjectName('SceningToolbar.setup_ui.separator_line_2')
+        separator_line_2.setObjectName(
+            'SceningToolbar.setup_ui.separator_line_2')
         separator_line_2.setFrameShape(Qt.QFrame.VLine)
         separator_line_2.setFrameShadow(Qt.QFrame.Sunken)
         layout_line_2.addWidget(separator_line_2)
 
         self.export_template_lineedit = Qt.QLineEdit(self)
         # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
-        self.export_template_lineedit.setToolTip(r'Use {start} and {end} as placeholders. Both are valid for single frame scenes. {label} is available, too.')
+        self.export_template_lineedit.setToolTip(
+            r'Use {start} and {end} as placeholders.'
+            r'Both are valid for single frame scenes. '
+            r'{label} is available, too. '
+        )
         self.export_template_lineedit.setPlaceholderText('Export Template')
         layout_line_2.addWidget(self.export_template_lineedit)
 
@@ -610,7 +616,7 @@ class SceningToolbar(AbstractToolbar):
             self.import_file(self.supported_file_types[file_type], path)
 
     @fire_and_forget
-    @set_status_label('Importing scenes')
+    @set_status_label('Importing scening list')
     def import_file(self, import_func: Callable[[Path, SceningList, int], None], path: Path) -> None:
         out_of_range_count = 0
         scening_list, scening_list_index = self.current_lists.add(path.stem)

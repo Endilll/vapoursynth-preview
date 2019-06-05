@@ -16,7 +16,7 @@ class DummyAttribute:
 def abstract_attribute(obj: Optional[T] = None) -> T:
     if obj is None:
         obj = DummyAttribute()  # type: ignore
-    obj.__is_abstract_attribute__ = True  # type: ignore
+    obj._is_abstract_attribute_ = True  # type: ignore
     return cast(T, obj)
 
 
@@ -27,12 +27,12 @@ class ABCMeta(NativeABCMeta):
         for name in dir(instance):
             attr = getattr(instance, name, None)
             if attr is not None:
-                if getattr(attr, '__is_abstract_attribute__', False):
+                if getattr(attr, '_is_abstract_attribute_', False):
                     abstract_attributes.append(name)
 
         if len(abstract_attributes) > 0:
             raise NotImplementedError(
-                "Class {} doesn't initialize abstract attributes with values: {}"
+                "Class {} doesn't initialize following abstract attributes: {}"
                 .format(cls.__name__, ', '.join(abstract_attributes))
             )
         return instance

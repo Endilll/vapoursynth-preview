@@ -19,10 +19,11 @@ from vspreview.utils import (
 
 
 class SceningList(Qt.QAbstractTableModel, QYAMLObject):
+    yaml_tag = '!SceningList'
+
     __slots__ = (
         'name', 'items', 'max_value'
     )
-    yaml_tag = '!SceningList'
 
     START_FRAME_COLUMN = 0
     END_FRAME_COLUMN   = 1
@@ -282,10 +283,11 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
 
 
 class SceningLists(Qt.QAbstractListModel, QYAMLObject):
+    yaml_tag = '!SceningLists'
+
     __slots__ = (
         'items',
     )
-    yaml_tag = '!SceningLists'
 
     def __init__(self, items: Optional[List[SceningList]] = None) -> None:
         super().__init__()

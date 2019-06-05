@@ -11,13 +11,12 @@ from vspreview.utils import debug
 
 # TODO: consider converting it to singleton
 
+    yaml_tag = '!Outputs'
 
 class Outputs(Qt.QAbstractListModel, QYAMLObject):
     __slots__ = (
         'items',
     )
-
-    yaml_tag = '!Outputs'
 
     def __init__(self, local_storage: Optional[Mapping[str, Output]] = None) -> None:
         super().__init__()

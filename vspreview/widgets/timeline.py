@@ -15,6 +15,7 @@ from vspreview.core import (
 )
 from vspreview.utils import debug
 
+
 # pylint: disable=attribute-defined-outside-init
 
 # TODO: store cursor pos as frame
@@ -83,10 +84,10 @@ class Timeline(Qt.QWidget):
     )
 
     class Mode(YAMLObject):
+        yaml_tag = '!Timeline.Mode'
+
         FRAME = 'frame'
         TIME  = 'time'
-
-        yaml_tag = '!Timeline.Mode'
 
         @classmethod
         def is_valid(cls, value: str) -> bool:

@@ -18,6 +18,8 @@ from vspreview.widgets import FrameEdit, TimeEdit
 
 
 class PlaybackToolbar(AbstractToolbar):
+    yaml_tag = '!PlaybackToolbar'
+
     __slots__ = (
         'play_timer', 'fps_timer', 'fps_history', 'current_fps',
         'seek_n_frames_b_button', 'seek_to_prev_button', 'play_pause_button',
@@ -28,8 +30,6 @@ class PlaybackToolbar(AbstractToolbar):
         'play_end_frame', 'play_buffer', 'toggle_button',
     )
 
-    yaml_tag = '!PlaybackToolbar'
-
     def __init__(self, main: AbstractMainWindow) -> None:
         from concurrent.futures import Future
 
@@ -39,7 +39,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.play_buffer: Deque[Future] = deque()
         self.play_timer = Qt.QTimer()
         self.play_timer.setTimerType(Qt.Qt.PreciseTimer)
-        self.play_timer.timeout.connect(self._playback_show_next_frame)
+        self.play_timer.timeout.connect(self._show_next_frame)
 
         self.fps_history: Deque[int] = deque([], int(self.main.FPS_AVERAGING_WINDOW_SIZE) + 1)
         self.current_fps = 0.0
@@ -159,7 +159,7 @@ class PlaybackToolbar(AbstractToolbar):
         else:
             self.play_timer.start(round(1000 / self.main.current_output.play_fps))
 
-    def _playback_show_next_frame(self) -> None:
+    def _show_next_frame(self) -> None:
         try:
             frame_future = self.play_buffer.pop()
         except IndexError:

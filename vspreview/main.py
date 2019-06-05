@@ -321,6 +321,8 @@ class MainWindow(AbstractMainWindow):
     DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
 
+    yaml_tag = '!MainWindow'
+
     storable_attrs = [
         'toolbars',
     ]
@@ -331,8 +333,6 @@ class MainWindow(AbstractMainWindow):
         'central_widget', 'statusbar',
         'opengl_widget',
     ]
-
-    yaml_tag = '!MainWindow'
 
     def __init__(self) -> None:
         from qdarkstyle import load_stylesheet_pyqt5
@@ -487,12 +487,8 @@ class MainWindow(AbstractMainWindow):
                                     .format(exc.problem_mark.line + 1, exc.problem_mark.column + 1))  # pylint: disable=no-member
                 else:
                     logging.warning('Storage parsing failed. Using defaults.')
-                # logging.getLogger().setLevel(logging.ERROR)
         else:
             logging.info('No storage found. Using defaults.')
-            # logging.getLogger().setLevel(logging.ERROR)
-
-        # logging.getLogger().setLevel(self.LOG_LEVEL)
 
         self.statusbar.label.setText('Ready')
 
@@ -522,14 +518,16 @@ class MainWindow(AbstractMainWindow):
     def render_raw_videoframe(self, vs_frame: vs.VideoFrame) -> Qt.QPixmap:
         import ctypes
 
-        frame_data     = vs_frame.get_read_ptr(0)
+        frame_pointer  = vs_frame.get_read_ptr(0)
         frame_stride   = vs_frame.get_stride(0)
-        # frame_itemsize = vs_frame.get_read_array(0).itemsize
         frame_itemsize = vs_frame.format.bytes_per_sample
 
         # powerful spell. do not touch
-        frame_data   = ctypes.cast(frame_data, ctypes.POINTER(ctypes.c_char * (frame_itemsize * vs_frame.width * vs_frame.height)))[0]  # type: ignore
-        frame_image  = Qt.QImage(frame_data, vs_frame.width, vs_frame.height, frame_stride, Qt.QImage.Format_RGB32)
+        data_pointer = ctypes.cast(
+            frame_pointer,
+            ctypes.POINTER(ctypes.c_char * (frame_itemsize * vs_frame.width * vs_frame.height))
+        )[0]
+        frame_image  = Qt.QImage(data_pointer, vs_frame.width, vs_frame.height, frame_stride, Qt.QImage.Format_RGB32)
         frame_pixmap = Qt.QPixmap.fromImage(frame_image)
 
         return frame_pixmap

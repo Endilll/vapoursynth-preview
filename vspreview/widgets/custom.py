@@ -14,6 +14,7 @@ from vspreview.core import (
 from vspreview.models import SceningList
 from vspreview.utils  import debug, from_qtime, to_qtime
 
+
 # TODO: replace specialized Edit classes with some metaclasses magic or such
 
 
