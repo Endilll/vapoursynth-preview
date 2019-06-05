@@ -637,6 +637,10 @@ class SceningToolbar(AbstractToolbar):
             self.current_list_index = scening_list_index
 
     def import_ass(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports lines as scenes.
+        Text is ignored.
+        '''
         import pysubs2
 
         subs = pysubs2.load(str(path))
@@ -649,6 +653,10 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_cue(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports tracks as scenes.
+        Uses TITLE for scene label.
+        '''
         from cueparser import CueSheet
 
         def offset_to_time(offset: str) -> Optional[Time]:
@@ -690,6 +698,9 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_dgi(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports IDR frames as single-frame scenes.
+        '''
         pattern = re.compile(r'IDR\s\d+\n(\d+):FRM', re.RegexFlag.MULTILINE)
         for match in pattern.findall(path.read_text()):
             try:
@@ -730,6 +741,10 @@ class SceningToolbar(AbstractToolbar):
             frame += FrameInterval(1)
 
     def import_matroska_xml_chapters(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports chapters as scenes.
+        Preserve end time and text if they're present.
+        '''
         from xml.etree import ElementTree
 
         timestamp_pattern = re.compile(r'(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)')
@@ -775,6 +790,10 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_ogm_chapters(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports chapters as signle-frame scenes.
+        Uses NAME for scene label.
+        '''
         pattern = re.compile(r'(CHAPTER\d+)=(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)\n\1NAME=(.*)', re.RegexFlag.MULTILINE)
         for match in pattern.finditer(path.read_text()):
             time = Time(
@@ -788,6 +807,9 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_qp(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports I- and K-frames as single-frame scenes.
+        '''
         pattern = re.compile(r'(\d+)\sI|K')
         for match in pattern.findall(path.read_text()):
             try:
@@ -796,6 +818,9 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_matroska_timestamps_v1(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports gaps between timestamps as scenes.
+        '''
         pattern = re.compile(r'(\d+),(\d+),(\d+(?:\.\d+)?)')
 
         for match in pattern.finditer(path.read_text()):
@@ -805,6 +830,10 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_matroska_timestamps_v2(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports intervals of constant FPS as scenes.
+        Uses FPS as scene label.
+        '''
         timestamps: List[Time] = []
         for line in path.read_text().splitlines():
             try:
@@ -848,6 +877,12 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_tfm(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports TFM's 'OVR HELP INFORMATION'.
+        Single combed frames are put into single-frame scenes.
+        Frame groups are put into regular scenes.
+        Combed probability is used for label.
+        '''
         class TFMFrame(Frame):
             mic: Optional[int]
 
@@ -888,6 +923,9 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_xvid(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports I-frames as single-frames scenes.
+        '''
         for i, line in enumerate(path.read_text().splitlines()):
             if not line.startswith('i'):
                 continue
