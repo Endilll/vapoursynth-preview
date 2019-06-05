@@ -572,10 +572,10 @@ class MainWindow(AbstractMainWindow):
         else:
             index = value
 
-        prev_index = self.toolbars.main.outputs_combobox.currentIndex()
         if index < 0 or index >= len(self.outputs):
-            logging.info(f'Output switching: output {index} is out of range. Switching to first output')
-            index = 0
+            return
+
+        prev_index = self.toolbars.main.outputs_combobox.currentIndex()
 
         self.toolbars.playback.stop()
 
