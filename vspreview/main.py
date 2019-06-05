@@ -264,20 +264,25 @@ class Toolbars(AbstractToolbars):
     yaml_tag = '!Toolbars'
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
-        from vspreview.toolbars import DebugToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar
+        from vspreview.toolbars import (
+            DebugToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar,
+            BenchmarkToolbar
+        )
 
-        self.main      =     MainToolbar(main_window)
+        self.main      =      MainToolbar(main_window)
         self.main.setObjectName('Toolbars.main')
 
-        self.misc      =     MiscToolbar(main_window)
-        self.playback  = PlaybackToolbar(main_window)
-        self.scening   =  SceningToolbar(main_window)
-        self.debug     =    DebugToolbar(main_window)
+        self.misc      =      MiscToolbar(main_window)
+        self.playback  =  PlaybackToolbar(main_window)
+        self.scening   =   SceningToolbar(main_window)
+        self.benchmark = BenchmarkToolbar(main_window)
+        self.debug     =     DebugToolbar(main_window)
 
-        self.misc    .setObjectName('Toolbars.misc')
-        self.playback.setObjectName('Toolbars.playback')
-        self.scening .setObjectName('Toolbars.scening')
-        self.debug   .setObjectName('Toolbars.debug')
+        self.misc     .setObjectName('Toolbars.misc')
+        self.playback .setObjectName('Toolbars.playback')
+        self.scening  .setObjectName('Toolbars.scening')
+        self.benchmark.setObjectName('Toolbars.benchmark')
+        self.debug    .setObjectName('Toolbars.debug')
 
 
     def __getstate__(self) -> Mapping[str, Mapping[str, Any]]:
@@ -299,23 +304,25 @@ class Toolbars(AbstractToolbars):
 
 class MainWindow(AbstractMainWindow):
     # those are defaults that can be overriden at runtime or used as fallbacks
-    AUTOSAVE_ENABLED           =  True
-    AUTOSAVE_INTERVAL          =    30 * 1000  # s
-    BASE_PPI                   =    96  # PPI
-    DARK_THEME                 =  True
-    FPS_AVERAGING_WINDOW_SIZE  = FrameInterval(100)
-    FPS_REFRESH_INTERVAL       =   150  # ms
-    LOG_LEVEL          = logging.DEBUG
-    OPENGL_RENDERING           = False
-    OUTPUT_INDEX               =     0
+    AUTOSAVE_ENABLED          =  True
+    AUTOSAVE_INTERVAL         =    30 * 1000  # s
+    BASE_PPI                  =    96  # PPI
+    BENCHMARK_CLEAR_CACHE     = False
+    BENCHMARK_REFRESH_INTERVAL =  150  # ms
+    DARK_THEME                =  True
+    FPS_AVERAGING_WINDOW_SIZE = FrameInterval(100)
+    FPS_REFRESH_INTERVAL      =   150  # ms
+    LOG_LEVEL         = logging.DEBUG
+    OPENGL_RENDERING          = False
+    OUTPUT_INDEX              =     0
     PLAY_BUFFER_SIZE = FrameInterval(get_usable_cpus_count())
     PNG_COMPRESSION_LEVEL     =     0  # 0 - 100
     SAVE_TEMPLATE = '{script_name}_{frame}'
-    SEEK_STEP                  =     1  # frames
-    STATUSBAR_MESSAGE_TIMEOUT  =     3 * 1000  # s
+    SEEK_STEP                 =     1  # frames
+    STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # s
     # it's allowed to stretch target interval betweewn notches by 20% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
-    TIMELINE_MODE              = 'frame'
+    TIMELINE_MODE             = 'frame'
     # would be used for formats with subsampling
     VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
     VS_OUTPUT_MATRIX          = Output.Matrix.BT709
@@ -326,6 +333,7 @@ class MainWindow(AbstractMainWindow):
     VS_OUTPUT_PREFER_PROPS    = True
     VS_OUTPUT_RESIZER_KWARGS  = {}  # type: Mapping[str, str]
 
+    BENCHMARK_FRAME_DATA_SHARING_FIX  =  True
     DEBUG_PLAY_FPS                    = False
     DEBUG_TOOLBAR                     = False
     DEBUG_TOOLBAR_BUTTONS_PRINT_STATE = False
