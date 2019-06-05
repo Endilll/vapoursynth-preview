@@ -59,7 +59,8 @@ disable=
     unused-argument,
     logging-fstring-interpolation,
     logging-format-interpolation,
-    unused-import
+    unused-import,
+    protected-access
 
 [REPORTS]
 
