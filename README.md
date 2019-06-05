@@ -1,4 +1,4 @@
-Standalone preview for VapourSynth scripts. Meant to be paired with a code editor like Visual Studio Code.
+Standalone preview for VapourSynth scripts. Meant to be paired with a code editor with integrated terminal like Visual Studio Code.
 
 # Prerequisites
 
