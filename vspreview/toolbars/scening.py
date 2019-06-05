@@ -22,6 +22,10 @@ from vspreview.utils import (
 from vspreview.widgets import ComboBox, Notches, TimeEdit, FrameEdit
 
 
+# TODO: import all lwi video streams as separate scening lists
+# TODO: check lwi index for interlaced video
+
+
 class SceningListDialog(Qt.QDialog):
     __slots__ = (
         'main', 'scening_list',
@@ -236,6 +240,7 @@ class SceningToolbar(AbstractToolbar):
             'Aegisub Project (*.ass)'       : self.import_ass,
             'CUE Sheet (*.cue)'             : self.import_cue,
             'DGIndex Project (*.dgi)'       : self.import_dgi,
+            'L-SMASH Works Index (*.lwi)'   : self.import_lwi,
             'Matroska Timestamps v1 (*.txt)': self.import_matroska_timestamps_v1,
             'Matroska Timestamps v2 (*.txt)': self.import_matroska_timestamps_v2,
             'Matroska XML Chapters (*.xml)' : self.import_matroska_xml_chapters,
@@ -691,6 +696,38 @@ class SceningToolbar(AbstractToolbar):
                 scening_list.add(Frame(match))
             except ValueError:
                 out_of_range_count += 1
+
+    def import_lwi(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports Key=1 frames as single-frame scenes.
+        Ignores everything besides Index=0 video stream.
+        '''
+        from copy import deepcopy
+
+        AV_CODEC_ID_FIRST_AUDIO = 0x10000
+        STREAM_INDEX = 0
+        IS_KEY = 1
+
+        pattern = re.compile(r'Index={}.*?Codec=(\d+).*?\n.*?Key=(\d)'.format(
+            STREAM_INDEX
+        ))
+
+        frame = Frame(0)
+        for match in pattern.finditer(path.read_text(), re.RegexFlag.MULTILINE):
+            if int(match[1]) >= AV_CODEC_ID_FIRST_AUDIO:
+                frame += FrameInterval(1)
+                continue
+
+            if not int(match[2]) == IS_KEY:
+                frame += FrameInterval(1)
+                continue
+
+            try:
+                scening_list.add(deepcopy(frame))
+            except ValueError:
+                out_of_range_count += 1
+
+            frame += FrameInterval(1)
 
     def import_matroska_xml_chapters(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         from xml.etree import ElementTree
