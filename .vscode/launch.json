@@ -16,8 +16,10 @@
             "name": "Current File",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/run.py",
             "args": [
+                "${file}"
             ],
             "showReturnValue": true
         }

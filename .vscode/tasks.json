@@ -30,11 +30,12 @@
             "label": "Open Current File in VSPreview",
             "type": "shell",
             "windows": {
-                "command": "python ${workspaceFolder}/run.py ${file}",
+                "command": "python ${workspaceFolder}/run.py \"${file}\""
             },
             "linux": {
-                "command": "python3 ${workspaceFolder}/run.py ${file}",
+                "command": "python3 ${workspaceFolder}/run.py \"${file}\""
             },
-        },
+            "problemMatcher": []
+        }
     ]
 }
