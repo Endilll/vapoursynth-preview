@@ -309,7 +309,7 @@ class MainWindow(AbstractMainWindow):
     OPENGL_RENDERING           = False
     OUTPUT_INDEX               =     0
     PLAY_BUFFER_SIZE = FrameInterval(get_usable_cpus_count())
-    PNG_COMPRESSION_LEVEL      =    80  # 0 - 100
+    PNG_COMPRESSION_LEVEL     =     0  # 0 - 100
     SAVE_TEMPLATE = '{script_name}_{frame}'
     SEEK_STEP                  =     1  # frames
     STATUSBAR_MESSAGE_TIMEOUT  =     3 * 1000  # s
