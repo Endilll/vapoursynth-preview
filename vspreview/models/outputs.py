@@ -6,14 +6,14 @@ from   typing  import Any, cast, Iterator, List, Mapping, Optional
 from   PyQt5       import Qt
 import vapoursynth as     vs
 
-from vspreview.core  import Output, QYAMLObjectSingleton
+from vspreview.core  import Output, QYAMLObjectSingleton, QYAMLObject
 from vspreview.utils import debug
 
 
 # TODO: support non-YUV outputs
 
 
-class Outputs(Qt.QAbstractListModel, QYAMLObjectSingleton):
+class Outputs(Qt.QAbstractListModel, QYAMLObject):
     yaml_tag = '!Outputs'
 
     __slots__ = (
