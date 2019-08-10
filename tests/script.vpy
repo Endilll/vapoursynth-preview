@@ -5,11 +5,13 @@ core = vs.core
 
 # clip0 = core.dgdecodenv.DGSource(r'Pop Team Epic OP.dgi')
 clip0 = core.ffms2.Source(r'Pop Team Epic OP.mkv')
+clip0 = clip0.text.FrameNum()
 clip0.set_output(0)
 
-clip1 = core.ffms2.Source(r'Cocoro Palette.mp4')
+clip10 = core.ffms2.Source(r'Cocoro Palette.mp4')
 # clip1 = core.ffms2.Source(r'Cross Ange Tenshi to Ryuu no Rondo 01.m2ts')
-clip1.set_output(10)
+clip10 = clip10.text.FrameNum()
+clip10.set_output(10)
 
 
 # clip0 = core.ffms2.Source(r'Pop Team Epic OP.mkv')
