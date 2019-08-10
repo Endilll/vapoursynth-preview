@@ -54,13 +54,13 @@ confidence=
 
 disable=
     C,
-    assigning-non-slot,
-    c-extension-no-member,
-    unused-argument,
-    logging-fstring-interpolation,
-    logging-format-interpolation,
-    unused-import,
-    protected-access
+#     assigning-non-slot,
+#     c-extension-no-member,
+#     unused-argument,
+#     logging-fstring-interpolation,
+#     logging-format-interpolation,
+#     unused-import,
+#     protected-access
 
 [REPORTS]
 
