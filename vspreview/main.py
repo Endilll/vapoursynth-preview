@@ -23,7 +23,7 @@ from vspreview.utils    import (
 class MainView(QMainWindow, View):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         from qdarkstyle import load_stylesheet_pyside2
-        from .settings import DARK_THEME
+        from .settings  import DARK_THEME
 
         super().__init__()  # pylint: disable=no-value-for-parameter
         View.__init__(self, *args, init_super=False, **kwargs)  # type: ignore
