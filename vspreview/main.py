@@ -7,7 +7,7 @@ from   typing  import Any, cast, Optional
 
 from PySide2.QtCore    import QSize
 from PySide2.QtWidgets import (
-    QHBoxLayout, QVBoxLayout, QWidget, QMainWindow
+    QApplication, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow
 )
 import rx.operators as ops
 from   vapoursynth  import VideoNode
@@ -15,17 +15,25 @@ from   vapoursynth  import VideoNode
 from vspreview.core     import Frame, Output, Property, View, ViewModel
 from vspreview.controls import ComboBox, GraphicsView, SpinBox, PushButton
 from vspreview.models   import GraphicsScene, ListModel
-from vspreview.utils    import Application, check_dependencies
+from vspreview.utils    import (
+    Application, check_dependencies, patch_dark_stylesheet
+)
 
 
 class MainView(QMainWindow, View):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        from qdarkstyle import load_stylesheet_pyside2
+        from .settings import DARK_THEME
+
         super().__init__()  # pylint: disable=no-value-for-parameter
         View.__init__(self, *args, init_super=False, **kwargs)  # type: ignore
 
         self.setup_ui()
 
         self.setWindowTitle('VSPreview')
+        self.app = QApplication.instance()
+        if DARK_THEME:
+            self.app.setStyleSheet(patch_dark_stylesheet(load_stylesheet_pyside2()))
 
         self.graphics_view.bind_foreground_output(self._properties.current_output, View.BindKind.SOURCE_TO_VIEW)
         self.graphics_view.bind_outputs_model(self._data_context.outputs, View.BindKind.SOURCE_TO_VIEW)

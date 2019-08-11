@@ -84,3 +84,7 @@ def check_dependencies() -> bool:
         return False
 
     return True
+
+
+def patch_dark_stylesheet(stylesheet: str) -> str:
+    return stylesheet + 'QGraphicsView { border: 0px; padding: 0px; }'

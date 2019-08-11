@@ -3,5 +3,6 @@ __all__ = [
 ]
 
 from .utils import (
-    Application, check_dependencies, main_view_model, strfdelta
+    Application, check_dependencies, main_view_model, patch_dark_stylesheet,
+    strfdelta,
 )

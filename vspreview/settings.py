@@ -3,6 +3,7 @@ from   typing  import Mapping
 
 from vspreview.core import Output
 
+DARK_THEME = True
 LOG_LEVEL = logging.DEBUG
 
 VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
