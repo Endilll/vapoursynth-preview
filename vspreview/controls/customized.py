@@ -135,7 +135,7 @@ class CheckBox(QCheckBox):
             self._parent.add_property_listener(prop, get_from_property)
             get_from_property()
         if View.BindKind.is_from_view(bind_kind):
-            ret = self.textChanged.connect(set_to_property)
+            ret = self.stateChanged.connect(set_to_property)
             assert ret
 
 
