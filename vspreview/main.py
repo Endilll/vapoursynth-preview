@@ -12,8 +12,10 @@ from PySide2.QtWidgets import (
 import rx.operators as ops
 from   vapoursynth  import VideoNode
 
-from vspreview.core     import Frame, Output, Property, View, ViewModel
-from vspreview.controls import ComboBox, GraphicsView, SpinBox, PushButton
+from vspreview.core     import Frame, Output, Property, View, ViewModel, repeat_last_when
+from vspreview.controls import (
+    CheckBox, ComboBox, GraphicsView, SpinBox, PushButton
+)
 from vspreview.models   import GraphicsScene, ListModel
 from vspreview.utils    import (
     Application, check_dependencies, patch_dark_stylesheet
@@ -41,6 +43,7 @@ class MainView(QMainWindow, View):
         self.outputs_combobox.bind_model(self._data_context.outputs, View.BindKind.SOURCE_TO_VIEW)
         self.frame_spinbox.bind_value(self._properties.current_frame, View.BindKind.BIDIRECTIONAL)
         self.frame_spinbox.bind_max_value(self._properties.end_frame, View.BindKind.SOURCE_TO_VIEW)
+        self.synced_checkbox.bind(self._properties.outputs_synced, View.BindKind.BIDIRECTIONAL)
         self.load_button.bind(self._data_context.on_load_pressed, View.BindKind.VIEW_TO_SOURCE)
 
         ret = self.test_button.clicked.connect(self.on_test_clicked); assert ret
@@ -62,6 +65,10 @@ class MainView(QMainWindow, View):
         self.frame_spinbox = SpinBox(self)
         self.toolbar_layout.addWidget(self.frame_spinbox)
 
+        self.synced_checkbox = CheckBox(self)
+        self.synced_checkbox.setText('Sync Outputs')
+        self.toolbar_layout.addWidget(self.synced_checkbox)
+
         self.load_button = PushButton(self)
         self.load_button.setText('Load Script')
         self.toolbar_layout.addWidget(self.load_button)
@@ -80,24 +87,32 @@ class MainViewModel(ViewModel):
     current_frame  = Property[Frame](Frame(0))
     end_frame      = Property[Frame](Frame(0))
     current_output = Property[Optional[Output]](None)
-    outputs = ListModel[Output]()
+    outputs        = ListModel[Output]()
+    outputs_synced = Property[bool](True)
 
     def __init__(self) -> None:
         super().__init__()
 
         self.current_frame = type(self).current_output.pipe(
-            ops.map(lambda output: output.current_frame if output is not None else Frame(0))
-        )
-        self.last_frame = type(self).current_output.pipe(
-            ops.map(lambda output: output.last_frame if output is not None else Frame(0)),
-        )
+            ops.map(lambda output: output.current_frame if output is not None else Frame(0)))
+        self.end_frame = type(self).current_output.pipe(
+            ops.map(lambda output: output.end_frame if output is not None else Frame(0)))
 
-        type(self).current_frame.subscribe(self.switch_frame)  # type: ignore
+        type(self).current_frame.pipe(
+            ops.filter(lambda _: not self.outputs_synced),
+            ops.filter(lambda _: self.current_output is not None),
+        ).subscribe(lambda frame: setattr(self.current_output, 'current_frame', frame))
+        type(self).current_frame.pipe(
+            repeat_last_when(type(self).outputs_synced, lambda synced: synced),  # type: ignore
+            ops.filter(lambda _: self.outputs_synced),
+            ops.filter(lambda _: self.current_output is not None),
+        ).subscribe(lambda frame: list(map(  # type: ignore
+            lambda output: setattr(output, 'current_frame', frame),
+            self.outputs
+        )))
 
-    def switch_frame(self, frame: Frame) -> None:
-        if self.current_output is None:
-            return
-        self.current_output.current_frame = frame
+    def test(self) -> None:
+        pass
 
     def on_load_pressed(self) -> None:
         self.load_script(Path(r'script.vpy').resolve())

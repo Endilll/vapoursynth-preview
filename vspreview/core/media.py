@@ -400,6 +400,8 @@ class Scene:
 
 
 class Output:
+    from .customized import GraphicsItem
+
     class Resizer:
         Bilinear = vs_core.resize.Bilinear
         Bicubic  = vs_core.resize.Bicubic
@@ -543,7 +545,7 @@ class Output:
 
     __slots__ = (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
-        'format', 'total_frames', 'total_time', 'graphics_item',
+        'format', 'total_frames', 'total_time', '_graphics_item',
         'end_frame', 'end_time', 'fps', '_current_frame', '_name',
         '__weakref__',
     )
@@ -564,7 +566,7 @@ class Output:
         self.end_frame   = Frame(int(self.total_frames) - 1)
         self.end_time    = self.to_time(self.end_frame)
 
-        self.graphics_item: Optional[QGraphicsPixmapItem] = None
+        self._graphics_item: Optional[GraphicsItem] = None
         self._current_frame = Frame(0)
         self._name = f'Output {self.index}'
 
@@ -599,7 +601,7 @@ class Output:
         return vs_output
 
     def __getitem__(self, frame: Frame) -> QPixmap:
-        if frame < Frame(0) or frame > self.last_frame:
+        if frame < Frame(0) or frame > self.end_frame:
             raise IndexError
         return self.render_frame(frame)
 
@@ -611,9 +613,18 @@ class Output:
         return self._current_frame
     @current_frame.setter
     def current_frame(self, new_frame: Frame) -> None:
-        if self.graphics_item is not None:
+        if self.graphics_item is not None and self.graphics_item.visible:
             self.graphics_item.setPixmap(self[new_frame])
         self._current_frame = new_frame
+
+    @property
+    def graphics_item(self) -> Optional[GraphicsItem]:
+        return self._graphics_item
+    @graphics_item.setter
+    def graphics_item(self, new_item: Optional[GraphicsItem]) -> None:
+        if new_item is not None:
+            ret = new_item.about_to_show.connect(lambda: new_item.setPixmap(self[self.current_frame])); assert ret
+        self._graphics_item = new_item
 
     def __str__(self) -> str:
         return self._name

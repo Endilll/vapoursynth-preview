@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from PySide2.QtCore    import QModelIndex
+from PySide2.QtGui     import QPixmap
 from PySide2.QtWidgets import QGraphicsScene
 
-from vspreview.core import Output
+from vspreview.core import GraphicsItem, Output
 from .generic import ListModel
 
 
 class GraphicsScene(QGraphicsScene):
     def set_outputs_model(self, model: ListModel[Output]) -> None:
         def add_output(output: Output) -> None:
-            output.graphics_item = self.addPixmap(output.render_frame(output.current_frame))
-            output.graphics_item.hide()  # type: ignore
+            graphics_item = self.addPixmap(QPixmap())
+            graphics_item.hide()
+            output.graphics_item = graphics_item
 
         def remove_output(output: Output) -> None:
             if output.graphics_item is None:
@@ -39,7 +41,14 @@ class GraphicsScene(QGraphicsScene):
 
     def switch_to(self, output: Output) -> None:
         for item in self.items():
+            if item is output.graphics_item:
+                continue
             item.hide()
-        if output.graphics_item is None:
+        if output.graphics_item is None or output.graphics_item.visible:
             return
-        output.graphics_item.show()  # type: ignore
+        output.graphics_item.show()
+
+    def addPixmap(self, pixmap: QPixmap) -> GraphicsItem:
+        item = GraphicsItem(pixmap)
+        self.addItem(item)
+        return item
