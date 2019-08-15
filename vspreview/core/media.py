@@ -544,13 +544,12 @@ class Output:
     __slots__ = (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
         'format', 'total_frames', 'total_time', 'graphics_item',
-        'last_frame', 'last_time', 'fps', '_current_frame', '_name',
+        'end_frame', 'end_time', 'fps', '_current_frame', '_name',
+        '__weakref__',
     )
 
     def __init__(self, vs_output: VideoNode, index: int) -> None:
-        from PySide2.QtWidgets import QGraphicsPixmapItem
-
-        # runtime attributes
+        from .customized import GraphicsItem
 
         self.format       = vs_output.format  # changed after preparing vs ouput
         self.index        = index
@@ -562,8 +561,8 @@ class Output:
         self.fps          = self.fps_num / self.fps_den
         self.total_frames = FrameInterval(self.vs_output.num_frames)
         self.total_time   = self.to_time_interval(self.total_frames - FrameInterval(1))
-        self.last_frame   = Frame(int(self.total_frames) - 1)
-        self.last_time    = self.to_time(self.last_frame)
+        self.end_frame   = Frame(int(self.total_frames) - 1)
+        self.end_time    = self.to_time(self.end_frame)
 
         self.graphics_item: Optional[QGraphicsPixmapItem] = None
         self._current_frame = Frame(0)
@@ -618,6 +617,9 @@ class Output:
 
     def __str__(self) -> str:
         return self._name
+
+    def __repr__(self) -> str:
+        return '{} \'{}\''.format(type(self).__name__, self._name)
 
     def render_frame(self, frame: Frame) -> QPixmap:
         import ctypes

@@ -21,14 +21,14 @@ U = TypeVar('U')
 
 
 class Property(QObservable, Generic[T]):  # pylint: disable=unsubscriptable-object
-    type_specializations: Dict[Type, Type[Property]] = {}  # pylint: disable=undefined-variable
+    _specializations: Dict[Type, Type[Property]] = {}  # pylint: disable=undefined-variable
 
     def __class_getitem__(cls, ty: Type) -> Type[Property]:  # pylint: disable=no-self-argument
         if ty.__class__ is _GenericAlias:
             ty = ty.__args__[0]
 
-        if ty in cls.type_specializations:
-            return cls.type_specializations[ty]
+        if ty in cls._specializations:
+            return cls._specializations[ty]
 
         dct = {
             'ty': ty,
@@ -36,7 +36,7 @@ class Property(QObservable, Generic[T]):  # pylint: disable=unsubscriptable-obje
         }
 
         spec = type(cls.__name__, (cls,), dct)
-        cls.type_specializations[ty] = spec
+        cls._specializations[ty] = spec
         return spec
 
     @property
