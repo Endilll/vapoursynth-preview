@@ -5,3 +5,4 @@ from .media import (
     Time, TimeInterval, TimeType,
 )
 from .mvvm import Property, View, ViewModel
+from .rx import repeat_last_when
