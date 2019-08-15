@@ -1,3 +1,4 @@
+from .customized import GraphicsItem
 from .media import (
     Frame, FrameInterval, FrameType,
     Output, Scene,
