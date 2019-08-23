@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide2.QtCore    import Signal, QObject  # type: ignore
+from PySide2.QtCore    import QObject, Signal
 from PySide2.QtWidgets import QGraphicsPixmapItem
 
 

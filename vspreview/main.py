@@ -7,19 +7,85 @@ from   typing  import Any, cast, Optional
 
 from PySide2.QtCore    import QSize
 from PySide2.QtWidgets import (
-    QApplication, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow
+    QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 )
 import rx.operators as ops
 from   vapoursynth  import VideoNode
 
-from vspreview.core     import Frame, Output, Property, View, ViewModel, repeat_last_when
-from vspreview.controls import (
-    CheckBox, ComboBox, GraphicsView, SpinBox, PushButton
+from vspreview.core import (
+    Frame, Output, Property, repeat_last_when, View, ViewModel
 )
-from vspreview.models   import GraphicsScene, ListModel
-from vspreview.utils    import (
+from vspreview.controls import (
+    CheckBox, ComboBox, GraphicsView, PushButton, SpinBox
+)
+from vspreview.models import GraphicsScene, ListModel
+from vspreview.utils  import (
     Application, check_dependencies, patch_dark_stylesheet
 )
+
+
+class PlaybackToolbarView(View):
+    def __init__(self, data_context: ViewModel) -> None:
+        super().__init__(data_context)
+
+        self.setup_ui()
+
+    def setup_ui(self) -> None:
+        layout = QHBoxLayout(self)
+        layout.setObjectName('PlaybackToolbarView.setup_ui.layout')
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.play_pause_button = PushButton(self)
+        self.play_pause_button.setText('⏯')
+        self.play_pause_button.setToolTip('Play/Pause')
+        self.play_pause_button.setCheckable(True)
+        layout.addWidget(self.play_pause_button)
+
+        layout.addStretch()
+
+
+class PlaybackToolbarVM(ViewModel):
+    def __init__(self) -> None:
+        super().__init__()
+
+
+class MainToolbarView(View):
+    def __init__(self, data_context: ViewModel) -> None:
+        super().__init__(data_context)
+
+        self.setup_ui()
+
+        self.outputs_combobox.bind_current_item(self._properties.current_output,    View.BindKind.BIDIRECTIONAL)
+        self.outputs_combobox.bind_model(       self._data_context.outputs,         View.BindKind.SOURCE_TO_VIEW)
+        self.frame_spinbox   .bind_value(       self._properties.current_frame,     View.BindKind.BIDIRECTIONAL)
+        self.frame_spinbox   .bind_max_value(   self._properties.end_frame,         View.BindKind.SOURCE_TO_VIEW)
+        self.synced_checkbox .bind(             self._properties.outputs_synced,    View.BindKind.BIDIRECTIONAL)
+        self.load_button     .bind(             self._data_context.on_load_pressed, View.BindKind.VIEW_TO_SOURCE)
+        self.test_button     .bind(             self._data_context.test,            View.BindKind.VIEW_TO_SOURCE)
+
+    def setup_ui(self) -> None:
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.outputs_combobox = ComboBox(self)
+        layout.addWidget(self.outputs_combobox)
+
+        self.frame_spinbox = SpinBox(self)
+        layout.addWidget(self.frame_spinbox)
+
+        self.synced_checkbox = CheckBox(self)
+        self.synced_checkbox.setText('Sync Outputs')
+        layout.addWidget(self.synced_checkbox)
+
+        self.load_button = PushButton(self)
+        self.load_button.setText('Load Script')
+        layout.addWidget(self.load_button)
+
+        self.test_button = PushButton(self)
+        self.test_button.setText('Resize')
+        layout.addWidget(self.test_button)
+
+        layout.addStretch()
 
 
 class MainView(QMainWindow, View):
@@ -30,25 +96,21 @@ class MainView(QMainWindow, View):
         super().__init__()  # pylint: disable=no-value-for-parameter
         View.__init__(self, *args, init_super=False, **kwargs)  # type: ignore
 
-        self.setup_ui()
+        self._setup_ui()
 
         self.setWindowTitle('VSPreview')
         self.app = QApplication.instance()
         if DARK_THEME:
             self.app.setStyleSheet(patch_dark_stylesheet(load_stylesheet_pyside2()))
 
-        self.graphics_view.bind_foreground_output(self._properties.current_output, View.BindKind.SOURCE_TO_VIEW)
         self.graphics_view.bind_outputs_model(self._data_context.outputs, View.BindKind.SOURCE_TO_VIEW)
-        self.outputs_combobox.bind_current_item(self._properties.current_output, View.BindKind.BIDIRECTIONAL)
-        self.outputs_combobox.bind_model(self._data_context.outputs, View.BindKind.SOURCE_TO_VIEW)
-        self.frame_spinbox.bind_value(self._properties.current_frame, View.BindKind.BIDIRECTIONAL)
-        self.frame_spinbox.bind_max_value(self._properties.end_frame, View.BindKind.SOURCE_TO_VIEW)
-        self.synced_checkbox.bind(self._properties.outputs_synced, View.BindKind.BIDIRECTIONAL)
-        self.load_button.bind(self._data_context.on_load_pressed, View.BindKind.VIEW_TO_SOURCE)
+        self.graphics_view.bind_foreground_output(self._properties.current_output, View.BindKind.SOURCE_TO_VIEW)
 
-        ret = self.test_button.clicked.connect(self.on_test_clicked); assert ret
+        # ret = self.test_button.clicked.connect(self.on_test_clicked); assert ret
 
-    def setup_ui(self) -> None:
+        self._setup_toolbars()
+
+    def _setup_ui(self) -> None:
         self.central_widget = QWidget(self)
         self.main_layout = QVBoxLayout(self.central_widget)
         self.setCentralWidget(self.central_widget)
@@ -59,23 +121,9 @@ class MainView(QMainWindow, View):
         self.toolbar_layout = QHBoxLayout()
         self.main_layout.addLayout(self.toolbar_layout)
 
-        self.outputs_combobox = ComboBox(self)
-        self.toolbar_layout.addWidget(self.outputs_combobox)
-
-        self.frame_spinbox = SpinBox(self)
-        self.toolbar_layout.addWidget(self.frame_spinbox)
-
-        self.synced_checkbox = CheckBox(self)
-        self.synced_checkbox.setText('Sync Outputs')
-        self.toolbar_layout.addWidget(self.synced_checkbox)
-
-        self.load_button = PushButton(self)
-        self.load_button.setText('Load Script')
-        self.toolbar_layout.addWidget(self.load_button)
-
-        self.test_button = PushButton(self)
-        self.test_button.setText('Resize')
-        self.toolbar_layout.addWidget(self.test_button)
+    def _setup_toolbars(self) -> None:
+        self.main_toolbar = MainToolbarView(self._data_context)
+        self.toolbar_layout.addWidget(self.main_toolbar)
 
     def on_test_clicked(self, state: int) -> None:
         hint = self.graphics_view.sizeHint()
@@ -83,11 +131,13 @@ class MainView(QMainWindow, View):
         self.resize(new_size)
 
 
-class MainViewModel(ViewModel):
+class MainVM(ViewModel):
+    script_path    = Property[Path](Path())
     current_frame  = Property[Frame](Frame(0))
     end_frame      = Property[Frame](Frame(0))
-    current_output = Property[Optional[Output]](None)
+
     outputs        = ListModel[Output]()
+    current_output = Property[Optional[Output]](None)
     outputs_synced = Property[bool](True)
 
     def __init__(self) -> None:
@@ -106,10 +156,10 @@ class MainViewModel(ViewModel):
             repeat_last_when(type(self).outputs_synced, lambda synced: synced),  # type: ignore
             ops.filter(lambda _: self.outputs_synced),
             ops.filter(lambda _: self.current_output is not None),
-        ).subscribe(lambda frame: list(map(  # type: ignore
-            lambda output: setattr(output, 'current_frame', frame),
-            self.outputs
-        )))
+        ).subscribe(lambda frame: [
+            setattr(output, 'current_frame', frame)  # type: ignore
+            for output in self.outputs
+        ])
 
     def test(self) -> None:
         pass
@@ -120,6 +170,8 @@ class MainViewModel(ViewModel):
     def load_script(self, path: Path) -> None:
         from traceback import print_exc
         import vapoursynth as vs
+
+        self.script_path = path
 
         self.outputs.clear()
         vs.clear_outputs()
@@ -134,6 +186,10 @@ class MainViewModel(ViewModel):
 
         for i, vs_output in vs.get_outputs().items():
             self.outputs.append(Output(cast(VideoNode, vs_output), i))
+        self.current_output.graphics_item.show()  # type: ignore
+
+    def reload_script(self) -> None:
+        self.load_script(self.script_path)
 
 
 def main() -> None:
@@ -161,9 +217,9 @@ def main() -> None:
     chdir(script_path.parent)
 
     app = Application(sys.argv)
-    view_model = MainViewModel()
-    view = MainView(view_model)
-    view_model.load_script(script_path)
+    vm = MainVM()
+    view = MainView(vm)
+    vm.load_script(script_path)
     view.show()  # type: ignore
 
     try:

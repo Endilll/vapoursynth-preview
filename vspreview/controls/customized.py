@@ -57,7 +57,7 @@ class Label(QLabel):
 
 
 class PushButton(QPushButton):
-    def bind(self, handler: Callable, bind_kind: View.BindKind) -> None:
+    def bind(self, handler: Callable[[bool], None], bind_kind: View.BindKind) -> None:
         assert bind_kind is View.BindKind.VIEW_TO_SOURCE
 
         ret = self.clicked.connect(handler)
@@ -160,6 +160,16 @@ class SpinBox(QSpinBox):
         if View.BindKind.is_from_view(bind_kind):
             ret = self.valueChanged.connect(set_to_property)
             assert ret
+
+    def bind_min_value(self, prop: Property, bind_kind: View.BindKind) -> None:
+        assert bind_kind == View.BindKind.SOURCE_TO_VIEW
+
+        def get_from_property() -> None:
+            value = int(getattr(self._data_context, prop.name))
+            self.setMinimum(value)
+
+        self._parent.add_property_listener(prop, get_from_property)
+        get_from_property()
 
     def bind_max_value(self, prop: Property, bind_kind: View.BindKind) -> None:
         assert bind_kind == View.BindKind.SOURCE_TO_VIEW

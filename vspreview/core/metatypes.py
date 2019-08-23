@@ -14,4 +14,4 @@ else:
 class QABCMeta(ABCMeta, type(QObject)): pass  # type: ignore
 class QABC(metaclass=QABCMeta): pass
 
-class QObservable(Observable, QObject, metaclass=QABCMeta): pass  # t
+class QObservable(Observable, QObject, metaclass=QABCMeta): pass

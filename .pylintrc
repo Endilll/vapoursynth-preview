@@ -54,14 +54,15 @@ confidence=
 
 disable=
     C,
-    no-name-in-module,
-#     assigning-non-slot,
-#     c-extension-no-member,
+    assigning-non-slot,
+    c-extension-no-member,
     unused-argument,
     logging-fstring-interpolation,
-#     logging-format-interpolation,
-#     unused-import,
-#     protected-access
+    logging-format-interpolation,
+    unused-import,
+    protected-access,
+    fixme,
+    no-name-in-module,
 
 [REPORTS]
 

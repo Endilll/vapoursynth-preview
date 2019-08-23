@@ -2,14 +2,18 @@ from __future__ import annotations
 
 # pylint: disable=function-redefined,pointless-statement
 
+from concurrent.futures import Future
 from datetime import timedelta
 from typing   import (
-    Any, Optional, overload, TypeVar, Union,
+    Any, Callable, Optional, overload, TypeVar, Union,
 )
 
-from PySide2.QtGui import QImage, QPixmap
+from PySide2.QtGui import QImage, QPainter, QPixmap
 
-from vapoursynth import core as vs_core, VideoNode
+from vapoursynth import (
+    AlphaOutputTuple, COMPATBGR32, core as vs_core, GRAY8, RGB, VideoFrame,
+    VideoNode,
+)
 
 
 class Frame:
@@ -546,32 +550,46 @@ class Output:
     __slots__ = (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
         'format', 'total_frames', 'total_time', '_graphics_item',
-        'end_frame', 'end_time', 'fps', '_current_frame', '_name',
-        '__weakref__',
+        'end_frame', 'end_time', 'fps', '_name', '_current_frame',
+        'has_alpha', 'vs_alpha', 'format_alpha',
     )
 
-    def __init__(self, vs_output: VideoNode, index: int) -> None:
+    def __init__(self, vs_output: Union[VideoNode, AlphaOutputTuple], index: int) -> None:
         from .customized import GraphicsItem
 
-        self.format       = vs_output.format  # changed after preparing vs ouput
+        if isinstance(vs_output, AlphaOutputTuple):
+            self.has_alpha = True
+            self.vs_output = vs_output.clip
+            self.vs_alpha  = vs_output.alpha
+
+            # changed after preparing vs alpha
+            self.format_alpha = self.vs_alpha.format
+            self.vs_alpha = self.prepare_vs_output(self.vs_alpha, alpha=True)
+        else:
+            self.has_alpha = False
+            self.vs_output = vs_output
+
         self.index        = index
-        self.vs_output    = self.prepare_vs_output(vs_output)
+        # changed after preparing vs output
+        self.format       = self.vs_output.format
+
+        self.vs_output    = self.prepare_vs_output(self.vs_output)
         self.width        = self.vs_output.width
         self.height       = self.vs_output.height
         self.fps_num      = self.vs_output.fps.numerator
         self.fps_den      = self.vs_output.fps.denominator
         self.fps          = self.fps_num / self.fps_den
         self.total_frames = FrameInterval(self.vs_output.num_frames)
-        self.total_time   = self.to_time_interval(self.total_frames - FrameInterval(1))
-        self.end_frame   = Frame(int(self.total_frames) - 1)
-        self.end_time    = self.to_time(self.end_frame)
+        self.total_time   = self.to_time_interval(self.total_frames
+                                                  - FrameInterval(1))
+        self.end_frame    = Frame(int(self.total_frames) - 1)
+        self.end_time     = self.to_time(self.end_frame)
 
         self._graphics_item: Optional[GraphicsItem] = None
         self._current_frame = Frame(0)
         self._name = f'Output {self.index}'
 
-    def prepare_vs_output(self, vs_output: VideoNode) -> VideoNode:
-        from vapoursynth import COMPATBGR32, RGB
+    def prepare_vs_output(self, vs_output: VideoNode, alpha: bool = False) -> VideoNode:
         from vspreview import settings
 
         resizer = settings.VS_OUTPUT_RESIZER
@@ -585,18 +603,27 @@ class Output:
             'prefer_props'  : settings.VS_OUTPUT_PREFER_PROPS,
         }
 
-        vs_output = vs_core.std.FlipVertical(vs_output)
+        if not alpha:
+            vs_output = vs_core.std.FlipVertical(vs_output)
 
         if vs_output.format == COMPATBGR32:  # type: ignore
             return vs_output
 
-        is_subsampled = vs_output.format.subsampling_w != 0 or vs_output.format.subsampling_h != 0
+        is_subsampled = (vs_output.format.subsampling_w != 0
+                         or vs_output.format.subsampling_h != 0)
         if not is_subsampled:
             resizer = self.Resizer.Point
+
         if vs_output.format.color_family == RGB:
             del resizer_kwargs['matrix_in_s']
 
-        vs_output = resizer(vs_output, **resizer_kwargs, **settings.VS_OUTPUT_RESIZER_KWARGS)
+        if alpha:
+            if vs_output.format == GRAY8:  # type: ignore
+                return vs_output
+            resizer_kwargs['format'] = GRAY8
+
+        vs_output = resizer(vs_output, **resizer_kwargs,
+                            **settings.VS_OUTPUT_RESIZER_KWARGS)
 
         return vs_output
 
@@ -613,17 +640,23 @@ class Output:
         return self._current_frame
     @current_frame.setter
     def current_frame(self, new_frame: Frame) -> None:
+        if new_frame > self.end_frame:
+            print('New frame {} is out of bounds of 0 - {}'
+                  .format(new_frame, self.end_frame))
+            return
         if self.graphics_item is not None and self.graphics_item.visible:
             self.graphics_item.setPixmap(self[new_frame])
         self._current_frame = new_frame
 
     @property
-    def graphics_item(self) -> Optional[GraphicsItem]:
+    def graphics_item(self) -> Optional[GraphicsItem]:  # pylint: disable=undefined-variable
         return self._graphics_item
     @graphics_item.setter
     def graphics_item(self, new_item: Optional[GraphicsItem]) -> None:
         if new_item is not None:
-            ret = new_item.about_to_show.connect(lambda: new_item.setPixmap(self[self.current_frame])); assert ret
+            ret = new_item.about_to_show.connect(
+                lambda: new_item.setPixmap(
+                    self[self.current_frame])); assert ret
         self._graphics_item = new_item
 
     def __str__(self) -> str:
@@ -633,22 +666,58 @@ class Output:
         return '{} \'{}\''.format(type(self).__name__, self._name)
 
     def render_frame(self, frame: Frame) -> QPixmap:
-        import ctypes
+        if not self.has_alpha:
+            return self.render_raw_videoframe(
+                self.vs_output.get_frame(int(frame)))
+        else:
+            return self.render_raw_videoframe(
+                self.vs_output.get_frame(int(frame)),
+                self.vs_alpha.get_frame(int(frame)))
 
-        vs_frame = self.vs_output.get_frame(int(frame))
+    def render_frame_async(self, frame: Frame, callback: Callable[QPixmap, None]) -> Future:
+        pass
+        
 
-        frame_pointer  = vs_frame.get_read_ptr(0)
-        frame_stride   = vs_frame.get_stride(0)
-        frame_itemsize = vs_frame.format.bytes_per_sample
+    def render_raw_videoframe(self, vs_frame: VideoFrame, vs_frame_alpha: Optional[VideoFrame] = None) -> QPixmap:
+        from ctypes import cast, c_char, POINTER
 
-        data_pointer = ctypes.cast(
-            frame_pointer,
-            ctypes.POINTER(ctypes.c_char * (frame_itemsize * vs_frame.width * vs_frame.height))
+        # powerful spell. do not touch
+        frame_data_pointer = cast(
+            vs_frame.get_read_ptr(0),
+            POINTER(c_char * (
+                vs_frame.format.bytes_per_sample
+                * vs_frame.width * vs_frame.height))
         )[0]
-        frame_image  = QImage(data_pointer, vs_frame.width, vs_frame.height, frame_stride, QImage.Format_RGB32)
-        frame_pixmap = QPixmap.fromImage(frame_image)
+        frame_image = QImage(
+            frame_data_pointer, vs_frame.width, vs_frame.height,
+            vs_frame.get_stride(0), QImage.Format_RGB32)
 
-        return frame_pixmap
+        if vs_frame_alpha is None:
+            result_pixmap = QPixmap.fromImage(frame_image)
+        else:
+            alpha_data_pointer = cast(
+                vs_frame_alpha.get_read_ptr(0),
+                POINTER(c_char * (
+                    vs_frame_alpha.format.bytes_per_sample
+                    * vs_frame_alpha.width * vs_frame_alpha.height))
+            )[0]
+            alpha_image = QImage(
+                alpha_data_pointer, vs_frame.width, vs_frame.height,
+                vs_frame_alpha.get_stride(0), QImage.Format_Alpha8)
+
+            result_image = QImage(vs_frame.width, vs_frame.height,
+                                  QImage.Format_ARGB32_Premultiplied)
+            painter = QPainter(result_image)
+            painter.setCompositionMode(QPainter.CompositionMode_Source)
+            painter.drawImage(0, 0, frame_image)
+            painter.setCompositionMode(
+                QPainter.CompositionMode_DestinationIn)
+            painter.drawImage(0, 0, alpha_image)
+            painter.end()
+
+            result_pixmap = QPixmap.fromImage(result_image)
+
+        return result_pixmap
 
     def _calculate_frame(self, seconds: float) -> int:
         return round(seconds * self.fps)

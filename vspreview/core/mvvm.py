@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from enum import auto, Flag
 from typing import (  # type: ignore
-    Any, Callable, Dict, Generic, List, Optional, overload, TypeVar, Type,
-    Union, _GenericAlias,
+    Any, Callable, cast, Dict, Generic, List, Optional, overload, TypeVar,
+    Type, Union, _GenericAlias,
 )
 
-from PySide2.QtCore import QObject, Signal  # type: ignore
+from PySide2.QtCore import QObject, Signal
 from PySide2.QtWidgets import QWidget
 from rx.core import Observer, Observable
 from rx.core.typing import Scheduler
@@ -57,7 +57,7 @@ class Property(QObservable, Generic[T]):  # pylint: disable=unsubscriptable-obje
 
         assert hasattr(self, 'ty'), '{} requires type of underlying data to be specified'.format(type(self).__name__)
 
-        super().__init__(subscribe)  # type: ignore
+        super().__init__(subscribe)
 
         self._value = init_value
         self._name = ""
@@ -96,11 +96,21 @@ class Property(QObservable, Generic[T]):  # pylint: disable=unsubscriptable-obje
         return repr(self)
 
     def __repr__(self) -> str:
-        return '{} = {}[{}]({})'.format(self.name, type(self).__name__, self.ty.__name__, self._value)
+        return '{} = {}[{}]({})'.format(
+            self.name, type(self).__name__, self.ty.__name__, self._value)
 
 
 class ViewModel(QObject):
     property_changed = Signal(Property)
+
+    @property
+    def main_vm(self) -> ViewModel:
+        return self._main_vm
+
+    def __init__(self, main_vm: Optional[ViewModel] = None) -> None:
+        super().__init__()
+
+        self._main_vm = cast(ViewModel, main_vm)
 
 
 class View(QWidget):
@@ -137,5 +147,7 @@ class View(QWidget):
         self._listeners[prop].append(listener)
 
     def on_property_changed(self, prop: Property) -> None:
+        if prop not in self._listeners:
+            return
         for listener in self._listeners[prop]:
             listener()
