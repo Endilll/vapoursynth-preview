@@ -126,6 +126,7 @@ class MainToolbar(AbstractToolbar):
         self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
         self.copy_frame_button           .clicked.connect(self.on_copy_frame_button_clicked)
         self.copy_timestamp_button       .clicked.connect(self.on_copy_timestamp_button_clicked)
+        self.sync_outputs_checkbox  .stateChanged.connect(self.on_sync_outputs_changed)
         self.zoom_combobox    .currentTextChanged.connect(self.on_zoom_changed)
         self.save_as_button              .clicked.connect(self.on_save_as_clicked)
         self.switch_timeline_mode_button .clicked.connect(self.on_switch_timeline_mode_clicked)
@@ -140,6 +141,7 @@ class MainToolbar(AbstractToolbar):
         add_shortcut(Qt.Qt.Key_8, lambda: self.main.switch_output(7))
         add_shortcut(Qt.Qt.Key_9, lambda: self.main.switch_output(8))
         add_shortcut(Qt.Qt.Key_0, lambda: self.main.switch_output(9))
+        add_shortcut(Qt.Qt.Key_S,         self.sync_outputs_checkbox.click)
 
         set_qobject_names(self)
 
@@ -169,6 +171,10 @@ class MainToolbar(AbstractToolbar):
         self.copy_timestamp_button.setText('⎘')
         layout.addWidget(self.copy_timestamp_button)
 
+        self.sync_outputs_checkbox = Qt.QCheckBox(self)
+        self.sync_outputs_checkbox.setText('Sync Outputs')
+        layout.addWidget(self.sync_outputs_checkbox)
+
         self.zoom_combobox = ComboBox[float](self)
         self.zoom_combobox.setMinimumContentsLength(4)
         layout.addWidget(self.zoom_combobox)
@@ -189,6 +195,10 @@ class MainToolbar(AbstractToolbar):
         qt_silent_call(self.frame_control.setValue, frame)
         qt_silent_call(self. time_control.setValue,  time)
 
+        if self.sync_outputs_checkbox.isChecked():
+            for output in self.main.outputs:
+                output.frame_to_show = frame
+
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.outputs_combobox.setCurrentIndex, index)
         qt_silent_call(self.   frame_control.setMaximum, self.main.current_output.end_frame)
@@ -207,6 +217,14 @@ class MainToolbar(AbstractToolbar):
     def on_copy_timestamp_button_clicked(self, checked: Optional[bool] = None) -> None:
         self.main.clipboard.setText(self.time_control.text())
         self.main.statusbar.showMessage('Current timestamp copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+
+    def on_sync_outputs_changed(self, state: Qt.Qt.CheckState) -> None:
+        if state == Qt.Qt.Checked:
+            for output in self.main.outputs:
+                output.frame_to_show = self.main.current_frame
+        if state == Qt.Qt.Unchecked:
+            for output in self.main.outputs:
+                output.frame_to_show = None
 
     def on_switch_timeline_mode_clicked(self, checked: Optional[bool] = None) -> None:
         if self.main.timeline.mode == self.main.timeline.Mode.TIME:
@@ -594,7 +612,10 @@ class MainWindow(AbstractMainWindow):
         # current_output relies on outputs_combobox
         self.toolbars.main.on_current_output_changed(index, prev_index)
         self.timeline.set_end_frame(self.current_output.end_frame)
-        self.current_frame = self.current_output.last_showed_frame
+        if self.current_output.frame_to_show is not None:
+            self.current_frame = self.current_output.frame_to_show
+        else:
+            self.current_frame = self.current_output.last_showed_frame
 
         for output in self.outputs:
             output.graphics_scene_item.hide()

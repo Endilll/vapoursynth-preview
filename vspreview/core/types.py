@@ -657,6 +657,7 @@ class Output(YAMLObject):
 
     storable_attrs = (
         'name', 'last_showed_frame', 'scening_lists', 'play_fps',
+        'frame_to_show',
     )
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
@@ -698,6 +699,8 @@ class Output(YAMLObject):
             self.scening_lists: SceningLists = SceningLists()
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
+        if not hasattr(self, 'frame_to_show'):
+            self.frame_to_show: Optional[Frame] = None
 
     def prepare_vs_output(self, vs_output: vs.VideoNode) -> vs.VideoNode:
         from vspreview.utils import main_window
@@ -782,3 +785,8 @@ class Output(YAMLObject):
                 self.play_fps = play_fps
         except (KeyError, TypeError):
             logging.warning(f'Storage loading: Output: play fps weren\'t parsed successfully.')
+
+        try:
+            self.frame_to_show = state['frame_to_show']
+        except (KeyError, TypeError):
+            logging.warning(f'Storage loading: Output: failed to parse frame to show.')
