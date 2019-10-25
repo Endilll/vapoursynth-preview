@@ -122,8 +122,8 @@ class MainToolbar(AbstractToolbar):
         }
 
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
-        self.frame_control          .valueChanged.connect(self.main.switch_frame)
-        self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
+        self.frame_control       .editingFinished.connect(lambda: self.main.switch_frame(self.frame_control.value()))
+        self.time_control        .editingFinished.connect(lambda: self.main.switch_frame(time=self.time_control.value()))
         self.copy_frame_button           .clicked.connect(self.on_copy_frame_button_clicked)
         self.copy_timestamp_button       .clicked.connect(self.on_copy_timestamp_button_clicked)
         self.sync_outputs_checkbox  .stateChanged.connect(self.on_sync_outputs_changed)
