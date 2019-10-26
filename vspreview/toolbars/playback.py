@@ -57,6 +57,8 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_to_next_button        .clicked.connect(self.seek_to_next)
         self.seek_n_frames_b_button     .clicked.connect(self.seek_n_frames_b)
         self.seek_n_frames_f_button     .clicked.connect(self.seek_n_frames_f)
+        self.seek_to_start_button       .clicked.connect(self.seek_to_start)
+        self.seek_to_end_button         .clicked.connect(self.seek_to_end)
         self.seek_frame_control    .valueChanged.connect(self.on_seek_frame_changed)
         self.seek_time_control     .valueChanged.connect(self.on_seek_time_changed)
         self.fps_spinbox           .valueChanged.connect(self.on_fps_changed)
@@ -68,6 +70,8 @@ class PlaybackToolbar(AbstractToolbar):
         add_shortcut(              Qt.Qt.Key_Right, self.seek_to_next_button   .click)
         add_shortcut(Qt.Qt.SHIFT + Qt.Qt.Key_Left , self.seek_n_frames_b_button.click)
         add_shortcut(Qt.Qt.SHIFT + Qt.Qt.Key_Right, self.seek_n_frames_f_button.click)
+        add_shortcut(              Qt.Qt.Key_Home,  self.seek_to_start_button  .click)
+        add_shortcut(              Qt.Qt.Key_End,   self.seek_to_end_button    .click)
 
         set_qobject_names(self)
 
@@ -75,6 +79,11 @@ class PlaybackToolbar(AbstractToolbar):
         layout = Qt.QHBoxLayout(self)
         layout.setObjectName('PlaybackToolbar.setup_ui.layout')
         layout.setContentsMargins(0, 0, 0, 0)
+
+        self.seek_to_start_button = Qt.QPushButton(self)
+        self.seek_to_start_button.setText('⏮')
+        self.seek_to_start_button.setToolTip('Seek to First Frame')
+        layout.addWidget(self.seek_to_start_button)
 
         self.seek_n_frames_b_button = Qt.QPushButton(self)
         self.seek_n_frames_b_button.setText('⏪')
@@ -101,6 +110,11 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_n_frames_f_button.setText('⏩')
         self.seek_n_frames_f_button.setToolTip('Seek N Frames Forward')
         layout.addWidget(self.seek_n_frames_f_button)
+
+        self.seek_to_end_button = Qt.QPushButton(self)
+        self.seek_to_end_button.setText('⏭')
+        self.seek_to_end_button.setToolTip('Seek to Last Frame')
+        layout.addWidget(self.seek_to_end_button)
 
         self.seek_frame_control = FrameEdit[FrameInterval](self)
         self.seek_frame_control.setMinimum(FrameInterval(1))
@@ -197,6 +211,14 @@ class PlaybackToolbar(AbstractToolbar):
             frame_interval = self.play_end_frame - self.play_start_frame
             logging.debug(f'{time_interval:.3f} s, {frame_interval} frames, {int(frame_interval) / time_interval:.3f} fps')
             self.play_start_time = None
+
+    def seek_to_start(self, checked: Optional[bool] = None) -> None:
+        self.stop()
+        self.main.current_frame = Frame(0)
+
+    def seek_to_end(self, checked: Optional[bool] = None) -> None:
+        self.stop()
+        self.main.current_frame = self.main.current_output.end_frame
 
     def seek_to_prev(self, checked: Optional[bool] = None) -> None:
         try:
