@@ -444,6 +444,7 @@ class MainWindow(AbstractMainWindow):
         self.graphics_view.setBackgroundBrush(self.palette().brush(Qt.QPalette.Window))
         self.graphics_view.setSizePolicy(Qt.QSizePolicy.Fixed, Qt.QSizePolicy.Fixed)
         self.graphics_view.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
+        self.graphics_view.setTransformationAnchor(GraphicsView.AnchorUnderMouse)
         self.main_layout.addWidget(self.graphics_view)
 
         self.timeline = Timeline(self.central_widget)
