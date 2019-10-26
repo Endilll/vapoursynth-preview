@@ -662,17 +662,30 @@ class Output(YAMLObject):
     __slots__ = storable_attrs + (
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
         'format', 'total_frames', 'total_time', 'graphics_scene_item',
-        'end_frame', 'end_time', 'fps',
+        'end_frame', 'end_time', 'fps', 'has_alpha', 'vs_alpha',
+        'format_alpha',
     )
 
-    def __init__(self, vs_output: vs.VideoNode, index: int) -> None:
+    def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
         from vspreview.models import SceningLists
 
         # runtime attributes
 
-        self.format       = vs_output.format  # changed after preparing vs ouput
+        if isinstance(vs_output, vs.AlphaOutputTuple):
+            self.has_alpha = True
+            self.vs_output = vs_output.clip
+            self.vs_alpha  = vs_output.alpha
+
+            self.format_alpha = self.vs_alpha.format
+            self.vs_alpha = self.prepare_vs_output(self.vs_alpha, alpha=True)
+        else:
+            self.has_alpha = False
+            self.vs_output = vs_output
+
         self.index        = index
-        self.vs_output    = self.prepare_vs_output(vs_output)
+        self.format       = self.vs_output.format  # changed after preparing vs output
+
+        self.vs_output    = self.prepare_vs_output(self.vs_output)
         self.width        = self.vs_output.width
         self.height       = self.vs_output.height
         self.fps_num      = self.vs_output.fps.numerator
@@ -702,7 +715,7 @@ class Output(YAMLObject):
         if not hasattr(self, 'frame_to_show'):
             self.frame_to_show: Optional[Frame] = None
 
-    def prepare_vs_output(self, vs_output: vs.VideoNode) -> vs.VideoNode:
+    def prepare_vs_output(self, vs_output: vs.VideoNode, alpha: bool = False) -> vs.VideoNode:
         from vspreview.utils import main_window
 
         main = main_window()
@@ -730,9 +743,53 @@ class Output(YAMLObject):
         if vs_output.format.color_family == vs.RGB:
             del resizer_kwargs['matrix_in_s']
 
+        if alpha:
+            if vs_output.format == vs.GRAY8:
+                return vs_output
+            resizer_kwargs['format'] = vs.GRAY8
+
         vs_output = resizer(vs_output, **resizer_kwargs, **main.VS_OUTPUT_RESIZER_KWARGS)
 
         return vs_output
+
+    def render_frame(self, frame: Frame) -> Qt.QPixmap:
+        if not self.has_alpha:
+            return self.render_raw_videoframe(
+                self.vs_output.get_frame(int(frame)))
+        else:
+            return self.render_raw_videoframe(
+                self.vs_output.get_frame(int(frame)),
+                self.vs_alpha.get_frame(int(frame)))
+
+    def render_raw_videoframe(self, vs_frame: vs.VideoFrame, vs_frame_alpha: Optional[vs.VideoFrame] = None) -> Qt.QPixmap:
+        import ctypes
+
+        frame_pointer  = vs_frame.get_read_ptr(0)
+        frame_stride   = vs_frame.get_stride(0)
+        frame_itemsize = vs_frame.format.bytes_per_sample
+
+        # powerful spell. do not touch
+        frame_data_pointer = ctypes.cast(
+            frame_pointer,
+            ctypes.POINTER(ctypes.c_char * (frame_itemsize * vs_frame.width * vs_frame.height))
+        )[0]
+        qimage_format = Qt.QImage.Format_RGB32
+
+        if vs_frame_alpha is not None:
+            alpha_data_pointer = ctypes.cast(
+                vs_frame_alpha.get_read_ptr(0),
+                ctypes.POINTER(ctypes.c_char * (vs_frame.width * vs_frame.height))
+            )[0]
+
+            for i in range(0, vs_frame.width * vs_frame.height):
+                frame_data_pointer[i * 4 + 3] = alpha_data_pointer[i]
+
+            qimage_format = Qt.QImage.Format_ARGB32
+
+        frame_image  = Qt.QImage(frame_data_pointer, vs_frame.width, vs_frame.height, frame_stride, qimage_format)
+        frame_pixmap = Qt.QPixmap.fromImage(frame_image)
+
+        return frame_pixmap
 
     def _calculate_frame(self, seconds: float) -> int:
         return round(seconds * self.fps)

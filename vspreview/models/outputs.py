@@ -26,9 +26,6 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
 
         local_storage = local_storage if local_storage is not None else {}
         for i, vs_output in vs.get_outputs().items():
-            if isinstance(vs_output, vs.AlphaOutputTuple):
-                vs_output = vs_output.clip
-
             try:
                 output = local_storage[str(i)]
                 output.__init__(vs_output, i)  # type: ignore

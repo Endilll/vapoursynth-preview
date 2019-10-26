@@ -539,7 +539,7 @@ class MainWindow(AbstractMainWindow):
     def init_outputs(self) -> None:
         self.graphics_scene.clear()
         for output in self.outputs:
-            frame_pixmap = self.render_frame(output.last_showed_frame, output)
+            frame_pixmap = output.render_frame(output.last_showed_frame)
             frame_item   = self.graphics_scene.addPixmap(frame_pixmap)
             frame_item.hide()
             output.graphics_scene_item = frame_item
@@ -554,27 +554,7 @@ class MainWindow(AbstractMainWindow):
         self.statusbar.showMessage('Reloaded successfully', self.STATUSBAR_MESSAGE_TIMEOUT)
 
     def render_frame(self, frame: Frame, output: Optional[Output] = None) -> Qt.QPixmap:
-        if output is None:
-            output = self.current_output
-
-        return self.render_raw_videoframe(output.vs_output.get_frame(int(frame)))
-
-    def render_raw_videoframe(self, vs_frame: vs.VideoFrame) -> Qt.QPixmap:
-        import ctypes
-
-        frame_pointer  = vs_frame.get_read_ptr(0)
-        frame_stride   = vs_frame.get_stride(0)
-        frame_itemsize = vs_frame.format.bytes_per_sample
-
-        # powerful spell. do not touch
-        data_pointer = ctypes.cast(
-            frame_pointer,
-            ctypes.POINTER(ctypes.c_char * (frame_itemsize * vs_frame.width * vs_frame.height))
-        )[0]
-        frame_image  = Qt.QImage(data_pointer, vs_frame.width, vs_frame.height, frame_stride, Qt.QImage.Format_RGB32)
-        frame_pixmap = Qt.QPixmap.fromImage(frame_image)
-
-        return frame_pixmap
+        return self.current_output.render_frame(frame)
 
     def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
         if frame is not None:
@@ -596,7 +576,7 @@ class MainWindow(AbstractMainWindow):
             toolbar.on_current_frame_changed(frame, time)
 
         if render_frame:
-            self.current_output.graphics_scene_item.setPixmap(self.render_frame(frame, self.current_output))
+            self.current_output.graphics_scene_item.setPixmap(self.render_frame(frame))
 
     def switch_output(self, value: Union[int, Output]) -> None:
         if len(self.outputs) == 0:
