@@ -122,9 +122,9 @@ class MainToolbar(AbstractToolbar):
         }
 
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
-        self.frame_control       .editingFinished.connect(lambda: self.main.switch_frame(self.frame_control.value()))
+        self.frame_control          .valueChanged.connect(self.main.switch_frame)
+        self.time_control           .valueChanged.connect(self.main.switch_frame)
         self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)
-        self.time_control        .editingFinished.connect(lambda: self.main.switch_frame(time=self.time_control.value()))
         self.time_control        .editingFinished.connect(self.time_control.clearFocus)
         self.copy_frame_button           .clicked.connect(self.on_copy_frame_button_clicked)
         self.copy_timestamp_button       .clicked.connect(self.on_copy_timestamp_button_clicked)
@@ -160,6 +160,7 @@ class MainToolbar(AbstractToolbar):
         layout.addWidget(self.outputs_combobox)
 
         self.frame_control = FrameEdit[Frame](self)
+        self.frame_control.setKeyboardTracking(False)
         layout.addWidget(self.frame_control)
 
         self.copy_frame_button = Qt.QPushButton(self)
@@ -167,6 +168,7 @@ class MainToolbar(AbstractToolbar):
         layout.addWidget(self.copy_frame_button)
 
         self.time_control = TimeEdit[Time](self)
+        self.time_control.setKeyboardTracking(False)
         layout.addWidget(self.time_control)
 
         self.copy_timestamp_button = Qt.QPushButton(self)
