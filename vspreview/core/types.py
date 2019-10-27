@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 from   datetime import timedelta
 import logging
 from   typing   import (
@@ -763,34 +764,41 @@ class Output(YAMLObject):
                 self.vs_alpha.get_frame(int(frame)))
 
     def render_raw_videoframe(self, vs_frame: vs.VideoFrame, vs_frame_alpha: Optional[vs.VideoFrame] = None) -> Qt.QPixmap:
-        import ctypes
-
-        frame_pointer  = vs_frame.get_read_ptr(0)
-        frame_stride   = vs_frame.get_stride(0)
-        frame_itemsize = vs_frame.format.bytes_per_sample
-
         # powerful spell. do not touch
         frame_data_pointer = ctypes.cast(
-            frame_pointer,
-            ctypes.POINTER(ctypes.c_char * (frame_itemsize * vs_frame.width * vs_frame.height))
+            vs_frame.get_read_ptr(0),
+            ctypes.POINTER(ctypes.c_char * (
+                vs_frame.format.bytes_per_sample
+                * vs_frame.width * vs_frame.height))
         )[0]
-        qimage_format = Qt.QImage.Format_RGB32
+        frame_image = Qt.QImage(
+            frame_data_pointer, vs_frame.width, vs_frame.height,
+            vs_frame.get_stride(0), Qt.QImage.Format_RGB32)
 
-        if vs_frame_alpha is not None:
+        if vs_frame_alpha is None:
+            result_pixmap = Qt.QPixmap.fromImage(frame_image)
+        else:
             alpha_data_pointer = ctypes.cast(
                 vs_frame_alpha.get_read_ptr(0),
-                ctypes.POINTER(ctypes.c_char * (vs_frame.width * vs_frame.height))
+                ctypes.POINTER(ctypes.c_char * (
+                    vs_frame_alpha.format.bytes_per_sample
+                    * vs_frame_alpha.width * vs_frame_alpha.height))
             )[0]
+            alpha_image = Qt.QImage(
+                alpha_data_pointer, vs_frame.width, vs_frame.height,
+                vs_frame_alpha.get_stride(0), Qt.QImage.Format_Alpha8)
 
-            for i in range(0, vs_frame.width * vs_frame.height):
-                frame_data_pointer[i * 4 + 3] = alpha_data_pointer[i]
+            result_image = Qt.QImage(vs_frame.width, vs_frame.height, Qt.QImage.Format_ARGB32_Premultiplied)
+            painter = Qt.QPainter(result_image)
+            painter.setCompositionMode(Qt.QPainter.CompositionMode_Source)
+            painter.drawImage(0, 0, frame_image)
+            painter.setCompositionMode(Qt.QPainter.CompositionMode_DestinationIn)
+            painter.drawImage(0, 0, alpha_image)
+            painter.end()
 
-            qimage_format = Qt.QImage.Format_ARGB32
+            result_pixmap = Qt.QPixmap.fromImage(result_image)
 
-        frame_image  = Qt.QImage(frame_data_pointer, vs_frame.width, vs_frame.height, frame_stride, qimage_format)
-        frame_pixmap = Qt.QPixmap.fromImage(frame_image)
-
-        return frame_pixmap
+        return result_pixmap
 
     def _calculate_frame(self, seconds: float) -> int:
         return round(seconds * self.fps)
