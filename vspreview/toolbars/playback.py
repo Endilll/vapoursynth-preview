@@ -154,14 +154,33 @@ class PlaybackToolbar(AbstractToolbar):
         if self.main.statusbar.label.text() == 'Ready':
             self.main.statusbar.label.setText('Playing')
 
-        play_buffer_size = int(min(
-            self.main.PLAY_BUFFER_SIZE,
-            self.main.current_output.end_frame - self.main.current_frame
-        ))
-        self.play_buffer = deque([], play_buffer_size)
-        for i in range(cast(int, self.play_buffer.maxlen)):
-            future = self.main.current_output.vs_output.get_frame_async(int(self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
-            self.play_buffer.appendleft(future)
+        if not self.main.current_output.has_alpha:
+            play_buffer_size = int(min(
+                self.main.PLAY_BUFFER_SIZE,
+                self.main.current_output.end_frame - self.main.current_frame
+            ))
+            self.play_buffer = deque([], play_buffer_size)
+            for i in range(cast(int, self.play_buffer.maxlen)):
+                future = self.main.current_output.vs_output.get_frame_async(int(
+                    self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
+                self.play_buffer.appendleft(future)
+        else:
+            play_buffer_size = int(min(
+                self.main.PLAY_BUFFER_SIZE,
+                (self.main.current_output.end_frame - self.main.current_frame) * 2
+            ))
+            # buffer size needs to be even in case alpha is present
+            play_buffer_size -= play_buffer_size % 2
+            self.play_buffer = deque([], play_buffer_size)
+
+            for i in range(cast(int, self.play_buffer.maxlen) // 2):
+                frame = self.main.current_frame + FrameInterval(i) + FrameInterval(1)
+                future = self.main.current_output.vs_output.get_frame_async(
+                    int(frame))
+                self.play_buffer.appendleft(future)
+                future = self.main.current_output.vs_alpha.get_frame_async(
+                    int(frame))
+                self.play_buffer.appendleft(future)
 
         if self.fps_unlimited_checkbox.isChecked() or self.main.DEBUG_PLAY_FPS:
             self.play_timer.start(0)
@@ -174,18 +193,45 @@ class PlaybackToolbar(AbstractToolbar):
             self.play_timer.start(round(1000 / self.main.current_output.play_fps))
 
     def _show_next_frame(self) -> None:
-        try:
-            frame_future = self.play_buffer.pop()
-        except IndexError:
-            self.play_pause_button.click()
-            return
+        if not self.main.current_output.has_alpha:
+            try:
+                frame_future = self.play_buffer.pop()
+            except IndexError:
+                self.play_pause_button.click()
+                return
 
-        next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE
-        if next_frame_for_buffer <= self.main.current_output.end_frame:
-            self.play_buffer.appendleft(self.main.current_output.vs_output.get_frame_async(next_frame_for_buffer))
+            next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE
+            if next_frame_for_buffer <= self.main.current_output.end_frame:
+                self.play_buffer.appendleft(
+                    self.main.current_output.vs_output.get_frame_async(
+                        next_frame_for_buffer))
 
-        self.main.switch_frame(self.main.current_frame + FrameInterval(1), render_frame=False)
-        pixmap = self.main.current_output.render_raw_videoframe(frame_future.result())
+            self.main.switch_frame(
+                self.main.current_frame + FrameInterval(1), render_frame=False)
+            pixmap = self.main.current_output.render_raw_videoframe(
+                frame_future.result())
+        else:
+            try:
+                frame_future = self.play_buffer.pop()
+                alpha_future = self.play_buffer.pop()
+            except IndexError:
+                self.play_pause_button.click()
+                return
+
+            next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE // 2
+            if next_frame_for_buffer <= self.main.current_output.end_frame:
+                self.play_buffer.appendleft(
+                    self.main.current_output.vs_output.get_frame_async(
+                        next_frame_for_buffer))
+                self.play_buffer.appendleft(
+                    self.main.current_output.vs_alpha.get_frame_async(
+                        next_frame_for_buffer))
+
+            self.main.switch_frame(
+                self.main.current_frame + FrameInterval(1), render_frame=False)
+            pixmap = self.main.current_output.render_raw_videoframe(
+                frame_future.result(), alpha_future.result())
+
         self.main.current_output.graphics_scene_item.setPixmap(pixmap)
 
         if not self.main.DEBUG_PLAY_FPS:
