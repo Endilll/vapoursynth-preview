@@ -731,7 +731,8 @@ class Output(YAMLObject):
             'prefer_props'  : main.VS_OUTPUT_PREFER_PROPS,
         }
 
-        vs_output = vs.core.std.FlipVertical(vs_output)
+        if not alpha:
+            vs_output = vs.core.std.FlipVertical(vs_output)
 
         if vs_output.format == vs.COMPATBGR32:
             return vs_output
