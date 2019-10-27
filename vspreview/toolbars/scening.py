@@ -51,6 +51,7 @@ class SceningListDialog(Qt.QDialog):
         self.start_frame_control.valueChanged.connect(self.on_start_frame_changed)
         self.start_time_control .valueChanged.connect(self.on_start_time_changed)
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
+        self.delete_button           .clicked.connect(self.on_delete_clicked)
 
         set_qobject_names(self)
 
@@ -86,6 +87,16 @@ class SceningListDialog(Qt.QDialog):
         self.label_lineedit = Qt.QLineEdit(self)
         self.label_lineedit.setPlaceholderText('Label')
         scene_layout.addWidget(self.label_lineedit)
+
+        buttons_layout = Qt.QHBoxLayout()
+        buttons_layout.setObjectName(
+            'SceningListDialog.setup_ui.buttons_layout')
+        layout.addLayout(buttons_layout)
+
+        self.delete_button = Qt.QPushButton(self)
+        self.delete_button.setText('Delete Selected Scene')
+        self.delete_button.setEnabled(False)
+        buttons_layout.addWidget(self.delete_button)
 
         # self.add_button = Qt.QPushButton(self)
         # self.add_button.setText('Add')
@@ -124,11 +135,17 @@ class SceningListDialog(Qt.QDialog):
         self.tableview.resizeColumnsToContents()
         self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
 
+        self.delete_button.setEnabled(False)
+
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         self.start_frame_control.setMaximum(self.main.current_output.end_frame)
         self.  end_frame_control.setMaximum(self.main.current_output.end_frame)
         self. start_time_control.setMaximum(self.main.current_output.end_time)
         self.   end_time_control.setMaximum(self.main.current_output.end_time)
+
+    def on_delete_clicked(self, checked: Optional[bool] = None) -> None:
+        for model_index in self.tableview.selectionModel().selectedRows():
+            self.scening_list.remove(model_index.row())
 
     def on_end_frame_changed(self, value: Union[Frame, int]) -> None:
         frame = Frame(value)
@@ -200,6 +217,7 @@ class SceningListDialog(Qt.QDialog):
 
     def on_tableview_selection_changed(self, selected: Qt.QItemSelection, deselected: Qt.QItemSelection) -> None:
         if len(selected.indexes()) == 0:
+            self.delete_button.setEnabled(False)
             return
         index = selected.indexes()[0]
         scene = self.scening_list[index.row()]
@@ -208,6 +226,7 @@ class SceningListDialog(Qt.QDialog):
         qt_silent_call(self. start_time_control.setValue, Time(scene.start))
         qt_silent_call(self.   end_time_control.setValue, Time(scene.end))
         qt_silent_call(self.     label_lineedit.setText,      scene.label)
+        self.delete_button.setEnabled(True)
 
 
 class SceningToolbar(AbstractToolbar):
