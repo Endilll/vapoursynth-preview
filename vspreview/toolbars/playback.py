@@ -91,7 +91,7 @@ class PlaybackToolbar(AbstractToolbar):
         layout.addWidget(self.seek_n_frames_b_button)
 
         self.seek_to_prev_button = Qt.QPushButton(self)
-        self.seek_to_prev_button.setText('◀️')
+        self.seek_to_prev_button.setText('◂')
         self.seek_to_prev_button.setToolTip('Seek 1 Frame Backwards')
         layout.addWidget(self.seek_to_prev_button)
 
@@ -102,7 +102,7 @@ class PlaybackToolbar(AbstractToolbar):
         layout.addWidget(self.play_pause_button)
 
         self.seek_to_next_button = Qt.QPushButton(self)
-        self.seek_to_next_button.setText('▶️')
+        self.seek_to_next_button.setText('▸')
         self.seek_to_next_button.setToolTip('Seek 1 Frame Forward')
         layout.addWidget(self.seek_to_next_button)
 
