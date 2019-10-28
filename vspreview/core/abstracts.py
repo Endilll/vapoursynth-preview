@@ -36,11 +36,11 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
         raise NotImplementedError()
 
     @abstractmethod
-    def switch_output(self, value: Union[int, Output]) -> None:
+    def switch_output(self, value: Union[int, Output]) -> bool:
         raise NotImplementedError()
 
     @abstractmethod
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> bool:
         raise NotImplementedError()
 
     @abstractmethod

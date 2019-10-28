@@ -418,7 +418,7 @@ class MainWindow(AbstractMainWindow):
 
         # timeline
 
-        self.timeline.clicked.connect(self.switch_frame)
+        self.timeline.clicked.connect(self.switch_frame)  # type: ignore
 
         # init toolbars and outputs
 
@@ -556,17 +556,17 @@ class MainWindow(AbstractMainWindow):
     def render_frame(self, frame: Frame, output: Optional[Output] = None) -> Qt.QPixmap:
         return self.current_output.render_frame(frame)
 
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
+    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> bool:
         if frame is not None:
             time = Time(frame)
         elif time is not None:
             frame = Frame(time)
         else:
             logging.debug('switch_frame(): both frame and time is None')
-            return
+            return False
         if frame > self.current_output.end_frame:
             # logging.debug('switch_frame(): New frame position is out of range')
-            return
+            return False
 
         self.current_output.last_showed_frame = frame
 
@@ -578,17 +578,18 @@ class MainWindow(AbstractMainWindow):
         if render_frame:
             self.current_output.graphics_scene_item.setPixmap(self.render_frame(frame))
 
-    def switch_output(self, value: Union[int, Output]) -> None:
+        return True
+
+    def switch_output(self, value: Union[int, Output]) -> bool:
         if len(self.outputs) == 0:
-            # TODO: consider returning False
-            return
+            return False
         if isinstance(value, Output):
             index = self.outputs.index_of(value)
         else:
             index = value
 
         if index < 0 or index >= len(self.outputs):
-            return
+            return False
 
         prev_index = self.toolbars.main.outputs_combobox.currentIndex()
 
@@ -610,6 +611,8 @@ class MainWindow(AbstractMainWindow):
         for toolbar in self.toolbars:
             toolbar.on_current_output_changed(index, prev_index)
         self.update_statusbar_output_info()
+
+        return True
 
     @property  # type: ignore
     def current_output(self) -> Output:  # type: ignore
