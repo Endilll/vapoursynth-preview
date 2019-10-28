@@ -817,7 +817,7 @@ class SceningToolbar(AbstractToolbar):
         pattern = re.compile(r'(\d+)\sI|K')
         for match in pattern.findall(path.read_text()):
             try:
-                scening_list.add(Frame(match))
+                scening_list.add(Frame(int(match)))
             except ValueError:
                 out_of_range_count += 1
 
