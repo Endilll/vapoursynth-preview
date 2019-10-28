@@ -123,7 +123,7 @@ class MainToolbar(AbstractToolbar):
 
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
         self.frame_control          .valueChanged.connect(self.main.switch_frame)
-        self.time_control           .valueChanged.connect(self.main.switch_frame)
+        self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
         self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)  # type: ignore
         self.time_control        .editingFinished.connect(self.time_control.clearFocus)  # type: ignore
         self.copy_frame_button           .clicked.connect(self.on_copy_frame_button_clicked)
