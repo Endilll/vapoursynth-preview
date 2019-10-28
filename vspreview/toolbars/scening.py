@@ -397,9 +397,9 @@ class SceningToolbar(AbstractToolbar):
         self.export_template_lineedit = Qt.QLineEdit(self)
         # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
         self.export_template_lineedit.setToolTip(
-            r'Use {start} and {end} as placeholders.'
+            r'Use {start} and {end} as placeholders. '
             r'Both are valid for single frame scenes. '
-            r'{label} is available, too. '
+            r'{label} is available, too.'
         )
         self.export_template_lineedit.setPlaceholderText('Export Template')
         layout_line_2.addWidget(self.export_template_lineedit)
