@@ -246,6 +246,7 @@ class SceningToolbar(AbstractToolbar):
             'Matroska XML Chapters (*.xml)' : self.import_matroska_xml_chapters,
             'OGM Chapters (*.txt)'          : self.import_ogm_chapters,
             'TFM Log (*.txt)'               : self.import_tfm,
+            'x264/x265 2 Pass Log (*.log)'  : self.import_x264_2pass_log,
             'x264/x265 QP File (*.qp)'      : self.import_qp,
             'XviD Log (*.txt)'              : self.import_xvid,
         }
@@ -923,6 +924,17 @@ class SceningToolbar(AbstractToolbar):
         for tfm_frame in tfm_frames:
             try:
                 scening_list.add(tfm_frame, label=str(tfm_frame.mic))
+            except ValueError:
+                out_of_range_count += 1
+
+    def import_x264_2pass_log(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports I- and K-frames as single-frame scenes.
+        '''
+        pattern = re.compile(r'in:(\d+).*type:I|K')
+        for match in pattern.findall(path.read_text()):
+            try:
+                scening_list.add(Frame(int(match)))
             except ValueError:
                 out_of_range_count += 1
 
