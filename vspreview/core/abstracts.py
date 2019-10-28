@@ -47,15 +47,46 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
     def show_message(self, message: str, timeout: Optional[int] = None) -> None:
         raise NotImplementedError
 
+    @property  # type: ignore
+    @abstractmethod
+    def current_output(self) -> Output:
+        raise NotImplementedError
+
+    @current_output.setter  # type: ignore
+    @abstractmethod
+    def current_output(self, value: Output) -> None:
+        raise NotImplementedError
+
+    @property  # type: ignore
+    @abstractmethod
+    def current_frame(self) -> Frame:
+        raise NotImplementedError
+
+    @current_frame.setter  # type: ignore
+    @abstractmethod
+    def current_frame(self, value: Frame) -> None:
+        raise NotImplementedError
+
+    @property  # type: ignore
+    @abstractmethod
+    def current_time(self) -> Time:
+        raise NotImplementedError
+
+    @current_time.setter  # type: ignore
+    @abstractmethod
+    def current_time(self, value: Time) -> None:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def outputs(self) -> Outputs:  # pylint: disable=undefined-variable
+        raise NotImplementedError
+
     central_widget: Qt.QWidget        = abstract_attribute()
     clipboard     : Qt.QClipboard     = abstract_attribute()
-    current_frame : Frame             = abstract_attribute()
-    current_time  : Time              = abstract_attribute()
-    current_output: Output            = abstract_attribute()
     display_scale : float             = abstract_attribute()
     graphics_scene: Qt.QGraphicsScene = abstract_attribute()
     graphics_view : Qt.QGraphicsView  = abstract_attribute()
-    outputs       : Outputs           = abstract_attribute()
     timeline      : Timeline          = abstract_attribute()
     toolbars      : AbstractToolbars  = abstract_attribute()  # pylint: disable=used-before-assignment
     save_on_exit  : bool              = abstract_attribute()
