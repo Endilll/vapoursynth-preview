@@ -60,7 +60,8 @@ disable=
     logging-fstring-interpolation,
     logging-format-interpolation,
     unused-import,
-    protected-access
+    protected-access,
+    fixme
 
 [REPORTS]
 
