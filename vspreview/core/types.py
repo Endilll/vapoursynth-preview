@@ -735,7 +735,7 @@ class Output(YAMLObject):
         if not alpha:
             vs_output = vs.core.std.FlipVertical(vs_output)
 
-        if vs_output.format == vs.COMPATBGR32:
+        if vs_output.format == vs.COMPATBGR32:  # type: ignore
             return vs_output
 
         is_subsampled = vs_output.format.subsampling_w != 0 or vs_output.format.subsampling_h != 0
@@ -746,7 +746,7 @@ class Output(YAMLObject):
             del resizer_kwargs['matrix_in_s']
 
         if alpha:
-            if vs_output.format == vs.GRAY8:
+            if vs_output.format == vs.GRAY8:  # type: ignore
                 return vs_output
             resizer_kwargs['format'] = vs.GRAY8
 

@@ -18,9 +18,23 @@ T = TypeVar('T')
 
 
 def print_var(var: Any) -> None:
-    frame = inspect.currentframe().f_back  # type: ignore
-    s = inspect.getframeinfo(frame).code_context[0]
-    r = re.search(r"\((.*)\)", s).group(1)  # type: ignore
+    current_frame = inspect.currentframe()
+    if current_frame is None:
+        logging.debug('print_var(): current_frame is None')
+        return
+    frame = current_frame.f_back
+
+    context = inspect.getframeinfo(frame).code_context
+    if context is None:
+        logging.debug('print_var(): code_context is None')
+        return
+    s = context[0]
+
+    match = re.search(r"\((.*)\)", s)
+    if match is None:
+        logging.debug('print_var(): match is None')
+        return
+    r = match.group(1)
     logging.debug(f'{r}: {var}')
 
 
@@ -143,7 +157,7 @@ def print_vs_output_colorspace_info(vs_output: vs.VideoNode) -> None:
 
 
 class DebugMeta(sip.wrappertype):  # type: ignore
-    def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> type:
+    def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> DebugMeta:
         from functools import partialmethod
 
         base = bases[0]
@@ -151,8 +165,8 @@ class DebugMeta(sip.wrappertype):  # type: ignore
         for attr in dir(base):
             if not attr.endswith('__') and callable(getattr(base, attr)):
                 dct[attr] = partialmethod(DebugMeta.dummy_method, attr)
-        subcls = super(DebugMeta, cls).__new__(cls, name, bases, dct)
-        return cast(type, subcls)
+        subcls = super(DebugMeta, cls).__new__(cls, name, bases, dct)  # type: ignore
+        return cast(DebugMeta, subcls)
 
     def dummy_method(self, name: str, *args: Any, **kwargs: Any) -> Any:
         method = getattr(super(GraphicsScene, GraphicsScene), name)

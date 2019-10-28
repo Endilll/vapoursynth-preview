@@ -76,8 +76,6 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
     def rowCount(self, parent: Qt.QModelIndex = Qt.QModelIndex()) -> int:
         if self.items is not None:
             return len(self.items)
-        else:
-            return 0
 
     def flags(self, index: Qt.QModelIndex) -> Qt.Qt.ItemFlags:
         # debug.print_func_name()

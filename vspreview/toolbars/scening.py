@@ -509,7 +509,7 @@ class SceningToolbar(AbstractToolbar):
         _, i = self.current_lists.add()
         self.current_list_index = i
 
-    def on_current_list_changed(self, new_value: SceningList, old_value: SceningList) -> None:
+    def on_current_list_changed(self, new_value: Optional[SceningList] = None, old_value: Optional[SceningList] = None) -> None:
         if new_value is not None:
             self.remove_list_button.setEnabled(True)
             self.  view_list_button.setEnabled(True)
