@@ -635,6 +635,14 @@ class MainWindow(AbstractMainWindow):
     def current_frame(self, value: Frame) -> None:
         self.switch_frame(value)
 
+    @property  # type: ignore
+    def current_time(self) -> Time:  # type: ignore
+        return Time(self.current_output.last_showed_frame)
+
+    @current_time.setter
+    def current_time(self, value: Time) -> None:
+        self.switch_frame(time=value)
+
     @property
     def outputs(self) -> Outputs:  # type: ignore
         return cast(Outputs, self.toolbars.main.outputs)

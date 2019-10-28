@@ -202,10 +202,9 @@ class SceningListDialog(Qt.QDialog):
         if index.column() in (SceningList.START_FRAME_COLUMN,
                               SceningList.END_FRAME_COLUMN):
             self.main.current_frame = self.scening_list.data(index)
-        if index.column() == SceningList.START_TIME_COLUMN:
-            self.main.current_frame = self.scening_list.data(index.siblingAtColumn(SceningList.START_FRAME_COLUMN))
-        if index.column() == SceningList.END_TIME_COLUMN:
-            self.main.current_frame = self.scening_list.data(index.siblingAtColumn(SceningList.END_FRAME_COLUMN))
+        if index.column() in (SceningList.START_TIME_COLUMN,
+                              SceningList.END_TIME_COLUMN):
+            self.main.current_time = self.scening_list.data(index)
 
     def on_tableview_rows_moved(self, parent_index: Qt.QModelIndex, start_i: int, end_i: int, dest_index: Qt.QModelIndex, dest_i: int) -> None:
         index = self.scening_list.index(dest_i, 0)
