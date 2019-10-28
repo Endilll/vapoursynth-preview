@@ -68,7 +68,7 @@ T = TypeVar('T', Output, SceningList, float)
 
 
 class ComboBox(Qt.QComboBox, Generic[T]):
-    def __class_getitem__(cls, t: Type[T]) -> Type:
+    def __class_getitem__(cls, ty: Type[T]) -> Type:
         type_specializations: Dict[Type, Type] = {
             Output     : _ComboBox_Output,
             SceningList: _ComboBox_SceningList,
@@ -76,7 +76,7 @@ class ComboBox(Qt.QComboBox, Generic[T]):
         }
 
         try:
-            return type_specializations[t]
+            return type_specializations[ty]
         except KeyError:
             raise TypeError
 
@@ -85,7 +85,7 @@ class ComboBox(Qt.QComboBox, Generic[T]):
     def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.type: Type[T]
+        self.ty: Type[T]
 
         self.setSizeAdjustPolicy(Qt.QComboBox.AdjustToMinimumContentsLengthWithIcon)
 
@@ -109,59 +109,46 @@ class ComboBox(Qt.QComboBox, Generic[T]):
 
 
 class _ComboBox_Output(ComboBox):
-    T = Output
+    ty = Output
     if TYPE_CHECKING:
-        valueChanged = Qt.pyqtSignal(T, Optional[T])
+        valueChanged = Qt.pyqtSignal(ty, Optional[ty])
     else:
-        valueChanged = Qt.pyqtSignal(T, object)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
+        valueChanged = Qt.pyqtSignal(ty, object)
 
 
 class _ComboBox_SceningList(ComboBox):
-    T = SceningList
+    ty = SceningList
     if TYPE_CHECKING:
-        valueChanged = Qt.pyqtSignal(T, Optional[T])
+        valueChanged = Qt.pyqtSignal(ty, Optional[ty])
     else:
-        valueChanged = Qt.pyqtSignal(T, object)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
-
+        valueChanged = Qt.pyqtSignal(ty, object)
 
 class _ComboBox_float(ComboBox):
-    T = float
+    ty = float
     if TYPE_CHECKING:
-        valueChanged = Qt.pyqtSignal(T, Optional[T])
+        valueChanged = Qt.pyqtSignal(ty, Optional[ty])
     else:
-        valueChanged = Qt.pyqtSignal(T, object)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
+        valueChanged = Qt.pyqtSignal(ty, object)
 
 
 class FrameEdit(Qt.QSpinBox, Generic[FrameType]):
-    def __class_getitem__(cls, t: Type[FrameType]) -> Type:
+    def __class_getitem__(cls, ty: Type[FrameType]) -> Type:
         type_specializations: Dict[Type, Type] = {
             Frame        : _FrameEdit_Frame,
             FrameInterval: _FrameEdit_FrameInterval,
         }
 
         try:
-            return type_specializations[t]
+            return type_specializations[ty]
         except KeyError:
             raise TypeError
 
     def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.type: Type[FrameType]
+        self.ty: Type[FrameType]
 
-        self.setMinimum(self.type(0))
+        self.setMinimum(self.ty(0))
 
         self.oldValue: FrameType = self.value()
         super().valueChanged.connect(self._valueChanged)
@@ -170,62 +157,54 @@ class FrameEdit(Qt.QSpinBox, Generic[FrameType]):
         self.valueChanged.emit(self.value(), self.oldValue)
 
     def value(self) -> FrameType:  # type: ignore
-        return self.type(super().value())
+        return self.ty(super().value())
 
     def setValue(self, newValue: FrameType) -> None:  # type: ignore
         super().setValue(int(newValue))
 
     def minimum(self) -> FrameType:  # type: ignore
-        return self.type(super().minimum())
+        return self.ty(super().minimum())
 
     def setMinimum(self, newValue: FrameType) -> None:  # type: ignore
         super().setMinimum(int(newValue))
 
     def maximum(self) -> FrameType:  # type: ignore
-        return self.type(super().maximum())
+        return self.ty(super().maximum())
 
     def setMaximum(self, newValue: FrameType) -> None:  # type: ignore
         super().setMaximum(int(newValue))
 
 
 class _FrameEdit_Frame(FrameEdit):
-    T = Frame
-    valueChanged = Qt.pyqtSignal(T, T)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
+    ty = Frame
+    valueChanged = Qt.pyqtSignal(ty, ty)
 
 
 class _FrameEdit_FrameInterval(FrameEdit):
-    T = FrameInterval
-    valueChanged = Qt.pyqtSignal(T, T)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
+    ty = FrameInterval
+    valueChanged = Qt.pyqtSignal(ty, ty)
 
 
 class TimeEdit(Qt.QTimeEdit, Generic[TimeType]):
-    def __class_getitem__(cls, t: Type[TimeType]) -> Type:
+    def __class_getitem__(cls, ty: Type[TimeType]) -> Type:
         type_specializations: Dict[Type, Type] = {
             Time        : _TimeEdit_Time,
             TimeInterval: _TimeEdit_TimeInterval,
         }
 
         try:
-            return type_specializations[t]
+            return type_specializations[ty]
         except KeyError:
             raise TypeError
 
     def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.type: Type[TimeType]
+        self.ty: Type[TimeType]
 
         self.setDisplayFormat('H:mm:ss.zzz')
         self.setButtonSymbols(Qt.QTimeEdit.NoButtons)
-        self.setMinimum(self.type())
+        self.setMinimum(self.ty())
 
         self.oldValue: TimeType = self.value()
         cast(Qt.pyqtSignal, self.timeChanged).connect(self._timeChanged)
@@ -235,40 +214,32 @@ class TimeEdit(Qt.QTimeEdit, Generic[TimeType]):
         self.oldValue = self.value()
 
     def value(self) -> TimeType:
-        return from_qtime(super().time(), self.type)
+        return from_qtime(super().time(), self.ty)
 
     def setValue(self, newValue: TimeType) -> None:
         super().setTime(to_qtime(newValue))
 
     def minimum(self) -> TimeType:
-        return from_qtime(super().minimumTime(), self.type)
+        return from_qtime(super().minimumTime(), self.ty)
 
     def setMinimum(self, newValue: TimeType) -> None:
         super().setMinimumTime(to_qtime(newValue))
 
     def maximum(self) -> TimeType:
-        return from_qtime(super().maximumTime(), self.type)
+        return from_qtime(super().maximumTime(), self.ty)
 
     def setMaximum(self, newValue: TimeType) -> None:
         super().setMaximumTime(to_qtime(newValue))
 
 
 class _TimeEdit_Time(TimeEdit):
-    T = Time
-    valueChanged = Qt.pyqtSignal(T, T)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
+    ty = Time
+    valueChanged = Qt.pyqtSignal(ty, ty)
 
 
 class _TimeEdit_TimeInterval(TimeEdit):
-    T = TimeInterval
-    valueChanged = Qt.pyqtSignal(T, T)
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.type = self.T
-        super().__init__(*args, **kwargs)
+    ty = TimeInterval
+    valueChanged = Qt.pyqtSignal(ty, ty)
 
 
 class StatusBar(Qt.QStatusBar):
