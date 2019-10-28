@@ -6,7 +6,7 @@ from enum               import Enum
 from fractions          import Fraction
 from inspect            import Signature
 from typing             import (
-    Any, BinaryIO, Callable, Dict, Optional, overload, Union
+    Any, BinaryIO, Callable, Dict, Optional, overload, Union,
 )
 
 # pylint: skip-file

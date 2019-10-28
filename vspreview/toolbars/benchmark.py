@@ -54,13 +54,14 @@ class BenchmarkToolbar(AbstractToolbar):
 
         self.update_info_timer = Qt.QTimer()
         self.update_info_timer.setTimerType(Qt.Qt.PreciseTimer)
-        self.update_info_timer.setInterval(self.main.BENCHMARK_REFRESH_INTERVAL)
+        self.update_info_timer.setInterval(
+            self.main.BENCHMARK_REFRESH_INTERVAL)
 
-        self. start_frame_control.valueChanged.connect(lambda value: self.update_controls(start=value))
+        self. start_frame_control.valueChanged.connect(lambda value: self.update_controls(start=      value))
         self.  start_time_control.valueChanged.connect(lambda value: self.update_controls(start=Frame(value)))
-        self.   end_frame_control.valueChanged.connect(lambda value: self.update_controls(  end=value))
+        self.   end_frame_control.valueChanged.connect(lambda value: self.update_controls(  end=      value))
         self.    end_time_control.valueChanged.connect(lambda value: self.update_controls(  end=Frame(value)))
-        self.total_frames_control.valueChanged.connect(lambda value: self.update_controls(total=value))
+        self.total_frames_control.valueChanged.connect(lambda value: self.update_controls(total=              value))
         self.  total_time_control.valueChanged.connect(lambda value: self.update_controls(total=FrameInterval(value)))
         self.   prefetch_checkbox.stateChanged.connect(self.on_prefetch_changed)
         self.    run_abort_button.     clicked.connect(self.on_run_abort_pressed)
@@ -112,8 +113,7 @@ class BenchmarkToolbar(AbstractToolbar):
         self.prefetch_checkbox.setText('Prefetch')
         self.prefetch_checkbox.setChecked(True)
         self.prefetch_checkbox.setToolTip(
-            'Request multiple frames in advance.'
-        )
+            'Request multiple frames in advance.')
         layout.addWidget(self.prefetch_checkbox)
 
         self.unsequenced_checkbox = Qt.QCheckBox(self)
@@ -156,8 +156,7 @@ class BenchmarkToolbar(AbstractToolbar):
             vs_clear_cache()
         if self.main.BENCHMARK_FRAME_DATA_SHARING_FIX:
             self.main.current_output.graphics_scene_item.setPixmap(
-                self.main.current_output.graphics_scene_item.pixmap().copy()
-            )
+                self.main.current_output.graphics_scene_item.pixmap().copy())
 
         self.start_frame  = self.start_frame_control .value()
         self.  end_frame  = self.  end_frame_control .value()
@@ -176,12 +175,14 @@ class BenchmarkToolbar(AbstractToolbar):
         self.running = True
         self.run_start_time = perf_counter()
 
-        for offset in range(min(int(self.frames_left), concurrent_requests_count)):
+        for offset in range(min(int(self.frames_left),
+                                concurrent_requests_count)):
             if self.unsequenced:
                 self._request_next_frame_unsequenced()
             else:
                 frame = self.start_frame + FrameInterval(offset)
-                future = self.main.current_output.vs_output.get_frame_async(int(frame))
+                future = self.main.current_output.vs_output.get_frame_async(
+                    int(frame))
                 self.buffer.appendleft(future)
 
         self.update_info_timer.start()
@@ -191,7 +192,8 @@ class BenchmarkToolbar(AbstractToolbar):
             self.update_info()
 
         self.running = False
-        Qt.QMetaObject.invokeMethod(self.update_info_timer, 'stop', Qt.Qt.QueuedConnection)
+        Qt.QMetaObject.invokeMethod(self.update_info_timer, 'stop',
+                                    Qt.Qt.QueuedConnection)
 
         if self.run_abort_button.isChecked():
             self.run_abort_button.click()
@@ -206,8 +208,7 @@ class BenchmarkToolbar(AbstractToolbar):
         next_frame = self.end_frame + FrameInterval(1) - self.frames_left
         if next_frame <= self.end_frame:
             new_future = self.main.current_output.vs_output.get_frame_async(
-                int(next_frame)
-            )
+                int(next_frame))
             self.buffer.appendleft(new_future)
 
         self.frames_left -= FrameInterval(1)
@@ -220,8 +221,7 @@ class BenchmarkToolbar(AbstractToolbar):
         if self.running:
             next_frame = self.end_frame + FrameInterval(1) - self.frames_left
             new_future = self.main.current_output.vs_output.get_frame_async(
-                int(next_frame)
-            )
+                int(next_frame))
             new_future.add_done_callback(self._request_next_frame_unsequenced)
 
         if future is not None:
@@ -296,5 +296,6 @@ class BenchmarkToolbar(AbstractToolbar):
         frames_done = self.total_frames - self.frames_left
         fps = int(frames_done) / float(run_time)
 
-        info_str = "{}/{} frames in {}, {:.3f} fps".format(frames_done, self.total_frames, run_time, fps)
+        info_str = ("{}/{} frames in {}, {:.3f} fps"
+                    .format(frames_done, self.total_frames, run_time, fps))
         self.info_label.setText(info_str)

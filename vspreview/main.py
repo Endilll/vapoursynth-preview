@@ -40,7 +40,7 @@ from vspreview.widgets import (
 
 class ScriptErrorDialog(Qt.QDialog):
     __slots__ = (
-        'main', 'label', 'reload_button', 'exit_button'
+        'main', 'label', 'reload_button', 'exit_button',
     )
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
@@ -67,9 +67,11 @@ class ScriptErrorDialog(Qt.QDialog):
         main_layout.addWidget(self.label)
 
         buttons_widget = Qt.QWidget(self)
-        buttons_widget.setObjectName('ScriptErrorDialog.setup_ui.buttons_widget')
+        buttons_widget.setObjectName(
+            'ScriptErrorDialog.setup_ui.buttons_widget')
         buttons_layout = Qt.QHBoxLayout(buttons_widget)
-        buttons_layout.setObjectName('ScriptErrorDialog.setup_uibuttons_layout')
+        buttons_layout.setObjectName(
+            'ScriptErrorDialog.setup_uibuttons_layout')
 
         self.reload_button = Qt.QPushButton(self)
         self.reload_button.setText('Reload')
@@ -156,7 +158,8 @@ class MainToolbar(AbstractToolbar):
         self.outputs_combobox.setEditable(True)
         self.outputs_combobox.setInsertPolicy(Qt.QComboBox.InsertAtCurrent)
         self.outputs_combobox.setDuplicatesEnabled(True)
-        self.outputs_combobox.setSizeAdjustPolicy(Qt.QComboBox.AdjustToContents)
+        self.outputs_combobox.setSizeAdjustPolicy(
+            Qt.QComboBox.AdjustToContents)
         layout.addWidget(self.outputs_combobox)
 
         self.frame_control = FrameEdit[Frame](self)
@@ -205,8 +208,10 @@ class MainToolbar(AbstractToolbar):
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.outputs_combobox.setCurrentIndex, index)
-        qt_silent_call(self.   frame_control.setMaximum, self.main.current_output.end_frame)
-        qt_silent_call(self.    time_control.setMaximum, self.main.current_output.end_time)
+        qt_silent_call(self.frame_control.setMaximum,
+                       self.main.current_output.end_frame)
+        qt_silent_call(self. time_control.setMaximum,
+                       self.main.current_output.end_time)
 
 
     def rescan_outputs(self) -> None:
@@ -240,17 +245,23 @@ class MainToolbar(AbstractToolbar):
         self.main.graphics_view.setZoom(self.zoom_combobox.currentData())
 
     def on_save_as_clicked(self, checked: Optional[bool] = None) -> None:
-        filter_str = ''.join([file_type + ';;' for file_type in self.save_file_types.keys()])
+        filter_str = ''.join(
+            [file_type + ';;' for file_type in self.save_file_types.keys()])
         filter_str = filter_str[0:-2]
 
         template = self.main.toolbars.misc.save_template_lineedit.text()
         try:
-            suggested_path_str = template.format(script_name=self.main.script_path.with_suffix(''), frame=self.main.current_frame)
+            suggested_path_str = template.format(
+                script_name=self.main.script_path.with_suffix(''),
+                frame=self.main.current_frame)
         except ValueError:
-            suggested_path_str = self.main.SAVE_TEMPLATE.format(script_name=self.main.script_path.with_suffix(''), frame=self.main.current_frame)
+            suggested_path_str = self.main.SAVE_TEMPLATE.format(
+                script_name=self.main.script_path.with_suffix(''),
+                frame=self.main.current_frame)
             self.main.show_message('Save name template is invalid')
 
-        save_path_str, file_type = Qt.QFileDialog.getSaveFileName(self.main, 'Save as', suggested_path_str, filter_str)
+        save_path_str, file_type = Qt.QFileDialog.getSaveFileName(
+            self.main, 'Save as', suggested_path_str, filter_str)
         try:
             self.save_file_types[file_type](Path(save_path_str))
         except KeyError:
@@ -272,17 +283,20 @@ class MainToolbar(AbstractToolbar):
             self.main.init_outputs()
             self.outputs_combobox.setModel(self.outputs)
         except KeyError:
-            logging.warning('Storage loading: Main toolbar: failed to parse outputs.')
+            logging.warning(
+                'Storage loading: Main toolbar: failed to parse outputs.')
 
         try:
             self.main.switch_output(state['current_output_index'])
             if self.outputs_combobox.currentIndex() == -1:
                 raise ValueError
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Main toolbar: failed to parse output index.')
+            logging.warning(
+                'Storage loading: Main toolbar: failed to parse output index.')
             self.main.switch_output(self.main.OUTPUT_INDEX)
         except ValueError:
-            logging.warning('Storage loading: Main toolbar: stored output index is not valid.')
+            logging.warning(
+                'Storage loading: Main toolbar: stored output index is not valid.')
             self.main.switch_output(self.main.OUTPUT_INDEX)
 
 
@@ -292,7 +306,7 @@ class Toolbars(AbstractToolbars):
     def __init__(self, main_window: AbstractMainWindow) -> None:
         from vspreview.toolbars import (
             DebugToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar,
-            BenchmarkToolbar
+            BenchmarkToolbar,
         )
 
         self.main      =      MainToolbar(main_window)
@@ -325,7 +339,8 @@ class Toolbars(AbstractToolbars):
                     raise TypeError
                 getattr(self, toolbar_name).__setstate__(storage)
             except (KeyError, TypeError):
-                logging.warning(f'Storage loading: failed to parse storage of {toolbar_name}.')
+                logging.warning(
+                    f'Storage loading: failed to parse storage of {toolbar_name}.')
 
 
 class MainWindow(AbstractMainWindow):
@@ -346,7 +361,7 @@ class MainWindow(AbstractMainWindow):
     SAVE_TEMPLATE = '{script_name}_{frame}'
     SEEK_STEP                 =     1  # frames
     STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # s
-    # it's allowed to stretch target interval betweewn notches by 20% at most
+    # it's allowed to stretch target interval betweewn notches by N% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE             = 'frame'
     # would be used for formats with subsampling
@@ -384,7 +399,8 @@ class MainWindow(AbstractMainWindow):
 
         # logging
 
-        logging.basicConfig(format='{asctime}: {levelname}: {message}', style='{', level=self.LOG_LEVEL)
+        logging.basicConfig(format='{asctime}: {levelname}: {message}',
+                            style='{', level=self.LOG_LEVEL)
         logging.Formatter.default_msec_format = '%s.%03d'
 
         # ???
@@ -441,13 +457,13 @@ class MainWindow(AbstractMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.graphics_view = GraphicsView(self.central_widget)
-        # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.DontSavePainterState)
-        # self.graphics_view.setOptimizationFlag(Qt.QGraphicsView.DontAdjustForAntialiasing)
-        # self.graphics_view.setViewportUpdateMode(Qt.QGraphicsView.FullViewportUpdate)
-        self.graphics_view.setBackgroundBrush(self.palette().brush(Qt.QPalette.Window))
-        self.graphics_view.setSizePolicy(Qt.QSizePolicy.Fixed, Qt.QSizePolicy.Fixed)
+        self.graphics_view.setBackgroundBrush(
+            self.palette().brush(Qt.QPalette.Window))
+        self.graphics_view.setSizePolicy(Qt.QSizePolicy.Fixed,
+                                         Qt.QSizePolicy.Fixed)
         self.graphics_view.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
-        self.graphics_view.setTransformationAnchor(GraphicsView.AnchorUnderMouse)
+        self.graphics_view.setTransformationAnchor(
+            GraphicsView.AnchorUnderMouse)
         self.main_layout.addWidget(self.graphics_view)
 
         self.timeline = Timeline(self.central_widget)
@@ -458,19 +474,23 @@ class MainWindow(AbstractMainWindow):
         self.statusbar = StatusBar(self.central_widget)
 
         self.statusbar.total_frames_label = Qt.QLabel(self.central_widget)
-        self.statusbar.total_frames_label.setObjectName('MainWindow.statusbar.total_frames_label')
+        self.statusbar.total_frames_label.setObjectName(
+            'MainWindow.statusbar.total_frames_label')
         self.statusbar.addWidget(self.statusbar.total_frames_label)
 
         self.statusbar.duration_label = Qt.QLabel(self.central_widget)
-        self.statusbar.duration_label.setObjectName('MainWindow.statusbar.duration_label')
+        self.statusbar.duration_label.setObjectName(
+            'MainWindow.statusbar.duration_label')
         self.statusbar.addWidget(self.statusbar.duration_label)
 
         self.statusbar.resolution_label = Qt.QLabel(self.central_widget)
-        self.statusbar.resolution_label.setObjectName('MainWindow.statusbar.resolution_label')
+        self.statusbar.resolution_label.setObjectName(
+            'MainWindow.statusbar.resolution_label')
         self.statusbar.addWidget(self.statusbar.resolution_label)
 
         self.statusbar.pixel_format_label = Qt.QLabel(self.central_widget)
-        self.statusbar.pixel_format_label.setObjectName('MainWindow.statusbar.pixel_format_label')
+        self.statusbar.pixel_format_label.setObjectName(
+            'MainWindow.statusbar.pixel_format_label')
         self.statusbar.addWidget(self.statusbar.pixel_format_label)
 
         self.statusbar.fps_label = Qt.QLabel(self.central_widget)
@@ -501,8 +521,10 @@ class MainWindow(AbstractMainWindow):
         try:
             exec(self.script_path.read_text(), {})  # pylint: disable=exec-used
         except Exception:  # pylint: disable=broad-except
-            logging.error('Script contains error(s). Check following lines for details.')
-            self.handle_script_error('Script contains error(s). See console output for details.')
+            logging.error(
+                'Script contains error(s). Check following lines for details.')
+            self.handle_script_error(
+                'Script contains error(s). See console output for details.')
             print_exc()
             return
         finally:
@@ -528,8 +550,9 @@ class MainWindow(AbstractMainWindow):
                 yaml.load(storage_path.open(), Loader=yaml.Loader)
             except yaml.YAMLError as exc:
                 if isinstance(exc, yaml.MarkedYAMLError):
-                    logging.warning('Storage parsing failed on line {} column {}. Using defaults.'
-                                    .format(exc.problem_mark.line + 1, exc.problem_mark.column + 1))  # pylint: disable=no-member
+                    logging.warning(
+                        'Storage parsing failed on line {} column {}. Using defaults.'
+                        .format(exc.problem_mark.line + 1, exc.problem_mark.column + 1))  # pylint: disable=no-member
                 else:
                     logging.warning('Storage parsing failed. Using defaults.')
         else:
@@ -566,7 +589,6 @@ class MainWindow(AbstractMainWindow):
             logging.debug('switch_frame(): both frame and time is None')
             return
         if frame > self.current_output.end_frame:
-            # logging.debug('switch_frame(): New frame position is out of range')
             return
 
         self.current_output.last_showed_frame = frame
@@ -581,7 +603,6 @@ class MainWindow(AbstractMainWindow):
 
     def switch_output(self, value: Union[int, Output]) -> None:
         if len(self.outputs) == 0:
-            # TODO: consider returning False
             return
         if isinstance(value, Output):
             index = self.outputs.index_of(value)
@@ -606,7 +627,8 @@ class MainWindow(AbstractMainWindow):
         for output in self.outputs:
             output.graphics_scene_item.hide()
         self.current_output.graphics_scene_item.show()
-        self.graphics_scene.setSceneRect(Qt.QRectF(self.current_output.graphics_scene_item.pixmap().rect()))
+        self.graphics_scene.setSceneRect(
+            Qt.QRectF(self.current_output.graphics_scene_item.pixmap().rect()))
         self.timeline.update_notches()
         for toolbar in self.toolbars:
             toolbar.on_current_output_changed(index, prev_index)
@@ -614,11 +636,8 @@ class MainWindow(AbstractMainWindow):
 
     @property  # type: ignore
     def current_output(self) -> Output:  # type: ignore
-        output = cast(Output, self.toolbars.main.outputs_combobox.currentData())
-        # check currentData() return on empty combobox
-        # if data != '':
-        #    return cast(Output, data)
-        # return None
+        output = cast(Output,
+                      self.toolbars.main.outputs_combobox.currentData())
         return output
 
     @current_output.setter
@@ -627,8 +646,6 @@ class MainWindow(AbstractMainWindow):
 
     @property  # type: ignore
     def current_frame(self) -> Frame:  # type: ignore
-        # if self.current_output is None:
-        #     return None
         return self.current_output.last_showed_frame
 
     @current_frame.setter
@@ -670,17 +687,26 @@ class MainWindow(AbstractMainWindow):
         if output is None:
             output = self.current_output
 
-        self.statusbar.total_frames_label.setText('{} frames '.format(output.total_frames))
-        self.    statusbar.duration_label.setText('{} '       .format(output.total_time))
-        self.  statusbar.resolution_label.setText('{}x{} '    .format(output.width, output.height))
+        self.statusbar.total_frames_label.setText(
+            '{} frames '.format(output.total_frames))
+        self.statusbar.duration_label.setText(
+            '{} '.format(output.total_time))
+        self.statusbar.resolution_label.setText(
+            '{}x{} '.format(output.width, output.height))
         if not output.has_alpha:
-            self.statusbar.pixel_format_label.setText('{} '.format(output.format.name))
+            self.statusbar.pixel_format_label.setText(
+                '{} '.format(output.format.name))
         else:
-            self.statusbar.pixel_format_label.setText('Clip: {}, Alpha: {} '.format(output.format.name, output.format_alpha.name))
+            self.statusbar.pixel_format_label.setText(
+                'Clip: {}, Alpha: {} '.format(output.format.name,
+                                              output.format_alpha.name))
         if output.fps_den != 0:
-            self.statusbar.fps_label.setText('{}/{} = {:.3f} fps '.format(output.fps_num, output.fps_den, output.fps_num / output.fps_den))
+            self.statusbar.fps_label.setText(
+                '{}/{} = {:.3f} fps '.format(output.fps_num, output.fps_den,
+                                             output.fps_num / output.fps_den))
         else:
-            self.statusbar.fps_label.setText('{}/{} fps '         .format(output.fps_num, output.fps_den))
+            self.statusbar.fps_label.setText(
+                '{}/{} fps '.format(output.fps_num, output.fps_den))
 
     def event(self, event: Qt.QEvent) -> bool:
         if event.type() == Qt.QEvent.LayoutRequest:
@@ -692,7 +718,8 @@ class MainWindow(AbstractMainWindow):
 
     def showEvent(self, event: Qt.QShowEvent) -> None:
         super().showEvent(event)
-        self.graphics_view.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding))
+        self.graphics_view.setSizePolicy(
+            Qt.QSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding))
 
     def closeEvent(self, event: Qt.QCloseEvent) -> None:
         if (self.toolbars.misc.autosave_enabled
@@ -710,14 +737,16 @@ class MainWindow(AbstractMainWindow):
         return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        # toolbars is singleton, so it initialize itself right in its __setstate__()
+        # toolbars is singleton,
+        # so it initialize itself right in its __setstate__()
 
         try:
             timeline_mode = state['timeline_mode']
             if not Timeline.Mode.is_valid(timeline_mode):
                 raise TypeError
         except (KeyError, TypeError):
-            logging.warning('Storage loading: failed to parse timeline mode. Using default.')
+            logging.warning(
+                'Storage loading: failed to parse timeline mode. Using default.')
             timeline_mode = self.TIMELINE_MODE
         self.timeline.mode = timeline_mode
 
@@ -743,7 +772,8 @@ def main() -> None:
     check_versions()
 
     parser = ArgumentParser()
-    parser.add_argument('script_path', help='Path to Vapoursynth script', type=Path, nargs='?')
+    parser.add_argument('script_path', help='Path to Vapoursynth script',
+                        type=Path, nargs='?')
     args = parser.parse_args()
 
     if args.script_path is None:
@@ -755,7 +785,6 @@ def main() -> None:
         print('Script path is invalid.')
         sys.exit(1)
 
-    # Qt.QApplication.setAttribute(Qt.Qt.AA_DisableHighDpiScaling)
     os.chdir(script_path.parent)
     app = Application(sys.argv)
     main_window = MainWindow()
@@ -772,17 +801,19 @@ def check_versions() -> bool:
     from pkg_resources import get_distribution
     from platform import python_version
 
-    if sys.version_info < (3, 7, 3, 'final', 0):
-        print('VSPreview is not tested on Python versions prior to 3.7.3 final, but you have {} {}. Use at your own risk.'.format(
-            python_version(), sys.version_info.releaselevel))
+    if sys.version_info < (3, 7, 4, 'final', 0):
+        print('VSPreview is not tested on Python versions prior to 3.7.4 final, but you have {} {}. Use at your own risk.'
+              .format(python_version(), sys.version_info.releaselevel))
         return False
 
-    if get_distribution('PyQt5').version < '5.12':
-        print('VSPreview is not tested on PyQt5 versions prior to 5.12, but you have {}. Use at your own risk.'.format(get_distribution('PyQt5').version))
+    if get_distribution('PyQt5').version < '5.13':
+        print('VSPreview is not tested on PyQt5 versions prior to 5.13, but you have {}. Use at your own risk.'
+              .format(get_distribution('PyQt5').version))
         return False
 
-    if vs.core.version_number() < 45:
-        print('VSPreview is not tested on VapourSynth versions prior to 45, but you have {}. Use at your own risk.'.format(vs.core.version_number()))
+    if vs.core.version_number() < 47:
+        print('VSPreview is not tested on VapourSynth versions prior to 47, but you have {}. Use at your own risk.'
+              .format(vs.core.version_number()))
         return False
 
     return True

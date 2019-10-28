@@ -89,7 +89,7 @@ class EventFilter(Qt.QObject):
             logging.debug(f'async test time: {s2 - s1} ns')
             if i != start_frame_async:
                 total_async += s2 - s1
-        # logging.debug('')
+        logging.debug('')
 
         start_frame_sync = 2000
         total_sync = 0
@@ -97,13 +97,15 @@ class EventFilter(Qt.QObject):
             s1 = perf_counter_ns()
             f2 = self.main.current_output.vs_output.get_frame(i)  # pylint: disable=unused-variable
             s2 = perf_counter_ns()
-            # logging.debug(f'sync test time: {s2 - s1} ns')
+            logging.debug(f'sync test time: {s2 - s1} ns')
             if i != start_frame_sync:
                 total_sync += s2 - s1
 
         logging.debug('')
-        logging.debug(f'Async average: {total_async / N - 1} ns, {1_000_000_000 / (total_async / N - 1)} fps')
-        logging.debug(f'Sync average:  {total_sync  / N - 1} ns, {1_000_000_000 / (total_sync  / N - 1)} fps')
+        logging.debug(
+            f'Async average: {total_async / N - 1} ns, {1_000_000_000 / (total_async / N - 1)} fps')
+        logging.debug(
+            f'Sync average:  {total_sync  / N - 1} ns, {1_000_000_000 / (total_sync  / N - 1)} fps')
 
 
 def measure_exec_time_ms(func: Callable[..., T], return_exec_time: bool = False, print_exec_time: bool = True) -> Callable[..., Union[T, Tuple[T, float]]]:
@@ -161,7 +163,6 @@ class DebugMeta(sip.wrappertype):  # type: ignore
         from functools import partialmethod
 
         base = bases[0]
-        # attr_list = ['activePanel', 'activeWindow', 'addEllipse', 'addItem', 'addLine', 'addPath', 'addPixmap', 'addPolygon', 'addRect', 'addSimpleText', 'addText', 'addWidget', 'backgroundBrush', 'bspTreeDepth', 'clearFocus', 'collidingItems', 'createItemGroup', 'destroyItemGroup', 'focusItem', 'font', 'foregroundBrush', 'hasFocus', 'height', 'inputMethodQuery', 'invalidate', 'isActive', 'itemAt', 'itemIndexMethod', 'items', 'itemsBoundingRect', 'minimumRenderSize', 'mouseGrabberItem', 'palette', 'removeItem', 'render', 'sceneRect', 'selectedItems', 'selectionArea', 'sendEvent', 'setActivePanel', 'setActiveWindow','setBackgroundBrush', 'setBspTreeDepth', 'setFocus', 'setFocusItem', 'setFont', 'setForegroundBrush', 'setItemIndexMethod', 'setMinimumRenderSize', 'setPalette', 'setSceneRect', 'setSelectionArea', 'setStickyFocus', 'setStyle', 'stickyFocus', 'style', 'update', 'views', 'width']
         for attr in dir(base):
             if not attr.endswith('__') and callable(getattr(base, attr)):
                 dct[attr] = partialmethod(DebugMeta.dummy_method, attr)
@@ -299,8 +300,10 @@ qevent_info = {
 
     120: ('ToolBarChange', 'toolbar visibility toggled'),
 
-    121: ('ApplicationActivate', 'deprecated. Use ApplicationStateChange instead.'),
-    122: ('ApplicationDeactivate', 'deprecated. Use ApplicationStateChange instead.'),
+    121: ('ApplicationActivate',
+          'deprecated. Use ApplicationStateChange instead.'),
+    122: ('ApplicationDeactivate',
+          'deprecated. Use ApplicationStateChange instead.'),
 
     123: ('QueryWhatsThis', 'query what\'s this widget help'),
     124: ('EnterWhatsThisMode', ''),
@@ -335,7 +338,8 @@ qevent_info = {
 
     169: ('KeyboardLayoutChange', 'keyboard layout changed'),
 
-    170: ('DynamicPropertyChange', 'A dynamic property was changed through setProperty/property'),
+    170: ('DynamicPropertyChange',
+          'A dynamic property was changed through setProperty/property'),
 
     171: ('TabletEnterProximity', ''),
     172: ('TabletLeaveProximity', ''),
@@ -345,11 +349,14 @@ qevent_info = {
     175: ('NonClientAreaMouseButtonRelease', ''),
     176: ('NonClientAreaMouseButtonDblClick', ''),
 
-    177: ('MacSizeChange', 'when the Qt::WA_Mac{Normal,Small,Mini}Size changes'),
+    177: ('MacSizeChange',
+          'when the Qt::WA_Mac{Normal,Small,Mini}Size changes'),
 
-    178: ('ContentsRectChange', 'sent by QWidget::setContentsMargins (internal)'),
+    178: ('ContentsRectChange',
+          'sent by QWidget::setContentsMargins (internal)'),
 
-    179: ('MacGLWindowChange', 'Internal! the window of the GLWidget has changed'),
+    179: ('MacGLWindowChange',
+          'Internal! the window of the GLWidget has changed'),
 
     180: ('FutureCallOut', ''),
 
@@ -365,7 +372,8 @@ qevent_info = {
     187: ('UngrabMouse', ''),
     188: ('GrabKeyboard', ''),
     189: ('UngrabKeyboard', ''),
-    191: ('MacGLClearDrawable', 'Internal Cocoa, the window has changed, so we must clear'),
+    191: ('MacGLClearDrawable',
+          'Internal Cocoa, the window has changed, so we must clear'),
 
     192: ('StateMachineSignal', ''),
     193: ('StateMachineWrapped', ''),
@@ -403,7 +411,8 @@ qevent_info = {
     215: ('WindowChangeInternal', 'internal for QQuickWidget'),
     216: ('ScreenChangeInternal', ''),
 
-    217: ('PlatformSurface', 'Platform surface created or about to be destroyed'),
+    217: ('PlatformSurface',
+          'Platform surface created or about to be destroyed'),
 
     218: ('Pointer', 'QQuickPointerEvent; ### Qt 6: QPointerEvent'),
 
@@ -428,11 +437,12 @@ class Application(Qt.QApplication):
             self.enter_count += 1
             ret, time = cast(
                 Tuple[bool, float],
-                measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event)
-            )
+                measure_exec_time_ms(
+                    Qt.QApplication.notify, True, False)(self, obj, event))
             self.enter_count -= 1
 
-            if type(event).__name__ == 'QEvent' and event.type() in qevent_info:
+            if (type(event).__name__ == 'QEvent'
+                    and event.type() in qevent_info):
                 event_name = qevent_info[event.type()][0]
             else:
                 event_name = type(event).__name__
@@ -444,14 +454,16 @@ class Application(Qt.QApplication):
 
             if obj_name == '':
                 try:
-                    if obj.parent() is not None and obj.parent().objectName() != '':
+                    if (obj.parent() is not None
+                            and obj.parent().objectName() != ''):
                         obj_name = '(parent) ' + obj.parent().objectName()
                 except RuntimeError:
                     pass
 
             recursive_indent = 2 * (self.enter_count - 1)
 
-            print(f'{time:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {" " * recursive_indent + event_name:<30}, name: {obj_name}')
+            print(
+                f'{time:7.3f} ms, receiver: {type(obj).__name__:>25}, event: {event.type():3d} {" " * recursive_indent + event_name:<30}, name: {obj_name}')
 
             return ret
         except Exception:  # pylint: disable=broad-except

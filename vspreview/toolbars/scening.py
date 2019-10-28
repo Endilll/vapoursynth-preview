@@ -97,11 +97,6 @@ class SceningListDialog(Qt.QDialog):
         self.delete_button.setEnabled(False)
         buttons_layout.addWidget(self.delete_button)
 
-        # self.add_button = Qt.QPushButton(self)
-        # self.add_button.setText('Add')
-        # self.add_button.setEnabled(False)
-        # scene_layout.addWidget(self.add_button)
-
     def on_add_clicked(self, checked: Optional[bool] = None) -> None:
         pass
 
@@ -132,7 +127,8 @@ class SceningListDialog(Qt.QDialog):
 
         self.tableview.setModel(self.scening_list)
         self.tableview.resizeColumnsToContents()
-        self.tableview.selectionModel().selectionChanged.connect(self.on_tableview_selection_changed)  # type: ignore
+        self.tableview.selectionModel().selectionChanged.connect(  # type: ignore
+            self.on_tableview_selection_changed)
 
         self.delete_button.setEnabled(False)
 
@@ -177,7 +173,8 @@ class SceningListDialog(Qt.QDialog):
     def on_name_changed(self, text: str) -> None:
         i = self.main.current_output.scening_lists.index_of(self.scening_list)
         index = self.main.current_output.scening_lists.index(i)
-        self.main.current_output.scening_lists.setData(index, text, Qt.Qt.UserRole)
+        self.main.current_output.scening_lists.setData(index, text,
+                                                       Qt.Qt.UserRole)
 
     def on_start_frame_changed(self, value: Union[Frame, int]) -> None:
         frame = Frame(value)
@@ -233,12 +230,15 @@ class SceningToolbar(AbstractToolbar):
         'export_template_pattern', 'export_template_scenes_pattern',
         'scening_list_dialog', 'supported_file_types',
         'add_list_button', 'remove_list_button', 'view_list_button',
-        'toggle_first_frame_button', 'toggle_second_frame_button', 'add_single_frame_button',
+        'toggle_first_frame_button', 'toggle_second_frame_button',
+        'add_single_frame_button',
         'add_to_list_button', 'remove_last_from_list_button',
-        'export_single_line_button', 'export_template_lineedit', 'export_multiline_button',
-        'status_label', 'import_file_button', 'items_combobox', 'remove_at_current_frame_button',
+        'export_single_line_button', 'export_template_lineedit',
+        'export_multiline_button',
+        'status_label', 'import_file_button', 'items_combobox',
+        'remove_at_current_frame_button',
         'seek_to_next_button', 'seek_to_prev_button',
-        'toggle_button'
+        'toggle_button',
     )
 
     def __init__(self, main: AbstractMainWindow) -> None:
@@ -247,7 +247,8 @@ class SceningToolbar(AbstractToolbar):
 
         self.first_frame : Optional[Frame] = None
         self.second_frame: Optional[Frame] = None
-        self.export_template_pattern  = re.compile(r'.*(?:{start}|{end}|{label}).*')
+        self.export_template_pattern  = re.compile(
+            r'.*(?:{start}|{end}|{label}).*')
         self.export_template_scenes_pattern = re.compile(r'.+')
 
         self.scening_update_status_label()
@@ -417,7 +418,6 @@ class SceningToolbar(AbstractToolbar):
         layout_line_2.addWidget(self.export_template_label)
 
         self.export_template_lineedit = Qt.QLineEdit(self)
-        # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
         self.export_template_lineedit.setToolTip(
             r'Use {start} and {end} as placeholders. '
             r'Both are valid for single frame scenes. '
@@ -458,8 +458,10 @@ class SceningToolbar(AbstractToolbar):
         if prev_index != -1:
             for scening_list in self.main.outputs[prev_index].scening_lists:
                 try:
-                    scening_list.rowsInserted.disconnect(self.on_list_items_changed)
-                    scening_list.rowsRemoved .disconnect(self.on_list_items_changed)
+                    scening_list.rowsInserted.disconnect(
+                        self.on_list_items_changed)
+                    scening_list.rowsRemoved .disconnect(
+                        self.on_list_items_changed)
                 except TypeError:
                     pass
 
@@ -573,7 +575,8 @@ class SceningToolbar(AbstractToolbar):
         self.check_remove_export_possibility()
 
     def on_add_to_list_clicked(self, checked: Optional[bool] = None) -> None:
-        self.current_list.add(self.first_frame, self.second_frame, self.label_lineedit.text())  # type: ignore
+        self.current_list.add(self.first_frame, self.second_frame,  # type: ignore
+                              self.label_lineedit.text())
 
         if self.toggle_first_frame_button.isChecked():
             self.toggle_first_frame_button.click()
@@ -636,7 +639,8 @@ class SceningToolbar(AbstractToolbar):
 
     def on_import_file_clicked(self, checked: Optional[bool] = None) -> None:
         filter_str = ';;'.join(self.supported_file_types.keys())
-        path_strs, file_type = Qt.QFileDialog.getOpenFileNames(self.main, caption='Open chapters file', filter=filter_str)
+        path_strs, file_type = Qt.QFileDialog.getOpenFileNames(
+            self.main, caption='Open chapters file', filter=filter_str)
 
         paths = [Path(path_str) for path_str in path_strs]
         for path in paths:
@@ -651,9 +655,11 @@ class SceningToolbar(AbstractToolbar):
         import_func(path, scening_list, out_of_range_count)
 
         if out_of_range_count > 0:
-            logging.warning(f'Scening import: {out_of_range_count} scenes were out of range of output, so they were dropped.')
+            logging.warning(
+                f'Scening import: {out_of_range_count} scenes were out of range of output, so they were dropped.')
         if len(scening_list) == 0:
-            logging.warning(f'Scening import: nothing was imported from \'{path.name}\'.')
+            logging.warning(
+                f'Scening import: nothing was imported from \'{path.name}\'.')
             self.current_lists.remove(scening_list_index)
         else:
             self.current_list_index = scening_list_index
@@ -689,8 +695,7 @@ class SceningToolbar(AbstractToolbar):
             return Time(
                 minutes      = int(match[1]),
                 seconds      = int(match[2]),
-                milliseconds = int(match[3]) / 75 * 1000
-            )
+                milliseconds = int(match[3]) / 75 * 1000)
 
         cue_sheet = CueSheet()
         cue_sheet.setOutputFormat('')
@@ -702,7 +707,8 @@ class SceningToolbar(AbstractToolbar):
                 continue
             offset = offset_to_time(track.offset)
             if offset is None:
-                logging.warning(f'Scening import: INDEX timestamp \'{track.offset}\' format isn\'t suported.')
+                logging.warning(
+                    f'Scening import: INDEX timestamp \'{track.offset}\' format isn\'t suported.')
                 continue
             start = Frame(offset)
 
@@ -746,7 +752,8 @@ class SceningToolbar(AbstractToolbar):
         ))
 
         frame = Frame(0)
-        for match in pattern.finditer(path.read_text(), re.RegexFlag.MULTILINE):
+        for match in pattern.finditer(path.read_text(),
+                                      re.RegexFlag.MULTILINE):
             if int(match[1]) >= AV_CODEC_ID_FIRST_AUDIO:
                 frame += FrameInterval(1)
                 continue
@@ -774,7 +781,8 @@ class SceningToolbar(AbstractToolbar):
         try:
             root = ElementTree.parse(str(path)).getroot()
         except ElementTree.ParseError as exc:
-            logging.warning(f'Scening import: error occured while parsing \'{path.name}\':')
+            logging.warning(
+                f'Scening import: error occured while parsing \'{path.name}\':')
             logging.warning(exc.msg)
             return
         for chapter in root.iter('ChapterAtom'):
@@ -818,14 +826,12 @@ class SceningToolbar(AbstractToolbar):
         '''
         pattern = re.compile(
             r'(CHAPTER\d+)=(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)\n\1NAME=(.*)',
-            re.RegexFlag.MULTILINE
-        )
+            re.RegexFlag.MULTILINE)
         for match in pattern.finditer(path.read_text()):
             time = Time(
                 hours   =   int(match[2]),
                 minutes =   int(match[3]),
-                seconds = float(match[4])
-            )
+                seconds = float(match[4]))
             try:
                 scening_list.add(Frame(time), label=match[5])
             except ValueError:
@@ -853,8 +859,7 @@ class SceningToolbar(AbstractToolbar):
                 scening_list.add(
                     Frame(int(match[1])),
                     Frame(int(match[2])),
-                    '{:.3f} fps'.format(float(match[3]))
-                )
+                    '{:.3f} fps'.format(float(match[3])))
             except ValueError:
                 out_of_range_count += 1
 
@@ -871,7 +876,8 @@ class SceningToolbar(AbstractToolbar):
                 continue
 
         if len(timestamps) < 2:
-            logging.warning('Scening import: timestamps file contains less that 2 timestamps, so there\'s nothing to import.')
+            logging.warning(
+                'Scening import: timestamps file contains less that 2 timestamps, so there\'s nothing to import.')
             return
 
         deltas = [
@@ -900,8 +906,7 @@ class SceningToolbar(AbstractToolbar):
             try:
                 scening_list.add(
                     scene_start, Frame(len(timestamps) - 1),
-                    '{:.3f} fps'.format(1 / float(scene_delta))
-                )
+                    '{:.3f} fps'.format(1 / float(scene_delta)))
             except ValueError:
                 out_of_range_count += 1
 
@@ -922,7 +927,8 @@ class SceningToolbar(AbstractToolbar):
 
         start_pos = log.find('OVR HELP INFORMATION')
         if start_pos == -1:
-            logging.warning('Scening import: TFM log doesn\'t contain OVR Help Information.')
+            logging.warning(
+                'Scening import: TFM log doesn\'t contain OVR Help Information.')
             return
         log = log[start_pos:]
 
@@ -937,8 +943,7 @@ class SceningToolbar(AbstractToolbar):
                 scene = scening_list.add(
                     Frame(int(match[1])),
                     Frame(int(match[2])),
-                    '{} combed'.format(match[3])
-                )
+                    '{} combed'.format(match[3]))
             except ValueError:
                 out_of_range_count += 1
                 continue
@@ -989,8 +994,10 @@ class SceningToolbar(AbstractToolbar):
                     start=scene.start, end=scene.end, label=scene.label
                 ) + '\n'
         except KeyError:
-            logging.warning('Scening: export template contains invalid placeholders.')
-            self.main.show_message('Export template contains invalid placeholders.')
+            logging.warning(
+                'Scening: export template contains invalid placeholders.')
+            self.main.show_message(
+                'Export template contains invalid placeholders.')
             return
 
         self.main.clipboard.setText(export_str)
@@ -1006,11 +1013,12 @@ class SceningToolbar(AbstractToolbar):
         try:
             for scene in self.current_list:
                 export_str += template.format(
-                    start=scene.start, end=scene.end, label=scene.label
-                )
+                    start=scene.start, end=scene.end, label=scene.label)
         except KeyError:
-            logging.warning('Scening: export template contains invalid placeholders.')
-            self.main.show_message('Export template contains invalid placeholders.')
+            logging.warning(
+                'Scening: export template contains invalid placeholders.')
+            self.main.show_message(
+                'Export template contains invalid placeholders.')
             return
 
         self.main.clipboard.setText(export_str)
@@ -1038,14 +1046,16 @@ class SceningToolbar(AbstractToolbar):
             self.seek_to_next_button         .setEnabled(False)
             self.seek_to_prev_button         .setEnabled(False)
 
-        if self.current_list is not None and self.main.current_frame in self.current_list:
+        if (self.current_list is not None
+                and self.main.current_frame in self.current_list):
             self.       add_single_frame_button.setEnabled(False)
             self.remove_at_current_frame_button.setEnabled(True)
         else:
             self.       add_single_frame_button.setEnabled(True)
             self.remove_at_current_frame_button.setEnabled(False)
 
-        if self.export_template_pattern.fullmatch(self.export_template_lineedit.text()) is not None:
+        if self.export_template_pattern.fullmatch(
+                self.export_template_lineedit.text()) is not None:
             self.export_multiline_button  .setEnabled(True)
             self.export_single_line_button.setEnabled(True)
         else:
@@ -1055,7 +1065,8 @@ class SceningToolbar(AbstractToolbar):
     def scening_update_status_label(self) -> None:
         first_frame_text  = str(self.first_frame)  if self.first_frame  is not None else ''
         second_frame_text = str(self.second_frame) if self.second_frame is not None else ''
-        self.status_label.setText('Scening: {} - {} '.format(first_frame_text, second_frame_text))
+        self.status_label.setText('Scening: {} - {} '
+                                  .format(first_frame_text, second_frame_text))
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
@@ -1072,18 +1083,21 @@ class SceningToolbar(AbstractToolbar):
                 raise TypeError
             self.first_frame = first_frame
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse Frame 1.')
+            logging.warning(
+                'Storage loading: Scening: failed to parse Frame 1.')
 
         if self.first_frame is not None:
             self.toggle_first_frame_button.setChecked(True)
 
         try:
             second_frame = state['second_frame']
-            if second_frame is not None and not isinstance(second_frame, Frame):
+            if second_frame is not None and not isinstance(second_frame,
+                                                           Frame):
                 raise TypeError
             self.second_frame = second_frame
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse Frame 2.')
+            logging.warning(
+                'Storage loading: Scening: failed to parse Frame 2.')
 
         if self.second_frame is not None:
             self.toggle_second_frame_button.setChecked(True)
@@ -1097,6 +1111,8 @@ class SceningToolbar(AbstractToolbar):
             logging.warning('Storage loading: Scening: failed to parse label.')
 
         try:
-            self.export_template_lineedit.setText(state['scening_export_template'])
+            self.export_template_lineedit.setText(
+                state['scening_export_template'])
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse export template.')
+            logging.warning(
+                'Storage loading: Scening: failed to parse export template.')

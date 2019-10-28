@@ -11,8 +11,7 @@ class DebugToolbar(AbstractToolbar):
         'test_button',
         'exec_lineedit', 'exec_button',
         'test_button',
-        # 'filter',
-        'toggle_button'
+        'toggle_button',
     )
 
     def __init__(self, main: AbstractMainWindow) -> None:
@@ -43,8 +42,7 @@ class DebugToolbar(AbstractToolbar):
 
         self.exec_lineedit = Qt.QLineEdit(self)
         self.exec_lineedit.setPlaceholderText(
-            'Python statement in context of DebugToolbar.exec_button_clicked()'
-        )
+            'Python statement in context of DebugToolbar.exec_button_clicked()')
         layout.addWidget(self.exec_lineedit)
 
         self.exec_button = Qt.QPushButton(self)

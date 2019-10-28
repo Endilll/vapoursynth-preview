@@ -1,5 +1,5 @@
 __all__ = [
-    'debug'
+    'debug',
 ]
 
 from .utils import (

@@ -78,11 +78,11 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
             return len(self.items)
 
     def flags(self, index: Qt.QModelIndex) -> Qt.Qt.ItemFlags:
-        # debug.print_func_name()
         if not index.isValid():
             return cast(Qt.Qt.ItemFlags, Qt.Qt.ItemIsEnabled)
 
-        return cast(Qt.Qt.ItemFlags, super().flags(index) | Qt.Qt.ItemIsEditable)
+        return cast(Qt.Qt.ItemFlags,
+                    super().flags(index) | Qt.Qt.ItemIsEditable)
 
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
         if not index.isValid():
@@ -97,7 +97,6 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         return True
 
     def __getstate__(self) -> Mapping[str, Any]:
-        # print(self.items)
         return dict(zip([
             str(output.index) for output in self.items],
             [   output        for output in self.items]
@@ -106,8 +105,10 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
     def __setstate__(self, state: Mapping[str, Output]) -> None:
         for key, value in state.items():
             if not isinstance(key, str):
-                raise TypeError(f'Storage loading: Outputs: key {key} is not a string')
+                raise TypeError(
+                    f'Storage loading: Outputs: key {key} is not a string')
             if not isinstance(value, Output):
-                raise TypeError(f'Storage loading: Outputs: value of key {key} is not an Output')
+                raise TypeError(
+                    f'Storage loading: Outputs: value of key {key} is not an Output')
 
         self.__init__(state)  # type: ignore

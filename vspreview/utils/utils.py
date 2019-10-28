@@ -108,15 +108,11 @@ def set_status_label(label: str) -> Callable[..., T]:
             main = main_window()
 
             if main.statusbar.label.text() == 'Ready':
-                # Qt.QMetaObject.invokeMethod(main.statusbar.label, 'setText', Qt.Qt.QueuedConnection,
-                #                             Qt.Q_ARG(str, label))
                 main.statusbar.label.setText(label)
 
             ret = func(*args, **kwargs)
 
             if main.statusbar.label.text() == label:
-                # Qt.QMetaObject.invokeMethod(main.statusbar.label, 'setText', Qt.Qt.QueuedConnection,
-                #                             Qt.Q_ARG(str, 'Ready'))
                 main.statusbar.label.setText('Ready')
 
             return ret

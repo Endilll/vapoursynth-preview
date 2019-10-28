@@ -22,7 +22,7 @@ class GraphicsView(Qt.QGraphicsView):
     WHEEL_STEP = 15 * 8  # degrees
 
     __slots__ = (
-        'app', 'angleRemainder'
+        'app', 'angleRemainder',
     )
 
     wheelScrolled = Qt.pyqtSignal(int)
@@ -53,12 +53,16 @@ class GraphicsView(Qt.QGraphicsView):
                 self.angleRemainder %= self.WHEEL_STEP
             return
         elif modifiers == Qt.Qt.NoModifier:
-            self.  verticalScrollBar().setValue(self.  verticalScrollBar().value() - event.angleDelta().y())
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - event.angleDelta().x())
+            self.  verticalScrollBar().setValue(
+                self.  verticalScrollBar().value() - event.angleDelta().y())
+            self.horizontalScrollBar().setValue(
+                self.horizontalScrollBar().value() - event.angleDelta().x())
             return
         elif modifiers == Qt.Qt.ShiftModifier:
-            self.  verticalScrollBar().setValue(self.  verticalScrollBar().value() - event.angleDelta().x())
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - event.angleDelta().y())
+            self.  verticalScrollBar().setValue(
+                self.  verticalScrollBar().value() - event.angleDelta().x())
+            self.horizontalScrollBar().setValue(
+                self.horizontalScrollBar().value() - event.angleDelta().y())
             return
 
         event.ignore()
@@ -87,7 +91,8 @@ class ComboBox(Qt.QComboBox, Generic[T]):
 
         self.ty: Type[T]
 
-        self.setSizeAdjustPolicy(Qt.QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.setSizeAdjustPolicy(
+            Qt.QComboBox.AdjustToMinimumContentsLengthWithIcon)
 
         self.oldValue = self.currentData()
         self.oldIndex = self.currentIndex()
@@ -122,6 +127,7 @@ class _ComboBox_SceningList(ComboBox):
         valueChanged = Qt.pyqtSignal(ty, Optional[ty])
     else:
         valueChanged = Qt.pyqtSignal(ty, object)
+
 
 class _ComboBox_float(ComboBox):
     ty = float

@@ -108,9 +108,12 @@ class Frame(YAMLObject):
         try:
             value = state['value']
             if not isinstance(value, int):
-                raise TypeError('Value of Frame isn\'t an integer. It\'s most probably corrupted.')
+                raise TypeError(
+                    'Value of Frame isn\'t an integer. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('Frame lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'Frame lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(value)  # type: ignore
 
@@ -210,9 +213,12 @@ class FrameInterval(YAMLObject):
         try:
             value = state['value']
             if not isinstance(value, int):
-                raise TypeError('Value of FrameInterval isn\'t an integer. It\'s most probably corrupted.')
+                raise TypeError(
+                    'Value of FrameInterval isn\'t an integer. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('FrameInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'FrameInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(value)  # type: ignore
 
@@ -235,8 +241,7 @@ class Time(YAMLObject):
         elif isinstance(init_value, Time):
             self.value = init_value.value
         elif isinstance(init_value, Frame):
-            self.value = main_window().current_output.to_time(
-                init_value).value
+            self.value = main_window().current_output.to_time(init_value).value
         elif any(kwargs):
             self.value = timedelta(**kwargs)
         elif init_value is None:
@@ -307,9 +312,12 @@ class Time(YAMLObject):
         try:
             value = state['value']
             if not isinstance(value, timedelta):
-                raise TypeError('Value of Time isn\'t an timedelta. It\'s most probably corrupted.')
+                raise TypeError(
+                    'Value of Time isn\'t an timedelta. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('Time lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'Time lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(value)  # type: ignore
 
@@ -409,9 +417,12 @@ class TimeInterval(YAMLObject):
         try:
             value = state['value']
             if not isinstance(value, timedelta):
-                raise TypeError('Value of TimeInterval isn\'t an timedelta. It\'s most probably corrupted.')
+                raise TypeError(
+                    'Value of TimeInterval isn\'t an timedelta. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('TimeInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'TimeInterval lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(value)  # type: ignore
 
@@ -423,7 +434,7 @@ class Scene(YAMLObject):
     yaml_tag = '!Scene'
 
     __slots__ = (
-        'start', 'end', 'label'
+        'start', 'end', 'label',
     )
 
     def __init__(self, start: Optional[Frame] = None, end: Optional[Frame] = None, label: str = '') -> None:
@@ -497,17 +508,22 @@ class Scene(YAMLObject):
         try:
             start = state['start']
             if not isinstance(start, Frame):
-                raise TypeError('Start frame of Scene is not a Frame. It\'s most probably corrupted.')
+                raise TypeError(
+                    'Start frame of Scene is not a Frame. It\'s most probably corrupted.')
 
             end = state['end']
             if not isinstance(end, Frame):
-                raise TypeError('End frame of Scene is not a Frame. It\'s most probably corrupted.')
+                raise TypeError(
+                    'End frame of Scene is not a Frame. It\'s most probably corrupted.')
 
             label = state['label']
             if not isinstance(label, str):
-                raise TypeError('Label of Scene is not a string. It\'s most probably corrupted.')
+                raise TypeError(
+                    'Label of Scene is not a string. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('Scene lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'Scene lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(start, end, label)  # type: ignore
 
@@ -677,6 +693,7 @@ class Output(YAMLObject):
             self.vs_output = vs_output.clip
             self.vs_alpha  = vs_output.alpha
 
+            # changed after preparing vs alpha
             self.format_alpha = self.vs_alpha.format
             self.vs_alpha = self.prepare_vs_output(self.vs_alpha, alpha=True)
         else:
@@ -684,7 +701,8 @@ class Output(YAMLObject):
             self.vs_output = vs_output
 
         self.index        = index
-        self.format       = self.vs_output.format  # changed after preparing vs output
+        # changed after preparing vs output
+        self.format       = self.vs_output.format
 
         self.vs_output    = self.prepare_vs_output(self.vs_output)
         self.width        = self.vs_output.width
@@ -693,7 +711,8 @@ class Output(YAMLObject):
         self.fps_den      = self.vs_output.fps.denominator
         self.fps          = self.fps_num / self.fps_den
         self.total_frames = FrameInterval(self.vs_output.num_frames)
-        self.total_time   = self.to_time_interval(self.total_frames - FrameInterval(1))
+        self.total_time   = self.to_time_interval(self.total_frames
+                                                  - FrameInterval(1))
         self.end_frame    = Frame(int(self.total_frames) - 1)
         self.end_time     = self.to_time(self.end_frame)
 
@@ -738,7 +757,8 @@ class Output(YAMLObject):
         if vs_output.format == vs.COMPATBGR32:  # type: ignore
             return vs_output
 
-        is_subsampled = vs_output.format.subsampling_w != 0 or vs_output.format.subsampling_h != 0
+        is_subsampled = (vs_output.format.subsampling_w != 0
+                         or vs_output.format.subsampling_h != 0)
         if not is_subsampled:
             resizer = self.Resizer.Point
 
@@ -750,7 +770,8 @@ class Output(YAMLObject):
                 return vs_output
             resizer_kwargs['format'] = vs.GRAY8
 
-        vs_output = resizer(vs_output, **resizer_kwargs, **main.VS_OUTPUT_RESIZER_KWARGS)
+        vs_output = resizer(vs_output, **resizer_kwargs,
+                            **main.VS_OUTPUT_RESIZER_KWARGS)
 
         return vs_output
 
@@ -788,11 +809,13 @@ class Output(YAMLObject):
                 alpha_data_pointer, vs_frame.width, vs_frame.height,
                 vs_frame_alpha.get_stride(0), Qt.QImage.Format_Alpha8)
 
-            result_image = Qt.QImage(vs_frame.width, vs_frame.height, Qt.QImage.Format_ARGB32_Premultiplied)
+            result_image = Qt.QImage(vs_frame.width, vs_frame.height,
+                                     Qt.QImage.Format_ARGB32_Premultiplied)
             painter = Qt.QPainter(result_image)
             painter.setCompositionMode(Qt.QPainter.CompositionMode_Source)
             painter.drawImage(0, 0, frame_image)
-            painter.setCompositionMode(Qt.QPainter.CompositionMode_DestinationIn)
+            painter.setCompositionMode(
+                Qt.QPainter.CompositionMode_DestinationIn)
             painter.drawImage(0, 0, alpha_image)
             painter.end()
 
@@ -816,7 +839,8 @@ class Output(YAMLObject):
         return FrameInterval(self._calculate_frame(float(time_interval)))
 
     def to_time_interval(self, frame_interval: FrameInterval) -> TimeInterval:
-        return TimeInterval(seconds=self._calculate_seconds(int(frame_interval)))
+        return TimeInterval(
+            seconds=self._calculate_seconds(int(frame_interval)))
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
@@ -831,19 +855,23 @@ class Output(YAMLObject):
                 raise TypeError
             self.name = name
         except (KeyError, TypeError):
-            logging.warning(f'Storage loading: output {self.index}: failed to parse name.')
+            logging.warning(
+                f'Storage loading: output {self.index}: failed to parse name.')
 
         try:
             self.last_showed_frame = state['last_showed_frame']
         except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: failed to parse last showed frame.')
+            logging.warning(
+                f'Storage loading: Output: failed to parse last showed frame.')
         except IndexError:
-            logging.warning(f'Storage loading: Output: last showed frame is out of range.')
+            logging.warning(
+                f'Storage loading: Output: last showed frame is out of range.')
 
         try:
             self.scening_lists = state['scening_lists']
         except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: scening lists weren\'t parsed successfully.')
+            logging.warning(
+                f'Storage loading: Output: scening lists weren\'t parsed successfully.')
 
         try:
             play_fps = state['play_fps']
@@ -852,9 +880,11 @@ class Output(YAMLObject):
             if play_fps >= 1.0:
                 self.play_fps = play_fps
         except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: play fps weren\'t parsed successfully.')
+            logging.warning(
+                f'Storage loading: Output: play fps weren\'t parsed successfully.')
 
         try:
             self.frame_to_show = state['frame_to_show']
         except (KeyError, TypeError):
-            logging.warning(f'Storage loading: Output: failed to parse frame to show.')
+            logging.warning(
+                f'Storage loading: Output: failed to parse frame to show.')

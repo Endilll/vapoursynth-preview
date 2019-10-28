@@ -41,11 +41,13 @@ class PlaybackToolbar(AbstractToolbar):
         self.play_timer.setTimerType(Qt.Qt.PreciseTimer)
         self.play_timer.timeout.connect(self._show_next_frame)
 
-        self.fps_history: Deque[int] = deque([], int(self.main.FPS_AVERAGING_WINDOW_SIZE) + 1)
+        self.fps_history: Deque[int] = deque(
+            [], int(self.main.FPS_AVERAGING_WINDOW_SIZE) + 1)
         self.current_fps = 0.0
         self.fps_timer = Qt.QTimer()
         self.fps_timer.setTimerType(Qt.Qt.PreciseTimer)
-        self.fps_timer.timeout.connect(lambda: self.fps_spinbox.setValue(self.current_fps))
+        self.fps_timer.timeout.connect(
+            lambda: self.fps_spinbox.setValue(self.current_fps))
 
         self.play_start_time: Optional[int] = None
         self.play_start_frame = Frame(0)
@@ -161,8 +163,9 @@ class PlaybackToolbar(AbstractToolbar):
             ))
             self.play_buffer = deque([], play_buffer_size)
             for i in range(cast(int, self.play_buffer.maxlen)):
-                future = self.main.current_output.vs_output.get_frame_async(int(
-                    self.main.current_frame + FrameInterval(i) + FrameInterval(1)))
+                future = self.main.current_output.vs_output.get_frame_async(
+                    int(self.main.current_frame + FrameInterval(i)
+                        + FrameInterval(1)))
                 self.play_buffer.appendleft(future)
         else:
             play_buffer_size = int(min(
@@ -174,7 +177,8 @@ class PlaybackToolbar(AbstractToolbar):
             self.play_buffer = deque([], play_buffer_size)
 
             for i in range(cast(int, self.play_buffer.maxlen) // 2):
-                frame = self.main.current_frame + FrameInterval(i) + FrameInterval(1)
+                frame = (self.main.current_frame + FrameInterval(i)
+                         + FrameInterval(1))
                 future = self.main.current_output.vs_output.get_frame_async(
                     int(frame))
                 self.play_buffer.appendleft(future)
@@ -190,7 +194,8 @@ class PlaybackToolbar(AbstractToolbar):
             else:
                 self.fps_timer.start(self.main.FPS_REFRESH_INTERVAL)
         else:
-            self.play_timer.start(round(1000 / self.main.current_output.play_fps))
+            self.play_timer.start(
+                round(1000 / self.main.current_output.play_fps))
 
     def _show_next_frame(self) -> None:
         if not self.main.current_output.has_alpha:
@@ -200,7 +205,8 @@ class PlaybackToolbar(AbstractToolbar):
                 self.play_pause_button.click()
                 return
 
-            next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE
+            next_frame_for_buffer = (self.main.current_frame
+                                     + self.main.PLAY_BUFFER_SIZE)
             if next_frame_for_buffer <= self.main.current_output.end_frame:
                 self.play_buffer.appendleft(
                     self.main.current_output.vs_output.get_frame_async(
@@ -218,7 +224,8 @@ class PlaybackToolbar(AbstractToolbar):
                 self.play_pause_button.click()
                 return
 
-            next_frame_for_buffer = self.main.current_frame + self.main.PLAY_BUFFER_SIZE // 2
+            next_frame_for_buffer = (self.main.current_frame
+                                     + self.main.PLAY_BUFFER_SIZE // 2)
             if next_frame_for_buffer <= self.main.current_output.end_frame:
                 self.play_buffer.appendleft(
                     self.main.current_output.vs_output.get_frame_async(
@@ -253,9 +260,11 @@ class PlaybackToolbar(AbstractToolbar):
         self.fps_timer.stop()
 
         if self.main.DEBUG_PLAY_FPS and self.play_start_time is not None:
-            time_interval  = (self.play_end_time - self.play_start_time) / 1_000_000_000
+            time_interval  = ((self.play_end_time - self.play_start_time)
+                              / 1_000_000_000)
             frame_interval = self.play_end_frame - self.play_start_frame
-            logging.debug(f'{time_interval:.3f} s, {frame_interval} frames, {int(frame_interval) / time_interval:.3f} fps')
+            logging.debug(
+                f'{time_interval:.3f} s, {frame_interval} frames, {int(frame_interval) / time_interval:.3f} fps')
             self.play_start_time = None
 
     def seek_to_start(self, checked: Optional[bool] = None) -> None:
@@ -283,14 +292,16 @@ class PlaybackToolbar(AbstractToolbar):
 
     def seek_n_frames_b(self, checked: Optional[bool] = None) -> None:
         try:
-            new_pos = self.main.current_frame - FrameInterval(self.seek_frame_control.value())
+            new_pos = (self.main.current_frame
+                       - FrameInterval(self.seek_frame_control.value()))
         except ValueError:
             return
         self.stop()
         self.main.current_frame = new_pos
 
     def seek_n_frames_f(self, checked: Optional[bool] = None) -> None:
-        new_pos = self.main.current_frame + FrameInterval(self.seek_frame_control.value())
+        new_pos = (self.main.current_frame
+                   + FrameInterval(self.seek_frame_control.value()))
         if new_pos > self.main.current_output.end_frame:
             return
         self.stop()
@@ -318,7 +329,8 @@ class PlaybackToolbar(AbstractToolbar):
             self.play()
 
     def reset_fps(self, checked: Optional[bool] = None) -> None:
-        self.fps_spinbox.setValue(self.main.current_output.fps_num / self.main.current_output.fps_den)
+        self.fps_spinbox.setValue(self.main.current_output.fps_num
+                                  / self.main.current_output.fps_den)
 
     def on_fps_unlimited_changed(self, state: int) -> None:
         if state == Qt.Qt.Checked:
@@ -345,7 +357,8 @@ class PlaybackToolbar(AbstractToolbar):
         for i in range(len(self.fps_history) - 1):
             elapsed_total += self.fps_history[i + 1] - self.fps_history[i]
 
-        self.current_fps = 1_000_000_000 / (elapsed_total / len(self.fps_history))
+        self.current_fps = (1_000_000_000
+                            / (elapsed_total / len(self.fps_history)))
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
@@ -359,4 +372,5 @@ class PlaybackToolbar(AbstractToolbar):
                 raise TypeError
             self.seek_frame_control.setValue(seek_interval_frame)
         except (KeyError, TypeError):
-            logging.warning('Storage loading: PlaybackToolbar: failed to parse seek_interval_frame')
+            logging.warning(
+                'Storage loading: PlaybackToolbar: failed to parse seek_interval_frame')

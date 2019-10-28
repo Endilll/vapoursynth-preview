@@ -11,11 +11,9 @@ from PyQt5 import Qt
 
 from vspreview.core import (
     Frame, FrameInterval, QYAMLObject,
-    Scene, Time, TimeInterval
+    Scene, Time, TimeInterval,
 )
-from vspreview.utils import (
-    debug, main_window
-)
+from vspreview.utils import debug, main_window
 
 
 class SceningList(Qt.QAbstractTableModel, QYAMLObject):
@@ -161,7 +159,8 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if i >= row:
                 i -= 1
             if i != row:
-                self.beginMoveRows(self.createIndex(row, 0), row, row, self.createIndex(i, 0), i)
+                self.beginMoveRows(self.createIndex(row, 0), row, row,
+                                   self.createIndex(i, 0), i)
                 del self.items[row]
                 self.items.insert(i, scene)
                 self.endMoveRows()
@@ -186,8 +185,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         self.items[i] = value
         self.dataChanged.emit(
             self.createIndex(i, 0),
-            self.createIndex(i, self.COLUMN_COUNT - 1)
-        )
+            self.createIndex(i, self.COLUMN_COUNT - 1))
 
     def __contains__(self, item: Union[Scene, Frame]) -> bool:
         if isinstance(item, Scene):
@@ -263,16 +261,21 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         try:
             name = state['name']
             if not isinstance(name, str):
-                raise TypeError('\'name\' of a SceningList is not a Frame. It\'s most probably corrupted.')
+                raise TypeError(
+                    '\'name\' of a SceningList is not a Frame. It\'s most probably corrupted.')
 
             items = state['items']
             if not isinstance(items, list):
-                raise TypeError('\'items\' of a SceningList is not a List. It\'s most probably corrupted.')
+                raise TypeError(
+                    '\'items\' of a SceningList is not a List. It\'s most probably corrupted.')
             for item in items:
                 if not isinstance(item, Scene):
-                    raise TypeError('One of the items of SceningList is not a Scene. It\'s most probably corrupted.')
+                    raise TypeError(
+                        'One of the items of SceningList is not a Scene. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('SceningList lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'SceningList lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(name, items)  # type: ignore
 
@@ -323,7 +326,8 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
         if not index.isValid():
             return cast(Qt.Qt.ItemFlags, Qt.Qt.ItemIsEnabled)
 
-        return cast(Qt.Qt.ItemFlags, super().flags(index) | Qt.Qt.ItemIsEditable)
+        return cast(Qt.Qt.ItemFlags,
+                    super().flags(index) | Qt.Qt.ItemIsEditable)
 
     def setData(self, index: Qt.QModelIndex, value: Any, role: int = Qt.Qt.EditRole) -> bool:
         if not index.isValid():
@@ -356,7 +360,8 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
 
         self.beginInsertRows(Qt.QModelIndex(), i, i)
         if name is None:
-            self.items.insert(i, SceningList('List {}'.format(len(self.items) + 1)))
+            self.items.insert(i, SceningList('List {}'
+                                             .format(len(self.items) + 1)))
         else:
             self.items.insert(i, SceningList(name))
         self.endInsertRows()
@@ -384,11 +389,15 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
         try:
             items = state['items']
             if not isinstance(items, list):
-                raise TypeError('\'items\' of a SceningLists is not a List. It\'s most probably corrupted.')
+                raise TypeError(
+                    '\'items\' of a SceningLists is not a List. It\'s most probably corrupted.')
             for item in items:
                 if not isinstance(item, SceningList):
-                    raise TypeError('One of the items of a SceningLists is not a SceningList. It\'s most probably corrupted.')
+                    raise TypeError(
+                        'One of the items of a SceningLists is not a SceningList. It\'s most probably corrupted.')
         except KeyError:
-            raise KeyError('SceningLists lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
+            raise KeyError(
+                'SceningLists lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'
+                .format(', '.join(self.__slots__)))
 
         self.__init__(items)  # type: ignore

@@ -118,9 +118,13 @@ class AbstractToolbar(Qt.QWidget, QABC):
             return
 
         if expanding:
-            self.main.resize(self.main.width(), self.main.height() + self.height() + round(6 * self.main.display_scale))
+            self.main.resize(
+                self.main.width(),
+                self.main.height() + self.height() + round(6 * self.main.display_scale))
         if not expanding:
-            self.main.resize(self.main.width(), self.main.height() - self.height() - round(6 * self.main.display_scale))
+            self.main.resize(
+                self.main.width(),
+                self.main.height() - self.height() - round(6 * self.main.display_scale))
             self.main.timeline.full_repaint()
 
     def __getstate__(self) -> Mapping[str, Any]:
@@ -135,7 +139,8 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     __slots__ = ()
 
-    # special toolbar ignored by len() and not accessible via subscription and 'in' operator
+    # special toolbar ignored by len()
+    # and not accessible via subscription and 'in' operator
     main     : AbstractToolbar = abstract_attribute()
 
     playback : AbstractToolbar = abstract_attribute()

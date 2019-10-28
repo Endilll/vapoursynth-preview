@@ -77,8 +77,7 @@ class MiscToolbar(AbstractToolbar):
 
         self.save_template_lineedit = Qt.QLineEdit(self)
         self.save_template_lineedit.setToolTip(
-            r'Use {script_name} and {frame} as placeholders.'
-        )
+            r'Use {script_name} and {frame} as placeholders.')
         layout.addWidget(self.save_template_lineedit)
 
         layout.addStretch()
@@ -107,8 +106,7 @@ class MiscToolbar(AbstractToolbar):
             # TODO: check if invokeMethod is still necessary
             Qt.QMetaObject.invokeMethod(
                 self.main, 'show_message',  Qt.Qt.QueuedConnection,
-                Qt.Q_ARG(str, 'Saved successfully')
-            )
+                Qt.Q_ARG(str, 'Saved successfully'))
 
     def on_autosave_changed(self, state: Qt.Qt.CheckState) -> None:
         if   state == Qt.Qt.Checked:
@@ -157,16 +155,19 @@ class MiscToolbar(AbstractToolbar):
         self.autosave_checkbox.setChecked(autosave_enabled)
 
         try:
-            self.save_template_lineedit.setText(state['save_file_name_template'])
+            self.save_template_lineedit.setText(
+                state['save_file_name_template'])
         except (KeyError, TypeError):
-            logging.warning('Storage loading: failed to parse save file name template.')
+            logging.warning(
+                'Storage loading: failed to parse save file name template.')
 
         try:
             show_debug = state['show_debug']
             if not isinstance(show_debug, bool):
                 raise TypeError
         except (KeyError, TypeError):
-            logging.warning('Storage loading: failed to parse show debug flag.')
+            logging.warning(
+                'Storage loading: failed to parse show debug flag.')
             show_debug = self.main.DEBUG_TOOLBAR
 
         self.show_debug_checkbox.setChecked(show_debug)
