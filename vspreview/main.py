@@ -612,8 +612,8 @@ class MainWindow(AbstractMainWindow):
             toolbar.on_current_output_changed(index, prev_index)
         self.update_statusbar_output_info()
 
-    @property
-    def current_output(self) -> Output:
+    @property  # type: ignore
+    def current_output(self) -> Output:  # type: ignore
         output = cast(Output, self.toolbars.main.outputs_combobox.currentData())
         # check currentData() return on empty combobox
         # if data != '':
@@ -625,8 +625,8 @@ class MainWindow(AbstractMainWindow):
     def current_output(self, value: Output) -> None:
         self.switch_output(self.outputs.index_of(value))
 
-    @property
-    def current_frame(self) -> Frame:
+    @property  # type: ignore
+    def current_frame(self) -> Frame:  # type: ignore
         # if self.current_output is None:
         #     return None
         return self.current_output.last_showed_frame
@@ -635,8 +635,8 @@ class MainWindow(AbstractMainWindow):
     def current_frame(self, value: Frame) -> None:
         self.switch_frame(value)
 
-    @property
-    def current_time(self) -> Time:
+    @property  # type: ignore
+    def current_time(self) -> Time:  # type: ignore
         return Time(self.current_output.last_showed_frame)
 
     @current_time.setter
@@ -644,7 +644,7 @@ class MainWindow(AbstractMainWindow):
         self.switch_frame(time=value)
 
     @property
-    def outputs(self) -> Outputs:
+    def outputs(self) -> Outputs:  # type: ignore
         return cast(Outputs, self.toolbars.main.outputs)
 
 
