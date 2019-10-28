@@ -247,7 +247,7 @@ class SceningToolbar(AbstractToolbar):
             'OGM Chapters (*.txt)'          : self.import_ogm_chapters,
             'TFM Log (*.txt)'               : self.import_tfm,
             'x264/x265 2 Pass Log (*.log)'  : self.import_x264_2pass_log,
-            'x264/x265 QP File (*.qp)'      : self.import_qp,
+            'x264/x265 QP File (*.qp *.txt)': self.import_qp,
             'XviD Log (*.txt)'              : self.import_xvid,
         }
 
