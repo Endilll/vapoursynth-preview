@@ -928,7 +928,7 @@ class SceningToolbar(AbstractToolbar):
 
     def import_xvid(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
-        Imports I-frames as single-frames scenes.
+        Imports I-frames as single-frame scenes.
         '''
         for i, line in enumerate(path.read_text().splitlines()):
             if not line.startswith('i'):
