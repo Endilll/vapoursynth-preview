@@ -429,6 +429,7 @@ class MainWindow(AbstractMainWindow):
             self.toolbars.main.layout().addWidget(toolbar.toggle_button)
 
         set_qobject_names(self)
+        self.setObjectName('MainWindow')
 
     def setup_ui(self) -> None:
         from vspreview.widgets import GraphicsView

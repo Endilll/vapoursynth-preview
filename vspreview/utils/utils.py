@@ -140,12 +140,21 @@ def method_dispatch(func: Callable[..., T]) -> Callable[..., T]:
 
 
 def set_qobject_names(obj: object) -> None:
-    if hasattr(obj, '__slots__'):
-        for attr_name in obj.__slots__:
-            attr = getattr(obj, attr_name)
-            if not isinstance(attr, Qt.QObject):
-                continue
-            attr.setObjectName(type(obj).__name__ + '.' + attr_name)
+    from vspreview.core import AbstractToolbar
+
+    if not hasattr(obj, '__slots__'):
+        return
+
+    slots = list(obj.__slots__)
+
+    if 'main' in slots:
+        slots.remove('main')
+
+    for attr_name in slots:
+        attr = getattr(obj, attr_name)
+        if not isinstance(attr, Qt.QObject):
+            continue
+        attr.setObjectName(type(obj).__name__ + '.' + attr_name)
 
 
 def get_usable_cpus_count() -> int:
