@@ -102,9 +102,10 @@ class MiscToolbar(AbstractToolbar):
             yaml.dump(self.main, f, indent=4, default_flow_style=False)
         if manually:
             # timeout triggers QTimer creation, so we need this to be invoked in GUI thread
+            # TODO: check if invokeMethod is still necessary
             Qt.QMetaObject.invokeMethod(
-                self.main.statusbar, 'showMessage',  Qt.Qt.QueuedConnection,
-                Qt.Q_ARG(str, 'Saved successfully'), Qt.Q_ARG(int, self.main.STATUSBAR_MESSAGE_TIMEOUT)
+                self.main, 'show_message',  Qt.Qt.QueuedConnection,
+                Qt.Q_ARG(str, 'Saved successfully')
             )
 
     def on_autosave_changed(self, state: Qt.Qt.CheckState) -> None:

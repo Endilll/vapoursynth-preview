@@ -43,6 +43,10 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
     def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
         raise NotImplementedError()
 
+    @abstractmethod
+    def show_message(self, message: str, timeout: Optional[int] = None) -> None:
+        raise NotImplementedError
+
     central_widget: Qt.QWidget        = abstract_attribute()
     clipboard     : Qt.QClipboard     = abstract_attribute()
     current_frame : Frame             = abstract_attribute()

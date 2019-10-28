@@ -983,11 +983,11 @@ class SceningToolbar(AbstractToolbar):
                 export_str += template.format(start=scene.start, end=scene.end, label=scene.label) + '\n'
         except KeyError:
             logging.warning('Scening: export template contains invalid placeholders.')
-            self.main.statusbar.showMessage('Export template contains invalid placeholders.', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+            self.main.show_message('Export template contains invalid placeholders.')
             return
 
         self.main.clipboard.setText(export_str)
-        self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+        self.main.show_message('Scening data exported to the clipboard')
 
     def export_single_line(self, checked: Optional[bool] = None) -> None:
         if self.current_list is None:
@@ -1001,11 +1001,11 @@ class SceningToolbar(AbstractToolbar):
                 export_str += template.format(start=scene.start, end=scene.end, label=scene.label)
         except KeyError:
             logging.warning('Scening: export template contains invalid placeholders.')
-            self.main.statusbar.showMessage('Export template contains invalid placeholders.', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+            self.main.show_message('Export template contains invalid placeholders.')
             return
 
         self.main.clipboard.setText(export_str)
-        self.main.statusbar.showMessage('Scening data exported to the clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+        self.main.show_message('Scening data exported to the clipboard')
 
     # misc
 

@@ -216,11 +216,11 @@ class MainToolbar(AbstractToolbar):
 
     def on_copy_frame_button_clicked(self, checked: Optional[bool] = None) -> None:
         self.main.clipboard.setText(str(self.main.current_frame))
-        self.main.statusbar.showMessage('Current frame number copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+        self.main.show_message('Current frame number copied to clipboard')
 
     def on_copy_timestamp_button_clicked(self, checked: Optional[bool] = None) -> None:
         self.main.clipboard.setText(self.time_control.text())
-        self.main.statusbar.showMessage('Current timestamp copied to clipboard', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+        self.main.show_message('Current timestamp copied to clipboard')
 
     def on_sync_outputs_changed(self, state: Qt.Qt.CheckState) -> None:
         if state == Qt.Qt.Checked:
@@ -248,7 +248,7 @@ class MainToolbar(AbstractToolbar):
             suggested_path_str = template.format(script_name=self.main.script_path.with_suffix(''), frame=self.main.current_frame)
         except ValueError:
             suggested_path_str = self.main.SAVE_TEMPLATE.format(script_name=self.main.script_path.with_suffix(''), frame=self.main.current_frame)
-            self.main.statusbar.showMessage('Save name template is invalid', self.main.STATUSBAR_MESSAGE_TIMEOUT)
+            self.main.show_message('Save name template is invalid')
 
         save_path_str, file_type = Qt.QFileDialog.getSaveFileName(self.main, 'Save as', suggested_path_str, filter_str)
         try:
@@ -551,7 +551,7 @@ class MainWindow(AbstractMainWindow):
         self.graphics_scene.clear()
         self.load_script(self.script_path)
 
-        self.statusbar.showMessage('Reloaded successfully', self.STATUSBAR_MESSAGE_TIMEOUT)
+        self.show_message('Reloaded successfully')
 
     def render_frame(self, frame: Frame, output: Optional[Output] = None) -> Qt.QPixmap:
         return self.current_output.render_frame(frame)
@@ -651,6 +651,11 @@ class MainWindow(AbstractMainWindow):
         elif new_index >= len(self.toolbars.main.zoom_levels):
             new_index = len(self.toolbars.main.zoom_levels) - 1
         self.toolbars.main.zoom_combobox.setCurrentIndex(new_index)
+
+    def show_message(self, message: str, timeout: Optional[int] = None) -> None:
+        if timeout is None:
+            timeout = self.STATUSBAR_MESSAGE_TIMEOUT
+        self.statusbar.showMessage(message, timeout)
 
     def update_statusbar_output_info(self, output: Optional[Output] = None) -> None:
         if output is None:
