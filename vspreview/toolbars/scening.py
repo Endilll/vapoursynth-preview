@@ -394,6 +394,10 @@ class SceningToolbar(AbstractToolbar):
         separator_line_2.setFrameShadow(Qt.QFrame.Sunken)
         layout_line_2.addWidget(separator_line_2)
 
+        self.export_template_label = Qt.QLabel(self)
+        self.export_template_label.setText('Export Template:')
+        layout_line_2.addWidget(self.export_template_label)
+
         self.export_template_lineedit = Qt.QLineEdit(self)
         # self.export_template_scene_lineedit.setSizePolicy(Qt.QSizePolicy(Qt.QSizePolicy.Policy.Expanding, Qt.QSizePolicy.Policy.Fixed))
         self.export_template_lineedit.setToolTip(
@@ -401,7 +405,7 @@ class SceningToolbar(AbstractToolbar):
             r'Both are valid for single frame scenes. '
             r'{label} is available, too.'
         )
-        self.export_template_lineedit.setPlaceholderText('Export Template')
+        self.export_template_lineedit.setText(r'({start},{end}),')
         layout_line_2.addWidget(self.export_template_lineedit)
 
         self.export_multiline_button = Qt.QPushButton(self)
