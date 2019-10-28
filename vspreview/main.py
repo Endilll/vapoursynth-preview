@@ -668,7 +668,10 @@ class MainWindow(AbstractMainWindow):
         self.statusbar.total_frames_label.setText('{} frames '.format(output.total_frames))
         self.    statusbar.duration_label.setText('{} '       .format(output.total_time))
         self.  statusbar.resolution_label.setText('{}x{} '    .format(output.width, output.height))
-        self.statusbar.pixel_format_label.setText('{} '       .format(output.format.name))
+        if not output.has_alpha:
+            self.statusbar.pixel_format_label.setText('{} '.format(output.format.name))
+        else:
+            self.statusbar.pixel_format_label.setText('Clip: {}, Alpha: {} '.format(output.format.name, output.format_alpha.name))
         if output.fps_den != 0:
             self.statusbar.fps_label.setText('{}/{} = {:.3f} fps '.format(output.fps_num, output.fps_den, output.fps_num / output.fps_den))
         else:
