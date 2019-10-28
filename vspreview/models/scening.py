@@ -249,10 +249,10 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         for scene in self.items:
             if FrameInterval(0) < initial - scene.start < result_delta:
                 result = scene.start
-                result_delta = scene.start - initial
+                result_delta = initial - scene.start
             if FrameInterval(0) < initial - scene.end < result_delta:
                 result = scene.end
-                result_delta = scene.end - initial
+                result_delta = initial - scene.end
 
         return result
 
