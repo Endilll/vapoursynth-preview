@@ -4,8 +4,8 @@ from   functools import lru_cache, partial, wraps
 import logging
 from   string    import Template
 from   typing    import (
-    Any, Callable, MutableMapping, Optional, Type, TYPE_CHECKING, TypeVar,
-    Union
+    Any, Callable, cast, MutableMapping, Optional, Type,
+    TYPE_CHECKING, TypeVar, Union,
 )
 
 from PyQt5 import Qt
@@ -75,7 +75,8 @@ def main_window() -> AbstractMainWindow:
     if app is not None:
         for widget in app.topLevelWidgets():
             if isinstance(widget, AbstractMainWindow):
-                return widget
+                # TODO: get rid of excessive cast
+                return cast(AbstractMainWindow, widget)
     logging.critical('main_window() failed')
     app.exit()
     raise RuntimeError

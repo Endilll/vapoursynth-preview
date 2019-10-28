@@ -10,16 +10,16 @@ from   PyQt5       import Qt
 import vapoursynth as     vs
 
 from vspreview.core import (
-    AbstractMainWindow, AbstractToolbar, AbstractToolbars, Frame,
-    FrameInterval, Output, Time, TimeInterval
+    AbstractMainWindow, AbstractToolbar, AbstractToolbars,
+    Frame, FrameInterval, Output, Time, TimeInterval,
 )
 from vspreview.models import Outputs
 from vspreview.utils import (
     add_shortcut, debug, get_usable_cpus_count, qt_silent_call,
-    set_qobject_names
+    set_qobject_names,
 )
 from vspreview.widgets import (
-    ComboBox, StatusBar, TimeEdit, Timeline, FrameEdit
+    ComboBox, StatusBar, TimeEdit, Timeline, FrameEdit,
 )
 
 
@@ -35,7 +35,7 @@ from vspreview.widgets import (
 # TODO: utilize Qt's signals
 # TODO: save window position
 # TODO: make use of alpha channel of outputs
-# TODO: respect cursor position when zooming in and out
+# TODO: properly mark protected members with underscore
 
 
 class ScriptErrorDialog(Qt.QDialog):

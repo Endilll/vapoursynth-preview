@@ -3,7 +3,7 @@ from __future__ import annotations
 from   enum    import auto, Enum
 import logging
 from   typing  import (
-    Any, cast, Dict, Iterator, List, Optional, Tuple, Type, Union
+    Any, cast, Dict, Iterator, List, Optional, Tuple, Type, Union,
 )
 
 from PyQt5 import Qt
@@ -11,7 +11,7 @@ from yaml  import YAMLObject
 
 from vspreview.core import (
     AbstractToolbar, Frame, FrameInterval, Scene, Time, TimeInterval,
-    TimeType, FrameType
+    TimeType, FrameType,
 )
 from vspreview.utils import debug
 

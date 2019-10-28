@@ -4,7 +4,7 @@ from   bisect   import bisect_left, bisect_right
 import logging
 from   typing   import (
     Any, Callable, cast, Dict, Iterator, List, Mapping, Optional, Set, Tuple,
-    Union
+    Union,
 )
 
 from PyQt5 import Qt

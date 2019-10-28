@@ -426,7 +426,10 @@ class Application(Qt.QApplication):
         isex = False
         try:
             self.enter_count += 1
-            ret, time = cast(Tuple[bool, float], measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event))
+            ret, time = cast(
+                Tuple[bool, float],
+                measure_exec_time_ms(Qt.QApplication.notify, True, False)(self, obj, event)
+            )
             self.enter_count -= 1
 
             if type(event).__name__ == 'QEvent' and event.type() in qevent_info:

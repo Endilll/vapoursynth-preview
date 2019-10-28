@@ -25,15 +25,15 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
 
     @abstractmethod
     def load_script(self, script_path: Path) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def reload_script(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def init_outputs(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def switch_output(self, value: Union[int, Output]) -> None:
@@ -67,7 +67,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
         from vspreview.widgets import Notches
 
     __slots__ = (
-        'main', 'toggle_button'
+        'main', 'toggle_button',
     )
 
     if TYPE_CHECKING:
@@ -149,7 +149,7 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     def __getitem__(self, index: int) -> AbstractToolbar:
         if index >= len(self.toolbars_names):
-            raise IndexError()
+            raise IndexError
         return cast(AbstractToolbar, getattr(self, self.toolbars_names[index]))
 
     def __len__(self) -> int:
@@ -157,11 +157,11 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     @abstractmethod
     def __getstate__(self) -> Mapping[str, Any]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     if TYPE_CHECKING:
         # https://github.com/python/mypy/issues/2220

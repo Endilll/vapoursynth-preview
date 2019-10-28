@@ -6,9 +6,11 @@ from   typing   import Any, Mapping, Optional
 
 from PyQt5 import Qt
 
-from vspreview.core  import AbstractMainWindow, AbstractToolbar, Frame
+from vspreview.core  import (
+    AbstractMainWindow, AbstractToolbar, Frame,
+)
 from vspreview.utils import (
-    add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label
+    add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label,
 )
 
 
@@ -21,7 +23,7 @@ class MiscToolbar(AbstractToolbar):
         'save_button', 'autosave_checkbox',
         'keep_on_top_checkbox', 'save_template_lineedit',
         'show_debug_checkbox',
-        'toggle_button'
+        'toggle_button',
     ]
 
     def __init__(self, main: AbstractMainWindow) -> None:

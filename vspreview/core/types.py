@@ -336,7 +336,7 @@ class TimeInterval(YAMLObject):
         elif init_value is None:
             self.value = timedelta()
         else:
-            raise TypeError()
+            raise TypeError
 
     def __add__(self, other: TimeInterval) -> TimeInterval:
         return TimeInterval(self.value + other.value)
@@ -710,7 +710,7 @@ class Output(YAMLObject):
                 or self.last_showed_frame > self.end_frame):
             self.last_showed_frame: Frame = Frame(0)
         if not hasattr(self, 'scening_lists'):
-            self.scening_lists: SceningLists = SceningLists()
+            self.scening_lists = SceningLists()
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
         if not hasattr(self, 'frame_to_show'):
@@ -819,8 +819,10 @@ class Output(YAMLObject):
         return TimeInterval(seconds=self._calculate_seconds(int(frame_interval)))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {attr_name: getattr(self, attr_name)
-                for attr_name in self.storable_attrs}
+        return {
+            attr_name: getattr(self, attr_name)
+            for attr_name in self.storable_attrs
+        }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:

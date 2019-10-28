@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from typing import (
-    Any, cast, Dict, List, no_type_check, Optional, Type, TypeVar, Tuple
-) 
+    Any, cast, Dict, List, no_type_check, Optional, Type, TypeVar, Tuple,
+)
 
 from PyQt5 import sip
 from yaml  import YAMLObject, YAMLObjectMetaclass

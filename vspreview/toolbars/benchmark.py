@@ -10,11 +10,11 @@ from PyQt5 import Qt
 
 from vspreview.core import (
     AbstractMainWindow, AbstractToolbar, Frame, FrameInterval, Time,
-    TimeInterval
+    TimeInterval,
 )
 from vspreview.utils import (
     debug, get_usable_cpus_count, qt_silent_call, set_qobject_names,
-    vs_clear_cache
+    vs_clear_cache,
 )
 from vspreview.widgets import FrameEdit, TimeEdit
 

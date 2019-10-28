@@ -5,25 +5,24 @@ from   pathlib  import Path
 import re
 from   typing   import (
     Any, Callable, cast, Dict, Iterator, List, Mapping, Optional, Set, Tuple,
-    Union
+    Union,
 )
 
 from PyQt5 import Qt
 
 from vspreview.core import (
     AbstractMainWindow, AbstractToolbar, Frame, FrameInterval,
-    Scene, Time, TimeInterval
+    Scene, Time, TimeInterval,
 )
 from vspreview.models import SceningList, SceningLists
 from vspreview.utils import (
     add_shortcut, debug, main_window, fire_and_forget, qt_silent_call,
-    set_qobject_names, set_status_label
+    set_qobject_names, set_status_label,
 )
 from vspreview.widgets import ComboBox, Notches, TimeEdit, FrameEdit
 
 
 # TODO: import all lwi video streams as separate scening lists
-# TODO: check lwi index for interlaced video
 
 
 class SceningListDialog(Qt.QDialog):
@@ -818,7 +817,10 @@ class SceningToolbar(AbstractToolbar):
         Imports chapters as signle-frame scenes.
         Uses NAME for scene label.
         '''
-        pattern = re.compile(r'(CHAPTER\d+)=(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)\n\1NAME=(.*)', re.RegexFlag.MULTILINE)
+        pattern = re.compile(
+            r'(CHAPTER\d+)=(\d{2}):(\d{2}):(\d{2}(?:\.\d{3})?)\n\1NAME=(.*)',
+            re.RegexFlag.MULTILINE
+        )
         for match in pattern.finditer(path.read_text()):
             time = Time(
                 hours   =   int(match[2]),
@@ -849,7 +851,11 @@ class SceningToolbar(AbstractToolbar):
 
         for match in pattern.finditer(path.read_text()):
             try:
-                scening_list.add(Frame(int(match[1])), Frame(int(match[2])), '{:.3f} fps'.format(float(match[3])))
+                scening_list.add(
+                    Frame(int(match[1])),
+                    Frame(int(match[2])),
+                    '{:.3f} fps'.format(float(match[3]))
+                )
             except ValueError:
                 out_of_range_count += 1
 
@@ -980,7 +986,9 @@ class SceningToolbar(AbstractToolbar):
 
         try:
             for scene in self.current_list:
-                export_str += template.format(start=scene.start, end=scene.end, label=scene.label) + '\n'
+                export_str += template.format(
+                    start=scene.start, end=scene.end, label=scene.label
+                ) + '\n'
         except KeyError:
             logging.warning('Scening: export template contains invalid placeholders.')
             self.main.show_message('Export template contains invalid placeholders.')
@@ -998,7 +1006,9 @@ class SceningToolbar(AbstractToolbar):
 
         try:
             for scene in self.current_list:
-                export_str += template.format(start=scene.start, end=scene.end, label=scene.label)
+                export_str += template.format(
+                    start=scene.start, end=scene.end, label=scene.label
+                )
         except KeyError:
             logging.warning('Scening: export template contains invalid placeholders.')
             self.main.show_message('Export template contains invalid placeholders.')
@@ -1043,7 +1053,6 @@ class SceningToolbar(AbstractToolbar):
             self.export_single_line_button.setEnabled(False)
             self.export_multiline_button  .setEnabled(False)
 
-
     def scening_update_status_label(self) -> None:
         first_frame_text  = str(self.first_frame)  if self.first_frame  is not None else ''
         second_frame_text = str(self.second_frame) if self.second_frame is not None else ''
@@ -1051,9 +1060,9 @@ class SceningToolbar(AbstractToolbar):
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
-            'first_frame': self.first_frame,
+            'first_frame' : self.first_frame,
             'second_frame': self.second_frame,
-            'label': self.label_lineedit.text(),
+            'label'       : self.label_lineedit.text(),
             'scening_export_template' : self.export_template_lineedit.text(),
         }
 
