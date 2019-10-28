@@ -22,7 +22,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
     yaml_tag = '!SceningList'
 
     __slots__ = (
-        'name', 'items', 'max_value'
+        'name', 'items',
     )
 
     START_FRAME_COLUMN = 0
@@ -32,10 +32,9 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
     LABEL_COLUMN       = 4
     COLUMN_COUNT       = 5
 
-    def __init__(self, name: str = '', max_value: Optional[Frame] = None, items: Optional[List[Scene]] = None) -> None:
+    def __init__(self, name: str = '', items: Optional[List[Scene]] = None) -> None:
         super().__init__()
         self.name      = name
-        self.max_value = max_value if max_value is not None else Frame(2**31)
         self.items     =     items if     items is not None else []
 
         self.main = main_window()
@@ -209,7 +208,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         if scene in self.items:
             return scene
 
-        if scene.end > self.max_value:
+        if scene.end > self.main.current_output.end_frame:
             raise ValueError('New Scene is out of bounds of output')
 
         index = bisect_right(self.items, scene)
@@ -232,7 +231,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
 
     def get_next_frame(self, initial: Frame) -> Optional[Frame]:
         result       = None
-        result_delta = FrameInterval(int(self.max_value))
+        result_delta = FrameInterval(int(self.main.current_output.end_frame))
         for scene in self.items:
             if FrameInterval(0) < scene.start - initial < result_delta:
                 result = scene.start
@@ -245,7 +244,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
 
     def get_prev_frame(self, initial: Frame) -> Optional[Frame]:
         result       = None
-        result_delta = FrameInterval(int(self.max_value))
+        result_delta = FrameInterval(int(self.main.current_output.end_frame))
         for scene in self.items:
             if FrameInterval(0) < initial - scene.start < result_delta:
                 result = scene.start
@@ -262,10 +261,6 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
-            max_value = state['max_value']
-            if not isinstance(max_value, Frame):
-                raise TypeError('\'max_value\' of a SceningList is not a Frame. It\'s most probably corrupted.')
-
             name = state['name']
             if not isinstance(name, str):
                 raise TypeError('\'name\' of a SceningList is not a Frame. It\'s most probably corrupted.')
@@ -279,7 +274,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         except KeyError:
             raise KeyError('SceningList lacks one or more of its fields. It\'s most probably corrupted. Check those: {}.'.format(', '.join(self.__slots__)))
 
-        self.__init__(name, max_value, items)  # type: ignore
+        self.__init__(name, items)  # type: ignore
 
 
 class SceningLists(Qt.QAbstractListModel, QYAMLObject):
@@ -355,17 +350,15 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
 
         return True
 
-    def add(self, name: Optional[str] = None, max_value: Optional[Frame] = None, i: Optional[int] = None) -> Tuple[SceningList, int]:
-        if max_value is None:
-            max_value = self.main.current_output.end_frame
+    def add(self, name: Optional[str] = None, i: Optional[int] = None) -> Tuple[SceningList, int]:
         if i is None:
             i = len(self.items)
 
         self.beginInsertRows(Qt.QModelIndex(), i, i)
         if name is None:
-            self.items.insert(i, SceningList('List {}'.format(len(self.items) + 1), max_value))
+            self.items.insert(i, SceningList('List {}'.format(len(self.items) + 1)))
         else:
-            self.items.insert(i, SceningList(name, max_value))
+            self.items.insert(i, SceningList(name))
         self.endInsertRows()
         return self.items[i], i
 
