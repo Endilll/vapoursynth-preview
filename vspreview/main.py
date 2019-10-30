@@ -751,21 +751,6 @@ class MainWindow(AbstractMainWindow):
         self.timeline.mode = timeline_mode
 
 
-class Application(Qt.QApplication):
-    def notify(self, obj: Qt.QObject, event: Qt.QEvent) -> bool:
-        isex = False
-        try:
-            return Qt.QApplication.notify(self, obj, event)
-        except Exception:  # pylint: disable=broad-except
-            isex = True
-            logging.error('Application: unexpected error')
-            print(*sys.exc_info())
-            return False
-        finally:
-            if isex:
-                self.quit()
-
-
 def main() -> None:
     from argparse import ArgumentParser
 
@@ -786,7 +771,7 @@ def main() -> None:
         sys.exit(1)
 
     os.chdir(script_path.parent)
-    app = Application(sys.argv)
+    app = Qt.QApplication(sys.argv)
     main_window = MainWindow()
     main_window.load_script(script_path)
     main_window.show()
