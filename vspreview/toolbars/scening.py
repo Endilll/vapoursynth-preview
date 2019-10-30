@@ -52,7 +52,7 @@ class SceningListDialog(Qt.QDialog):
         self.tableview         .doubleClicked.connect(self.on_tableview_clicked)
         self.delete_button           .clicked.connect(self.on_delete_clicked)
 
-        add_shortcut(Qt.Qt.Key_Delete, self.delete_button.click, self)
+        add_shortcut(Qt.Qt.Key_Delete, self.delete_button.click, self.tableview)
         set_qobject_names(self)
 
     def setup_ui(self) -> None:
@@ -94,6 +94,7 @@ class SceningListDialog(Qt.QDialog):
         layout.addLayout(buttons_layout)
 
         self.delete_button = Qt.QPushButton(self)
+        self.delete_button.setAutoDefault(False)
         self.delete_button.setText('Delete Selected Scene')
         self.delete_button.setEnabled(False)
         buttons_layout.addWidget(self.delete_button)
