@@ -10,10 +10,11 @@
             "args": [
                 "${workspaceFolder}/tests/script.vpy"
             ],
-            "showReturnValue": true
+            "showReturnValue": true,
+            "subProcess": true,
         },
         {
-            "name": "Current File",
+            "name": "VSP Current File",
             "type": "python",
             "request": "launch",
             "console": "integratedTerminal",
@@ -21,7 +22,17 @@
             "args": [
                 "${file}"
             ],
-            "showReturnValue": true
+            "showReturnValue": true,
+            "subProcess": true,
+        },
+        {
+            "name": "Current File",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "program": "${file}",
+            "showReturnValue": true,
+            "subProcess": true,
         }
         // {
         //     "name": "Python: Attach",
