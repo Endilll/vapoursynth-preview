@@ -2,9 +2,9 @@ Standalone preview for VapourSynth scripts. Meant to be paired with a code edito
 
 # Prerequisites
 
-Python 3.7.3
+Python 3.7.3 and higher
 
-Vapoursynth R45
+Vapoursynth R47 and higher
 
 pip modules:
 
