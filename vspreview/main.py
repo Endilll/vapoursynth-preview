@@ -759,6 +759,8 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument('script_path', help='Path to Vapoursynth script',
                         type=Path, nargs='?')
+    parser.add_argument('-a', '--external-args', type=str, nargs='?',
+                        help='Arguments that will be passed to scripts')
     args = parser.parse_args()
 
     if args.script_path is None:
@@ -769,6 +771,11 @@ def main() -> None:
     if not script_path.exists():
         print('Script path is invalid.')
         sys.exit(1)
+
+    # Rewrite args so external args will be forwarded correctly
+    if args.external_args:
+        external_args = args.external_args.split()
+        sys.argv[1:] = external_args
 
     os.chdir(script_path.parent)
     app = Qt.QApplication(sys.argv)
