@@ -510,14 +510,25 @@ class MainWindow(AbstractMainWindow):
     def patch_dark_stylesheet(self, stylesheet: str) -> str:
         return stylesheet + 'QGraphicsView { border: 0px; padding: 0px; }'
 
-    def load_script(self, script_path: Path) -> None:
+    def load_script(self, script_path: Path, external_args=[]) -> None:
         from traceback import print_exc
+        import shlex
 
         self.toolbars.playback.stop()
 
         self.statusbar.label.setText('Evaluating')
         self.script_path = script_path
         sys.path.append(str(self.script_path.parent))
+
+        # Rewrite args so external args will be forwarded correctly
+        if external_args:
+            self.external_args = shlex.split(external_args)
+        try:
+            argv_orig = sys.argv
+            sys.argv = [sys.argv[1]] + self.external_args
+        except AttributeError:
+            pass
+
         try:
             exec(self.script_path.read_text(), {})  # pylint: disable=exec-used
         except Exception:  # pylint: disable=broad-except
@@ -528,6 +539,7 @@ class MainWindow(AbstractMainWindow):
             print_exc()
             return
         finally:
+            sys.argv = argv_orig
             sys.path.pop()
 
         if len(vs.get_outputs()) == 0:
@@ -759,7 +771,7 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument('script_path', help='Path to Vapoursynth script',
                         type=Path, nargs='?')
-    parser.add_argument('-a', '--external-args', type=str, nargs='?',
+    parser.add_argument('-a', '--external-args', type=str,
                         help='Arguments that will be passed to scripts')
     args = parser.parse_args()
 
@@ -772,15 +784,10 @@ def main() -> None:
         print('Script path is invalid.')
         sys.exit(1)
 
-    # Rewrite args so external args will be forwarded correctly
-    if args.external_args:
-        external_args = args.external_args.split()
-        sys.argv[1:] = external_args
-
     os.chdir(script_path.parent)
     app = Qt.QApplication(sys.argv)
     main_window = MainWindow()
-    main_window.load_script(script_path)
+    main_window.load_script(script_path, external_args=args.external_args)
     main_window.show()
 
     try:
