@@ -510,7 +510,7 @@ class MainWindow(AbstractMainWindow):
     def patch_dark_stylesheet(self, stylesheet: str) -> str:
         return stylesheet + 'QGraphicsView { border: 0px; padding: 0px; }'
 
-    def load_script(self, script_path: Path, external_args=[]) -> None:
+    def load_script(self, script_path: Path, external_args: str = '') -> None:
         from traceback import print_exc
         import shlex
 
