@@ -389,7 +389,7 @@ class MainWindow(AbstractMainWindow):
         'script_path', 'save_on_exit', 'timeline', 'main_layout',
         'graphics_scene', 'graphics_view', 'script_error_dialog',
         'central_widget', 'statusbar',
-        'opengl_widget',
+        'opengl_widget', 'external_args',
     ]
 
     def __init__(self) -> None:
