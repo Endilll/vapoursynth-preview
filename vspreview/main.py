@@ -4,7 +4,7 @@ import logging
 import os
 from   pathlib  import Path
 import sys
-from   typing   import Any, cast, Mapping, Optional, Union
+from   typing   import Any, cast, List, Mapping, Optional, Union
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
@@ -418,6 +418,7 @@ class MainWindow(AbstractMainWindow):
         # global
 
         self.clipboard    = self.app.clipboard()
+        self.external_args: List[str] = []
         self.script_path  = Path()
         self.save_on_exit = True
 
