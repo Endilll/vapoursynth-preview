@@ -121,32 +121,48 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
         if column == self.START_FRAME_COLUMN:
             if not isinstance(value, Frame):
                 raise TypeError
-            if value > scene.end:
-                return False
-            scene.start = value
+            if scene.start != scene.end:
+                if value > scene.end:
+                    return False
+                scene.start = value
+            else:
+                scene.start = value
+                scene.end   = value
             proper_update = True
         elif column == self.END_FRAME_COLUMN:
             if not isinstance(value, Frame):
                 raise TypeError
-            if value < scene.start:
-                return False
-            scene.end = value
+            if scene.start != scene.end:
+                if value < scene.start:
+                    return False
+                scene.start = value
+            else:
+                scene.start = value
+                scene.end   = value
             proper_update = True
         if column == self.START_TIME_COLUMN:
             if not isinstance(value, Time):
                 raise TypeError
             frame = Frame(value)
-            if frame > scene.end:
-                return False
-            scene.start = frame
+            if scene.start != scene.end:
+                if frame > scene.end:
+                    return False
+                scene.start = frame
+            else:
+                scene.start = frame
+                scene.end   = frame
             proper_update = True
         if column == self.END_TIME_COLUMN:
             if not isinstance(value, Time):
                 raise TypeError
             frame = Frame(value)
-            if frame < scene.start:
-                return False
-            scene.end = frame
+            if scene.start != scene.end:
+                if frame < scene.start:
+                    return False
+                scene.start = frame
+            else:
+                scene.start = frame
+                scene.end   = frame
             proper_update = True
         elif column == self.LABEL_COLUMN:
             if not isinstance(value, str):
