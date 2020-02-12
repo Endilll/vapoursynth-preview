@@ -206,11 +206,7 @@ class SceningListDialog(Qt.QDialog):
             self.main.current_time = self.scening_list.data(index)
 
     def on_tableview_rows_moved(self, parent_index: Qt.QModelIndex, start_i: int, end_i: int, dest_index: Qt.QModelIndex, dest_i: int) -> None:
-        index = self.scening_list.index(dest_i, 0)
-        self.tableview.selectionModel().select(
-            index,
-            Qt.QItemSelectionModel.SelectionFlags(  # type: ignore
-                Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))
+        Qt.QTimer.singleShot(0, lambda: self.tableview.selectRow(dest_i))
 
     def on_tableview_selection_changed(self, selected: Qt.QItemSelection, deselected: Qt.QItemSelection) -> None:
         if len(selected.indexes()) == 0:
