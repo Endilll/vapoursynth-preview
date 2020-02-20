@@ -135,7 +135,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if scene.start != scene.end:
                 if value < scene.start:
                     return False
-                scene.start = value
+                scene.end = value
             else:
                 scene.start = value
                 scene.end   = value
@@ -159,7 +159,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if scene.start != scene.end:
                 if frame < scene.start:
                     return False
-                scene.start = frame
+                scene.end = frame
             else:
                 scene.start = frame
                 scene.end   = frame
@@ -172,7 +172,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
 
         if proper_update is True:
             i = bisect_right(self.items, scene)
-            if i >= row:
+            if i > row:
                 i -= 1
             if i != row:
                 self.beginMoveRows(self.createIndex(row, 0), row, row,
