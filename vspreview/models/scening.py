@@ -140,7 +140,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 scene.start = value
                 scene.end   = value
             proper_update = True
-        if column == self.START_TIME_COLUMN:
+        elif column == self.START_TIME_COLUMN:
             if not isinstance(value, Time):
                 raise TypeError
             frame = Frame(value)
@@ -152,7 +152,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 scene.start = frame
                 scene.end   = frame
             proper_update = True
-        if column == self.END_TIME_COLUMN:
+        elif column == self.END_TIME_COLUMN:
             if not isinstance(value, Time):
                 raise TypeError
             frame = Frame(value)
