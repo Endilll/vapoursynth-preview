@@ -20,6 +20,7 @@ class DebugToolbar(AbstractToolbar):
         self.setup_ui()
 
         self.  test_button.clicked.connect(self.test_button_clicked)
+        self. break_button.clicked.connect(self.break_button_clicked)
         self.  exec_button.clicked.connect(self.exec_button_clicked)
         self.exec_lineedit.editingFinished.connect(self.exec_button_clicked)
 
@@ -39,6 +40,10 @@ class DebugToolbar(AbstractToolbar):
         self.test_button = Qt.QPushButton(self)
         self.test_button.setText('Test')
         layout.addWidget(self.test_button)
+
+        self.break_button = Qt.QPushButton(self)
+        self.break_button.setText('Break')
+        layout.addWidget(self.break_button)
 
         self.exec_lineedit = Qt.QLineEdit(self)
         self.exec_lineedit.setPlaceholderText(
@@ -62,3 +67,6 @@ class DebugToolbar(AbstractToolbar):
             exec(self.exec_lineedit.text())  # pylint: disable=exec-used
         except Exception as e:  # pylint: disable=broad-except
             print(e)
+
+    def break_button_clicked(self, checked: Optional[bool] = None) -> None:
+        breakpoint()
