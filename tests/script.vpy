@@ -21,3 +21,7 @@ clip0.set_output(2, alpha)
 # clip0 = core.ffms2.Source(r'Pop Team Epic OP.mkv')
 # clip1 = core.std.BlankClip(width=848, height=480, color=[77, 255, 90], format=vs.YUV420P8, fpsnum=1000, fpsden=3)
 # print('exiting script.vpy...')
+
+core.std.LoadPlugin(r'c:\Program Files\VapourSynth\plugins64\BestAudioSource.dll')
+audio = core.bas.Source(r'Cocoro Palette.mp4', 1)
+audio.set_output(20)

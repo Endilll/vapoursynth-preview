@@ -216,6 +216,7 @@ class PlaybackToolbar(AbstractToolbar):
                 self.main.current_frame + FrameInterval(1), render_frame=False)
             pixmap = self.main.current_output.render_raw_videoframe(
                 frame_future.result())
+            self.main.outputs[-1].render_audio_frame(self.main.current_frame + FrameInterval(1))
         else:
             try:
                 frame_future = self.play_buffer.pop()

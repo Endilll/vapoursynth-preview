@@ -17,5 +17,6 @@
     "python.linting.pycodestyleEnabled": true,
     "python.linting.pycodestyleArgs": [
         "--config=.pycodestyle"
-    ]
+    ],
+    "python.pythonPath": "C:\\Program Files\\Python38\\python.exe"
 }

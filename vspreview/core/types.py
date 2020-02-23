@@ -676,15 +676,16 @@ class Output(YAMLObject):
         'name', 'last_showed_frame', 'play_fps',
         'frame_to_show',
     )
-    __slots__ = storable_attrs + (
-        'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
-        'format', 'total_frames', 'total_time', 'graphics_scene_item',
-        'end_frame', 'end_time', 'fps', 'has_alpha', 'vs_alpha',
-        'format_alpha',
-    )
+    # __slots__ = storable_attrs + (
+    #     'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
+    #     'format', 'total_frames', 'total_time', 'graphics_scene_item',
+    #     'end_frame', 'end_time', 'fps', 'has_alpha', 'vs_alpha',
+    #     'format_alpha',
+    # )
 
-    def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
+    def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple, vs.AudioNode], index: int) -> None:
         from vspreview.models import SceningLists
+        from vspreview.utils import main_window
 
         # runtime attributes
 
@@ -703,6 +704,54 @@ class Output(YAMLObject):
         self.index        = index
         # changed after preparing vs output
         self.format       = self.vs_output.format
+        self.is_audio     = False
+
+        if isinstance(vs_output, vs.AudioNode):
+            self.is_audio = True
+
+            self.qformat = Qt.QAudioFormat()
+            self.qformat.setChannelCount(2)
+            self.qformat.setSampleRate(48000)
+            self.qformat.setSampleType(Qt.QAudioFormat.Float)
+            self.qformat.setSampleSize(32)
+            self.qformat.setByteOrder(Qt.QAudioFormat.LittleEndian)
+            self.qformat.setCodec('audio/pcm')
+
+            if not Qt.QAudioDeviceInfo(Qt.QAudioDeviceInfo.defaultOutputDevice()).isFormatSupported(self.qformat):
+                logging.warning("Audio format not supported")
+
+            self.qoutput = Qt.QAudioOutput(self.qformat, main_window())
+            self.qoutput.setBufferSize(self.format.bytes_per_sample * self.format.samples_per_frame * 2)
+            self.iodevice = self.qoutput.start()
+            print(f'Buffer size: {self.qoutput.bufferSize()}')
+            print(f'Period size: {self.qoutput.periodSize()}')
+
+            self.width        = 100
+            self.height       = 100
+            self.fps_num      = 1
+            self.fps_den      = 1
+            self.fps          = self.fps_num / self.fps_den
+            self.total_frames = FrameInterval(self.vs_output.num_frames)
+            self.total_time   = self.to_time_interval(self.total_frames
+                                                      - FrameInterval(1))
+            self.end_frame    = Frame(int(self.total_frames) - 1)
+            self.end_time     = self.to_time(self.end_frame)
+
+            self.sample_rate = self.vs_output.sample_rate
+            self.num_samples = self.vs_output.num_samples
+            self.flags       = self.vs_output.flags
+
+            if not hasattr(self, 'name'):
+                self.name = 'Audio Output ' + str(self.index)
+            if (not hasattr(self, 'last_showed_frame')
+                    or self.last_showed_frame > self.end_frame):
+                self.last_showed_frame: Frame = Frame(0)
+            if not hasattr(self, 'play_fps'):
+                self.play_fps = 1
+            if not hasattr(self, 'frame_to_show'):
+                self.frame_to_show: Optional[Frame] = None
+
+            return
 
         self.vs_output    = self.prepare_vs_output(self.vs_output)
         self.width        = self.vs_output.width
@@ -773,7 +822,67 @@ class Output(YAMLObject):
 
         return vs_output
 
+    def render_audio_frame(self, frame: Frame) -> None:
+        from array import array
+
+        vs_frame = self.vs_output.get_frame(int(frame))
+        size = self.format.samples_per_frame
+        ptr_type = ctypes.POINTER(ctypes.c_float * size)
+
+        frame_data_ptr_l = ctypes.cast(
+            vs_frame.get_read_ptr(0),
+            ptr_type
+        )
+
+        frame_data_ptr_r = ctypes.cast(
+            vs_frame.get_read_ptr(1),
+            ptr_type
+        )
+
+        barray_l = bytes(frame_data_ptr_l.contents)
+        barray_r = bytes(frame_data_ptr_r.contents)
+
+        qbarray_l = Qt.QByteArray.fromRawData(barray_l)
+        qbarray_r = Qt.QByteArray.fromRawData(barray_r)
+
+        array_l = array('f', barray_l)
+        array_r = array('f', barray_r)
+        array = array('f', array_l + array_r)
+        
+        array[::2] = array_l
+        array[1::2] = array_r
+
+        barray = bytes(array.tobytes())
+
+        stride = self.format.bytes_per_sample
+
+        # while qbarray_l.size() != 0 and qbarray_r.size() != 0:
+        #     # self.iodevice.setCurrentWriteChannel(0)
+        #     bytes_written = self.iodevice.write(qbarray_l.left(stride))
+        #     # if stride != bytes_written:
+        #     # print(bytes_written)
+        #     qbarray_l = qbarray_l.right(qbarray_l.size() - bytes_written)
+        #     # self.iodevice.setCurrentWriteChannel(1)
+        #     bytes_written = self.iodevice.write(qbarray_r.left(stride))
+        #     qbarray_r = qbarray_r.right(qbarray_r.size() - bytes_written)
+
+            # self.iodevice.write(barray_r[i:i+48000])
+        # qbarray = Qt.QByteArray.fromRawData(barray)
+        self.iodevice.write(barray)
+        # print(self.qoutput.error())
+        # print(self.iodevice.errorString())
+        # print(self.qoutput.state())
+
+        # while (size > 0):
+        #     size -= self.iodevice.write(barray)
+        #     qbarray = qbarray.right(size)
+
+        # self.iodevice.beginTransaction()
+        # self.iodevice.commitTransaction()
+
     def render_frame(self, frame: Frame) -> Qt.QPixmap:
+        if isinstance(self.vs_output, vs.AudioNode):
+            return Qt.QPixmap(self.width, self.height)
         if not self.has_alpha:
             return self.render_raw_videoframe(
                 self.vs_output.get_frame(int(frame)))
@@ -877,7 +986,7 @@ class Output(YAMLObject):
             play_fps = state['play_fps']
             if not isinstance(play_fps, float):
                 raise TypeError
-            if play_fps >= 1.0:
+            if play_fps > 0.0:
                 self.play_fps = play_fps
         except (KeyError, TypeError):
             logging.warning(
