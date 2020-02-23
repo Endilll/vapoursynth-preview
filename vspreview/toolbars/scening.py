@@ -513,6 +513,7 @@ class SceningToolbar(AbstractToolbar):
             self.  view_list_button.setEnabled(True)
             new_value.rowsInserted.connect(self._on_list_items_changed)  # type: ignore
             new_value.rowsRemoved .connect(self._on_list_items_changed)  # type: ignore
+            new_value.dataChanged .connect(self._on_list_items_changed)
             self.scening_list_dialog.on_current_list_changed(new_value)
         else:
             self.remove_list_button.setEnabled(False)
@@ -522,6 +523,7 @@ class SceningToolbar(AbstractToolbar):
             try:
                 old_value.rowsInserted.disconnect(self._on_list_items_changed)  # type: ignore
                 old_value.rowsRemoved .disconnect(self._on_list_items_changed)  # type: ignore
+                old_value.dataChanged .disconnect(self._on_list_items_changed)
             except (IndexError, TypeError):
                 pass
 
