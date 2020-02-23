@@ -383,6 +383,13 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
         self.endInsertRows()
         return self.items[i], i
 
+    def add_list(self, scening_list: SceningList) -> int:
+        i = len(self.items)
+        self.beginInsertRows(Qt.QModelIndex(), i, i)
+        self.items.insert(i, scening_list)
+        self.endInsertRows()
+        return i
+
     def remove(self, item: Union[int, SceningList]) -> None:
         i = item
         if isinstance(i, SceningList):

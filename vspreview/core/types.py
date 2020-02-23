@@ -673,7 +673,7 @@ class Output(YAMLObject):
         BOTTOM      = values[5]
 
     storable_attrs = (
-        'name', 'last_showed_frame', 'scening_lists', 'play_fps',
+        'name', 'last_showed_frame', 'play_fps',
         'frame_to_show',
     )
     __slots__ = storable_attrs + (
@@ -728,8 +728,6 @@ class Output(YAMLObject):
         if (not hasattr(self, 'last_showed_frame')
                 or self.last_showed_frame > self.end_frame):
             self.last_showed_frame: Frame = Frame(0)
-        if not hasattr(self, 'scening_lists'):
-            self.scening_lists = SceningLists()
         if not hasattr(self, 'play_fps'):
             self.play_fps = self.fps_num / self.fps_den
         if not hasattr(self, 'frame_to_show'):
@@ -849,6 +847,8 @@ class Output(YAMLObject):
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
+        from vspreview.utils import main_window
+
         try:
             name = state['name']
             if not isinstance(name, str):
@@ -868,10 +868,10 @@ class Output(YAMLObject):
                 f'Storage loading: Output: last showed frame is out of range.')
 
         try:
-            self.scening_lists = state['scening_lists']
+            for scening_list in state['scening_lists']:
+                main_window().toolbars.scening.lists.add_list(scening_list)
         except (KeyError, TypeError):
-            logging.warning(
-                f'Storage loading: Output: scening lists weren\'t parsed successfully.')
+            pass
 
         try:
             play_fps = state['play_fps']

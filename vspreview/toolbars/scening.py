@@ -173,9 +173,9 @@ class SceningListDialog(Qt.QDialog):
         self.scening_list.setData(index, text, Qt.Qt.UserRole)
 
     def on_name_changed(self, text: str) -> None:
-        i = self.main.current_output.scening_lists.index_of(self.scening_list)
-        index = self.main.current_output.scening_lists.index(i)
-        self.main.current_output.scening_lists.setData(index, text,
+        i = self.main.toolbars.scening.lists.index_of(self.scening_list)
+        index = self.main.toolbars.scening.lists.index(i)
+        self.main.toolbars.scening.lists.setData(index, text,
                                                        Qt.Qt.UserRole)
 
     def on_start_frame_changed(self, value: Union[Frame, int]) -> None:
@@ -224,6 +224,7 @@ class SceningListDialog(Qt.QDialog):
 
 class SceningToolbar(AbstractToolbar):
     __slots__ = (
+        'lists',
         'first_frame', 'second_frame',
         'export_template_pattern', 'export_template_scenes_pattern',
         'scening_list_dialog', 'supported_file_types',
@@ -243,12 +244,15 @@ class SceningToolbar(AbstractToolbar):
         super().__init__(main, 'Scening')
         self.setup_ui()
 
+        self.lists = SceningLists()
+
         self.first_frame : Optional[Frame] = None
         self.second_frame: Optional[Frame] = None
         self.export_template_pattern  = re.compile(
             r'.*(?:{start}|{end}|{label}).*')
         self.export_template_scenes_pattern = re.compile(r'.+')
 
+        self.items_combobox.setModel(self.lists)
         self.scening_update_status_label()
         self.scening_list_dialog = SceningListDialog(self.main)
 
@@ -453,18 +457,6 @@ class SceningToolbar(AbstractToolbar):
         super().on_toggle(new_state)
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        if prev_index != -1:
-            for scening_list in self.main.outputs[prev_index].scening_lists:
-                try:
-                    scening_list.rowsInserted.disconnect(
-                        self.on_list_items_changed)
-                    scening_list.rowsRemoved .disconnect(
-                        self.on_list_items_changed)
-                except TypeError:
-                    pass
-
-        self.items_combobox.setModel(self.current_lists)
-        self.notches_changed.emit(self)
         self.scening_list_dialog.on_current_output_changed(index, prev_index)
 
     def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
@@ -488,24 +480,19 @@ class SceningToolbar(AbstractToolbar):
         self.items_combobox.setCurrentValue(item)
 
     @property
-    def current_lists(self) -> SceningLists:
-        return self.main.current_output.scening_lists
-
-    @property
     def current_list_index(self) -> int:
         return self.items_combobox.currentIndex()
 
     @current_list_index.setter
     def current_list_index(self, index: int) -> None:
-        if not (0 <= index < len(self.current_lists)):
+        if not (0 <= index < len(self.lists)):
             raise IndexError
         self.items_combobox.setCurrentIndex(index)
 
     # list management
 
     def on_add_list_clicked(self, checked: Optional[bool] = None) -> None:
-        _, i = self.current_lists.add()
-        self.current_list_index = i
+        _, self.current_list_index = self.lists.add()
 
     def on_current_list_changed(self, new_value: Optional[SceningList] = None, old_value: Optional[SceningList] = None) -> None:
         if new_value is not None:
@@ -535,7 +522,7 @@ class SceningToolbar(AbstractToolbar):
         self.notches_changed.emit(self)
 
     def on_remove_list_clicked(self, checked: Optional[bool] = None) -> None:
-        self.current_lists.remove(self.current_list_index)
+        self.lists.remove(self.current_list_index)
 
     def on_view_list_clicked(self, checked: Optional[bool] = None) -> None:
         self.scening_list_dialog.show()
@@ -650,7 +637,7 @@ class SceningToolbar(AbstractToolbar):
     @set_status_label('Importing scening list')
     def import_file(self, import_func: Callable[[Path, SceningList, int], None], path: Path) -> None:
         out_of_range_count = 0
-        scening_list, scening_list_index = self.current_lists.add(path.stem)
+        scening_list, scening_list_index = self.lists.add(path.stem)
 
         import_func(path, scening_list, out_of_range_count)
 
@@ -660,7 +647,7 @@ class SceningToolbar(AbstractToolbar):
         if len(scening_list) == 0:
             logging.warning(
                 f'Scening import: nothing was imported from \'{path.name}\'.')
-            self.current_lists.remove(scening_list_index)
+            self.lists.remove(scening_list_index)
         else:
             self.current_list_index = scening_list_index
 
@@ -1070,10 +1057,12 @@ class SceningToolbar(AbstractToolbar):
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
+            'current_list_index': self.current_list_index,
             'first_frame' : self.first_frame,
             'second_frame': self.second_frame,
             'label'       : self.label_lineedit.text(),
-            'scening_export_template' : self.export_template_lineedit.text(),
+            'lists'       : self.lists,
+            'scening_export_template': self.export_template_lineedit.text(),
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
@@ -1109,6 +1098,17 @@ class SceningToolbar(AbstractToolbar):
             self.label_lineedit.setText(state['label'])
         except (KeyError, TypeError):
             logging.warning('Storage loading: Scening: failed to parse label.')
+
+        try:
+            self.lists = state['lists']
+            self.items_combobox.setModel(self.lists)
+        except (KeyError, TypeError):
+            logging.warning('Storage loading: Scening: failed to parse lists.')
+
+        try:
+            self.current_list_index = state['current_list_index']
+        except (KeyError, TypeError):
+            logging.warning('Storage loading: Scening: failed to parse current list index.')
 
         try:
             self.export_template_lineedit.setText(
