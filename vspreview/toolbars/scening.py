@@ -485,7 +485,7 @@ class SceningToolbar(AbstractToolbar):
 
     @current_list_index.setter
     def current_list_index(self, index: int) -> None:
-        if not (0 <= index < len(self.lists)):
+        if not (-1 <= index < len(self.lists)):
             raise IndexError
         self.items_combobox.setCurrentIndex(index)
 
