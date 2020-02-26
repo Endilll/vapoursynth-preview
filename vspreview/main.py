@@ -390,6 +390,7 @@ class MainWindow(AbstractMainWindow):
         'graphics_scene', 'graphics_view', 'script_error_dialog',
         'central_widget', 'statusbar',
         'opengl_widget', 'external_args',
+        'script_exec_failed'
     ]
 
     def __init__(self) -> None:
@@ -421,6 +422,7 @@ class MainWindow(AbstractMainWindow):
         self.external_args: List[str] = []
         self.script_path  = Path()
         self.save_on_exit = True
+        self.script_exec_failed = False
 
         # graphics view
 
@@ -533,6 +535,7 @@ class MainWindow(AbstractMainWindow):
         try:
             exec(self.script_path.read_text(), {})  # pylint: disable=exec-used
         except Exception:  # pylint: disable=broad-except
+            self.script_exec_failed = True
             logging.error(
                 'Script contains error(s). Check following lines for details.')
             self.handle_script_error(
@@ -542,6 +545,8 @@ class MainWindow(AbstractMainWindow):
         finally:
             sys.argv = argv_orig
             sys.path.pop()
+
+        self.script_exec_failed = False
 
         if len(vs.get_outputs()) == 0:
             logging.error('Script has no outputs set.')
@@ -582,7 +587,7 @@ class MainWindow(AbstractMainWindow):
             output.graphics_scene_item = frame_item
 
     def reload_script(self) -> None:
-        if self.toolbars.misc.autosave_enabled:
+        if self.toolbars.misc.autosave_enabled and not self.script_exec_failed:
             self.toolbars.misc.save()
         vs.clear_outputs()
         self.graphics_scene.clear()
