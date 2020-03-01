@@ -101,12 +101,6 @@ class MiscToolbar(AbstractToolbar):
         with path.open(mode='w', newline='\n') as f:
             f.write(f'# VSPreview storage for {self.main.script_path}\n')
             yaml.dump(self.main, f, indent=4, default_flow_style=False)
-        if manually:
-            # timeout triggers QTimer creation, so we need this to be invoked in GUI thread
-            # TODO: check if invokeMethod is still necessary
-            Qt.QMetaObject.invokeMethod(
-                self.main, 'show_message',  Qt.Qt.QueuedConnection,
-                Qt.Q_ARG(str, 'Saved successfully'))
 
     def on_autosave_changed(self, state: Qt.Qt.CheckState) -> None:
         if   state == Qt.Qt.Checked:
