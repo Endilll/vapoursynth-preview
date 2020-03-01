@@ -98,6 +98,14 @@ class MiscToolbar(AbstractToolbar):
         if path is None:
             path = self.main.script_path.with_suffix('.yml')
 
+        old = path.with_suffix('.old.yml')
+        old2 = path.with_suffix('.old2.yml')
+
+        if old.exists():
+            old.replace(old2)
+        if path.exists():
+            path.replace(old)
+
         with path.open(mode='w', newline='\n') as f:
             f.write(f'# VSPreview storage for {self.main.script_path}\n')
             yaml.dump(self.main, f, indent=4, default_flow_style=False)
