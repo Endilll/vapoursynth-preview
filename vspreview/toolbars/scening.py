@@ -268,6 +268,7 @@ class SceningToolbar(AbstractToolbar):
             'Matroska XML Chapters (*.xml)' : self.import_matroska_xml_chapters,
             'OGM Chapters (*.txt)'          : self.import_ogm_chapters,
             'TFM Log (*.txt)'               : self.import_tfm,
+            'VSEdit Bookmarks (*.bookmarks)': self.import_vsedit,
             'x264/x265 2 Pass Log (*.log)'  : self.import_x264_2pass_log,
             'x264/x265 QP File (*.qp *.txt)': self.import_qp,
             'XviD Log (*.txt)'              : self.import_xvid,
@@ -969,6 +970,14 @@ class SceningToolbar(AbstractToolbar):
                 scening_list.add(tfm_frame, label=str(tfm_frame.mic))
             except ValueError:
                 out_of_range_count += 1
+
+    def import_vsedit(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports bookmarks as single-frame scenes
+        '''
+
+        for bookmark in path.read_text().split(', '):
+            scening_list.add(Frame(int(bookmark)))
 
     def import_x264_2pass_log(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
