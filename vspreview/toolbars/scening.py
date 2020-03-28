@@ -261,6 +261,7 @@ class SceningToolbar(AbstractToolbar):
             'AvsP Session (*.ses)'          : self.import_ses,
             'CUE Sheet (*.cue)'             : self.import_cue,
             'DGIndex Project (*.dgi)'       : self.import_dgi,
+            'IfoEdit Celltimes (*.txt)'     : self.import_celltimes,
             'L-SMASH Works Index (*.lwi)'   : self.import_lwi,
             'Matroska Timestamps v1 (*.txt)': self.import_matroska_timestamps_v1,
             'Matroska Timestamps v2 (*.txt)': self.import_matroska_timestamps_v2,
@@ -667,6 +668,14 @@ class SceningToolbar(AbstractToolbar):
                 scening_list.add(Frame(t_start), Frame(t_end))
             except ValueError:
                 out_of_range_count += 1
+
+    def import_celltimes(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports cell times as single-frame scenes
+        '''
+
+        for line in path.read_text().splitlines():
+            scening_list.add(Frame(int(line)))
 
     def import_cue(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
