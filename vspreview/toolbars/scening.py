@@ -258,6 +258,7 @@ class SceningToolbar(AbstractToolbar):
 
         self.supported_file_types = {
             'Aegisub Project (*.ass)'       : self.import_ass,
+            'AvsP Session (*.ses)'          : self.import_ses,
             'CUE Sheet (*.cue)'             : self.import_cue,
             'DGIndex Project (*.dgi)'       : self.import_dgi,
             'L-SMASH Works Index (*.lwi)'   : self.import_lwi,
@@ -834,6 +835,20 @@ class SceningToolbar(AbstractToolbar):
                 scening_list.add(Frame(int(match)))
             except ValueError:
                 out_of_range_count += 1
+
+    def import_ses(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        import pickle
+
+        with path.open('rb') as f:
+            try:
+                session = pickle.load(f)
+            except pickle.UnpicklingError:
+                return
+        if 'bookmarks' not in session:
+            return
+
+        for bookmark in session['bookmarks']:
+            scening_list.add(Frame(bookmark[0]))
 
     def import_matroska_timestamps_v1(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
