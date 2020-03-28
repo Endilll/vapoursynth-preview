@@ -837,6 +837,9 @@ class SceningToolbar(AbstractToolbar):
                 out_of_range_count += 1
 
     def import_ses(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports bookmarks as single-frame scenes
+        '''
         import pickle
 
         with path.open('rb') as f:
