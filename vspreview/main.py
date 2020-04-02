@@ -166,7 +166,7 @@ class MainToolbar(AbstractToolbar):
         self.frame_control.setKeyboardTracking(False)
         layout.addWidget(self.frame_control)
 
-        self.copy_frame_button = Qt.QPushButton(self)
+        self.copy_frame_button = Qt.QToolButton(self)
         self.copy_frame_button.setText('⎘')
         layout.addWidget(self.copy_frame_button)
 
@@ -174,7 +174,7 @@ class MainToolbar(AbstractToolbar):
         self.time_control.setKeyboardTracking(False)
         layout.addWidget(self.time_control)
 
-        self.copy_timestamp_button = Qt.QPushButton(self)
+        self.copy_timestamp_button = Qt.QToolButton(self)
         self.copy_timestamp_button.setText('⎘')
         layout.addWidget(self.copy_timestamp_button)
 

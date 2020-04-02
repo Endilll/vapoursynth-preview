@@ -84,7 +84,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
 
         self.notches_changed.connect(self.main.timeline.update_notches)
 
-        self.toggle_button = Qt.QPushButton(self)
+        self.toggle_button = Qt.QToolButton(self)
         self.toggle_button.setCheckable(True)
         self.toggle_button.setText(name)
         self.toggle_button.clicked.connect(self.on_toggle)

@@ -348,19 +348,12 @@ class SceningToolbar(AbstractToolbar):
         self.import_file_button.setText('Import List')
         layout_line_1.addWidget(self.import_file_button)
 
-        separator_line_1 = Qt.QFrame(self)
-        separator_line_1.setObjectName(
-            'SceningToolbar.setup_ui.separator_line_1')
-        separator_line_1.setFrameShape(Qt.QFrame.VLine)
-        separator_line_1.setFrameShadow(Qt.QFrame.Sunken)
-        layout_line_1.addWidget(separator_line_1)
-
-        self.seek_to_prev_button = Qt.QPushButton(self)
+        self.seek_to_prev_button = Qt.QToolButton(self)
         self.seek_to_prev_button.setText('⏪')
         self.seek_to_prev_button.setEnabled(False)
         layout_line_1.addWidget(self.seek_to_prev_button)
 
-        self.seek_to_next_button = Qt.QPushButton(self)
+        self.seek_to_next_button = Qt.QToolButton(self)
         self.seek_to_next_button.setText('⏩')
         self.seek_to_next_button.setEnabled(False)
         layout_line_1.addWidget(self.seek_to_next_button)
@@ -372,20 +365,20 @@ class SceningToolbar(AbstractToolbar):
         layout_line_2.setObjectName('SceningToolbar.setup_ui.layout_line_2')
         layout.addLayout(layout_line_2)
 
-        self.add_single_frame_button = Qt.QPushButton(self)
+        self.add_single_frame_button = Qt.QToolButton(self)
         # self.add_single_frame_button.setText('Add Single Frame')
         self.add_single_frame_button.setText('🆎')
         self.add_single_frame_button.setToolTip('Add Single Frame Scene')
         layout_line_2.addWidget(self.add_single_frame_button)
 
-        self.toggle_first_frame_button = Qt.QPushButton(self)
+        self.toggle_first_frame_button = Qt.QToolButton(self)
         # self.toggle_first_frame_button.setText('Frame 1')
         self.toggle_first_frame_button.setText('🅰️')
         self.toggle_first_frame_button.setToolTip('Toggle Start of New Scene')
         self.toggle_first_frame_button.setCheckable(True)
         layout_line_2.addWidget(self.toggle_first_frame_button)
 
-        self.toggle_second_frame_button = Qt.QPushButton(self)
+        self.toggle_second_frame_button = Qt.QToolButton(self)
         # self.toggle_second_frame_button.setText('Frame 2')
         self.toggle_second_frame_button.setText('🅱️')
         self.toggle_second_frame_button.setToolTip('Toggle End of New Scene')
