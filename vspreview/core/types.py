@@ -791,9 +791,9 @@ class Output(YAMLObject):
             ctypes.POINTER(ctypes.c_char * (
                 vs_frame.format.bytes_per_sample
                 * vs_frame.width * vs_frame.height))
-        )[0]
+        )
         frame_image = Qt.QImage(
-            frame_data_pointer, vs_frame.width, vs_frame.height,
+            frame_data_pointer.contents, vs_frame.width, vs_frame.height,
             vs_frame.get_stride(0), Qt.QImage.Format_RGB32)
 
         if vs_frame_alpha is None:
@@ -804,9 +804,9 @@ class Output(YAMLObject):
                 ctypes.POINTER(ctypes.c_char * (
                     vs_frame_alpha.format.bytes_per_sample
                     * vs_frame_alpha.width * vs_frame_alpha.height))
-            )[0]
+            )
             alpha_image = Qt.QImage(
-                alpha_data_pointer, vs_frame.width, vs_frame.height,
+                alpha_data_pointer.contents, vs_frame.width, vs_frame.height,
                 vs_frame_alpha.get_stride(0), Qt.QImage.Format_Alpha8)
 
             result_image = Qt.QImage(vs_frame.width, vs_frame.height,
