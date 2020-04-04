@@ -680,7 +680,7 @@ class Output(YAMLObject):
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
         'format', 'total_frames', 'total_time', 'graphics_scene_item',
         'end_frame', 'end_time', 'fps', 'has_alpha', 'vs_alpha',
-        'format_alpha',
+        'format_alpha', 'props', 'source_vs_output', 'source_vs_alpha'
     )
 
     def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
@@ -690,23 +690,25 @@ class Output(YAMLObject):
 
         if isinstance(vs_output, vs.AlphaOutputTuple):
             self.has_alpha = True
-            self.vs_output = vs_output.clip
-            self.vs_alpha  = vs_output.alpha
+            self.source_vs_output = vs_output.clip
+            self.source_vs_alpha  = vs_output.alpha
 
-            # changed after preparing vs alpha
-            self.format_alpha = self.vs_alpha.format
-            self.vs_alpha = self.prepare_vs_output(self.vs_alpha, alpha=True)
+            self.vs_alpha = self.prepare_vs_output(self.source_vs_alpha,
+                                                   alpha=True)
+            self.format_alpha = self.source_vs_alpha.format
         else:
             self.has_alpha = False
-            self.vs_output = vs_output
+            self.source_vs_output = vs_output
 
         self.index        = index
         # changed after preparing vs output
         self.format       = self.vs_output.format
 
-        self.vs_output    = self.prepare_vs_output(self.vs_output)
+        self.vs_output    = self.prepare_vs_output(self.source_vs_output)
         self.width        = self.vs_output.width
         self.height       = self.vs_output.height
+        self.format       = self.source_vs_output.format
+        self.props        = self.source_vs_output.get_frame(0).props
         self.fps_num      = self.vs_output.fps.numerator
         self.fps_den      = self.vs_output.fps.denominator
         self.fps          = self.fps_num / self.fps_den
