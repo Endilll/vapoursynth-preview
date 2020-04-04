@@ -146,6 +146,8 @@ class MainToolbar(AbstractToolbar):
         add_shortcut(Qt.Qt.Key_9, lambda: self.main.switch_output(8))
         add_shortcut(Qt.Qt.Key_0, lambda: self.main.switch_output(9))
         add_shortcut(Qt.Qt.Key_S,         self.sync_outputs_checkbox.click)
+        add_shortcut(Qt.Qt.CTRL + Qt.Qt.SHIFT + Qt.Qt.Key_S,
+                     self.save_as_button.click)
 
         set_qobject_names(self)
 
