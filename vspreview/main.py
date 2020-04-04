@@ -813,22 +813,24 @@ def check_versions() -> bool:
     from pkg_resources import get_distribution
     from platform import python_version
 
-    if sys.version_info < (3, 7, 4, 'final', 0):
-        print('VSPreview is not tested on Python versions prior to 3.7.4 final, but you have {} {}. Use at your own risk.'
+    failed = False
+
+    if sys.version_info < (3, 8, 0, 'final', 0):
+        print('VSPreview is not tested on Python versions prior to 3.8, but you have {} {}. Use at your own risk.'
               .format(python_version(), sys.version_info.releaselevel))
-        return False
+        failed = True
 
-    if get_distribution('PyQt5').version < '5.13':
-        print('VSPreview is not tested on PyQt5 versions prior to 5.13, but you have {}. Use at your own risk.'
+    if get_distribution('PyQt5').version < '5.14':
+        print('VSPreview is not tested on PyQt5 versions prior to 5.14, but you have {}. Use at your own risk.'
               .format(get_distribution('PyQt5').version))
-        return False
+        failed = True
 
-    if vs.core.version_number() < 47:
-        print('VSPreview is not tested on VapourSynth versions prior to 47, but you have {}. Use at your own risk.'
+    if vs.core.version_number() < 49:
+        print('VSPreview is not tested on VapourSynth versions prior to 49, but you have {}. Use at your own risk.'
               .format(vs.core.version_number()))
-        return False
+        failed = True
 
-    return True
+    return not failed
 
 
 if __name__ == '__main__':
