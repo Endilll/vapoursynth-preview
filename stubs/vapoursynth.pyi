@@ -40,6 +40,7 @@ class Format:
     name: str
     color_family: ColorFamily
     sample_type: SampleType
+    bits_per_sample: int
     bytes_per_sample: int
     subsampling_w: int
     subsampling_h: int
