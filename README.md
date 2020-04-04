@@ -6,10 +6,11 @@ Feel free to contact me in [Telegram chat](https://t.me/vspreview_chat). Any fee
 
 * Python 3.8
 * Vapoursynth R49
+* pip modules in `requirements.txt`
 
-pip modules:
+You can use the following command to install pip modules:
 
-`cueparser psutil pyqt5 pysubs2 pyyaml qdarkstyle vapoursynth`
+`pip install -r requirements.txt`
 
 # Usage
 
