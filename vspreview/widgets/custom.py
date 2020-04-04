@@ -25,6 +25,7 @@ class GraphicsView(Qt.QGraphicsView):
         'app', 'angleRemainder',
     )
 
+    mouseMoved = Qt.pyqtSignal(Qt.QMouseEvent)
     wheelScrolled = Qt.pyqtSignal(int)
 
     def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
@@ -66,6 +67,11 @@ class GraphicsView(Qt.QGraphicsView):
             return
 
         event.ignore()
+
+    def mouseMoveEvent(self, event: Qt.QMouseEvent) -> None:
+        super().mouseMoveEvent(event)
+        if self.hasMouseTracking():
+            self.mouseMoved.emit(event)
 
 
 class GraphicsImageItem:
