@@ -308,7 +308,7 @@ class Toolbars(AbstractToolbars):
     def __init__(self, main_window: AbstractMainWindow) -> None:
         from vspreview.toolbars import (
             DebugToolbar, MiscToolbar, PlaybackToolbar, SceningToolbar,
-            BenchmarkToolbar,
+            BenchmarkToolbar, PipetteToolbar,
         )
 
         self.main      =      MainToolbar(main_window)
@@ -317,12 +317,14 @@ class Toolbars(AbstractToolbars):
         self.misc      =      MiscToolbar(main_window)
         self.playback  =  PlaybackToolbar(main_window)
         self.scening   =   SceningToolbar(main_window)
+        self.pipette   =   PipetteToolbar(main_window)
         self.benchmark = BenchmarkToolbar(main_window)
         self.debug     =     DebugToolbar(main_window)
 
         self.misc     .setObjectName('Toolbars.misc')
         self.playback .setObjectName('Toolbars.playback')
         self.scening  .setObjectName('Toolbars.scening')
+        self.pipette  .setObjectName('Toolbars.pipette')
         self.benchmark.setObjectName('Toolbars.benchmark')
         self.debug    .setObjectName('Toolbars.debug')
 
@@ -366,7 +368,7 @@ class MainWindow(AbstractMainWindow):
     # it's allowed to stretch target interval betweewn notches by N% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE             = 'frame'
-    # would be used for formats with subsampling
+    # used for formats with subsampling
     VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
     VS_OUTPUT_MATRIX          = Output.Matrix.BT709
     VS_OUTPUT_TRANSFER        = Output.Transfer.BT709

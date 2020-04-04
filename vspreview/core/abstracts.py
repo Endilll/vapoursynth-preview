@@ -145,11 +145,12 @@ class AbstractToolbars(AbstractYAMLObjectSingleton):
 
     playback : AbstractToolbar = abstract_attribute()
     scening  : AbstractToolbar = abstract_attribute()
+    pipette  : AbstractToolbar = abstract_attribute()
     benchmark: AbstractToolbar = abstract_attribute()
     misc     : AbstractToolbar = abstract_attribute()
     debug    : AbstractToolbar = abstract_attribute()
 
-    toolbars_names = ('playback', 'scening', 'benchmark', 'misc', 'debug')
+    toolbars_names = ('playback', 'scening', 'pipette', 'benchmark', 'misc', 'debug')
     # 'main' should be the first
     all_toolbars_names = ['main'] + list(toolbars_names)
 
