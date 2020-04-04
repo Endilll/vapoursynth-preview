@@ -155,8 +155,8 @@ class BenchmarkToolbar(AbstractToolbar):
         if self.main.BENCHMARK_CLEAR_CACHE:
             vs_clear_cache()
         if self.main.BENCHMARK_FRAME_DATA_SHARING_FIX:
-            self.main.current_output.graphics_scene_item.setPixmap(
-                self.main.current_output.graphics_scene_item.pixmap().copy())
+            self.main.current_output.graphics_scene_item.setImage(
+                self.main.current_output.graphics_scene_item.image().copy())
 
         self.start_frame  = self.start_frame_control .value()
         self.  end_frame  = self.  end_frame_control .value()

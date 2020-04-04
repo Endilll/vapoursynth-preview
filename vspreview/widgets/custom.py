@@ -68,6 +68,35 @@ class GraphicsView(Qt.QGraphicsView):
         event.ignore()
 
 
+class GraphicsImageItem:
+    __slots__ = (
+        '_image', '_graphics_item'
+    )
+
+    def __init__(self, graphics_item: Qt.QGraphicsItem, image: Qt.QImage) -> None:
+        self._graphics_item = graphics_item
+        self._image = image
+
+    def contains(self, point: Qt.QPointF) -> bool:
+        return self._graphics_item.contains(point)
+
+    def hide(self) -> None:
+        self._graphics_item.hide()
+
+    def image(self) -> Qt.QImage:
+        return self._image
+
+    def pixmap(self) -> Qt.QPixmap:
+        return cast(Qt.QPixmap, self._graphics_item.pixmap())
+
+    def setImage(self, value: Qt.QImage) -> None:
+        self._image = value
+        self._graphics_item.setPixmap(Qt.QPixmap.fromImage(self._image))
+
+    def show(self) -> None:
+        self._graphics_item.show()
+
+
 T = TypeVar('T', Output, SceningList, float)
 
 

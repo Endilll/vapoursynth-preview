@@ -684,7 +684,8 @@ class Output(YAMLObject):
     )
 
     def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
-        from vspreview.models import SceningLists
+        from vspreview.models  import SceningLists
+        from vspreview.widgets import GraphicsImageItem
 
         # runtime attributes
 
@@ -701,8 +702,6 @@ class Output(YAMLObject):
             self.source_vs_output = vs_output
 
         self.index        = index
-        # changed after preparing vs output
-        self.format       = self.vs_output.format
 
         self.vs_output    = self.prepare_vs_output(self.source_vs_output)
         self.width        = self.vs_output.width
@@ -721,7 +720,7 @@ class Output(YAMLObject):
         # set by load_script() when it prepares graphics scene item
         # based on last showed frame
 
-        self.graphics_scene_item: Qt.QGraphicsPixmapItem
+        self.graphics_scene_item: GraphicsImageItem
 
         # storable attributes
 
@@ -775,7 +774,7 @@ class Output(YAMLObject):
 
         return vs_output
 
-    def render_frame(self, frame: Frame) -> Qt.QPixmap:
+    def render_frame(self, frame: Frame) -> Qt.QImage:
         if not self.has_alpha:
             return self.render_raw_videoframe(
                 self.vs_output.get_frame(int(frame)))
@@ -784,7 +783,7 @@ class Output(YAMLObject):
                 self.vs_output.get_frame(int(frame)),
                 self.vs_alpha.get_frame(int(frame)))
 
-    def render_raw_videoframe(self, vs_frame: vs.VideoFrame, vs_frame_alpha: Optional[vs.VideoFrame] = None) -> Qt.QPixmap:
+    def render_raw_videoframe(self, vs_frame: vs.VideoFrame, vs_frame_alpha: Optional[vs.VideoFrame] = None) -> Qt.QImage:
         # powerful spell. do not touch
         frame_data_pointer = ctypes.cast(
             vs_frame.get_read_ptr(0),
@@ -797,7 +796,7 @@ class Output(YAMLObject):
             vs_frame.get_stride(0), Qt.QImage.Format_RGB32)
 
         if vs_frame_alpha is None:
-            result_pixmap = Qt.QPixmap.fromImage(frame_image)
+            return frame_image
         else:
             alpha_data_pointer = ctypes.cast(
                 vs_frame_alpha.get_read_ptr(0),
@@ -819,9 +818,7 @@ class Output(YAMLObject):
             painter.drawImage(0, 0, alpha_image)
             painter.end()
 
-            result_pixmap = Qt.QPixmap.fromImage(result_image)
-
-        return result_pixmap
+            return result_image
 
     def _calculate_frame(self, seconds: float) -> int:
         return round(seconds * self.fps)

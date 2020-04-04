@@ -270,7 +270,7 @@ class MainToolbar(AbstractToolbar):
             pass
 
     def save_as_png(self, path: Path) -> None:
-        image = self.main.current_output.graphics_scene_item.pixmap().toImage()
+        image = self.main.current_output.graphics_scene_item.image()
         image.save(str(path), 'PNG', self.main.PNG_COMPRESSION_LEVEL)
 
     def __getstate__(self) -> Mapping[str, Any]:
@@ -581,11 +581,16 @@ class MainWindow(AbstractMainWindow):
         self.statusbar.label.setText('Ready')
 
     def init_outputs(self) -> None:
+        from vspreview.widgets import GraphicsImageItem
+
         self.graphics_scene.clear()
         for output in self.outputs:
-            frame_pixmap = output.render_frame(output.last_showed_frame)
-            frame_item   = self.graphics_scene.addPixmap(frame_pixmap)
-            frame_item.hide()
+            frame_image = output.render_frame(output.last_showed_frame)
+
+            raw_frame_item = self.graphics_scene.addPixmap(Qt.QPixmap.fromImage(frame_image))
+            raw_frame_item.hide()
+
+            frame_item = GraphicsImageItem(raw_frame_item, frame_image)
             output.graphics_scene_item = frame_item
 
     def reload_script(self) -> None:
@@ -597,7 +602,7 @@ class MainWindow(AbstractMainWindow):
 
         self.show_message('Reloaded successfully')
 
-    def render_frame(self, frame: Frame, output: Optional[Output] = None) -> Qt.QPixmap:
+    def render_frame(self, frame: Frame, output: Optional[Output] = None) -> Qt.QImage:
         return self.current_output.render_frame(frame)
 
     def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
@@ -619,7 +624,7 @@ class MainWindow(AbstractMainWindow):
             toolbar.on_current_frame_changed(frame, time)
 
         if render_frame:
-            self.current_output.graphics_scene_item.setPixmap(self.render_frame(frame))
+            self.current_output.graphics_scene_item.setImage(self.render_frame(frame))
 
     def switch_output(self, value: Union[int, Output]) -> None:
         if len(self.outputs) == 0:
