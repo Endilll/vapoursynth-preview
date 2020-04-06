@@ -100,13 +100,13 @@ class MiscToolbar(AbstractToolbar):
             vsp_dir.mkdir(exist_ok=True)
             path = vsp_dir / (self.main.script_path.stem + '.yml')
 
-        old = path.with_suffix('.old.yml')
-        old2 = path.with_suffix('.old2.yml')
-
-        if old.exists():
-            old.replace(old2)
-        if path.exists():
-            path.replace(old)
+        backup_paths = [
+            path.with_suffix(f'.old{i}.yml')
+            for i in range(self.main.STORAGE_BACKUPS_COUNT, 0, -1)
+        ] + [path]
+        for dest_path, src_path in zip(backup_paths[:-1], backup_paths[1:]):
+            if src_path.exists():
+                src_path.replace(dest_path)
 
         with path.open(mode='w', newline='\n') as f:
             f.write(f'# VSPreview storage for {self.main.script_path}\n')
