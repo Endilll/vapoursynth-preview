@@ -368,6 +368,7 @@ class MainWindow(AbstractMainWindow):
     # it's allowed to stretch target interval betweewn notches by N% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE             = 'frame'
+    VSP_DIR_NAME              = '.vspreview'
     # used for formats with subsampling
     VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
     VS_OUTPUT_MATRIX          = Output.Matrix.BT709
@@ -566,7 +567,12 @@ class MainWindow(AbstractMainWindow):
     def load_storage(self) -> None:
         import yaml
 
-        storage_path = self.script_path.with_suffix('.yml')
+        vsp_dir = self.script_path.parent / self.VSP_DIR_NAME
+        storage_path = vsp_dir / (self.script_path.stem + '.yml')
+
+        if not storage_path.exists():
+            storage_path = self.script_path.with_suffix('.yml')
+
         if storage_path.exists():
             try:
                 yaml.load(storage_path.open(), Loader=yaml.Loader)

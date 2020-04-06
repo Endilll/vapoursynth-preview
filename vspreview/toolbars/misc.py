@@ -96,7 +96,9 @@ class MiscToolbar(AbstractToolbar):
         yaml.Dumper.ignore_aliases = lambda *args: True
 
         if path is None:
-            path = self.main.script_path.with_suffix('.yml')
+            vsp_dir = self.main.script_path.parent / self.main.VSP_DIR_NAME
+            vsp_dir.mkdir(exist_ok=True)
+            path = vsp_dir / (self.main.script_path.stem + '.yml')
 
         old = path.with_suffix('.old.yml')
         old2 = path.with_suffix('.old2.yml')
