@@ -680,12 +680,16 @@ class Output(YAMLObject):
         'vs_output', 'index', 'width', 'height', 'fps_num', 'fps_den',
         'format', 'total_frames', 'total_time', 'graphics_scene_item',
         'end_frame', 'end_time', 'fps', 'has_alpha', 'vs_alpha',
-        'format_alpha', 'props', 'source_vs_output', 'source_vs_alpha'
+        'format_alpha', 'props', 'source_vs_output', 'source_vs_alpha',
+        'main'
     )
 
     def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
         from vspreview.models  import SceningLists
+        from vspreview.utils   import main_window
         from vspreview.widgets import GraphicsImageItem
+
+        self.main = main_window()
 
         # runtime attributes
 
@@ -735,19 +739,15 @@ class Output(YAMLObject):
             self.frame_to_show: Optional[Frame] = None
 
     def prepare_vs_output(self, vs_output: vs.VideoNode, alpha: bool = False) -> vs.VideoNode:
-        from vspreview.utils import main_window
-
-        main = main_window()
-
-        resizer = main.VS_OUTPUT_RESIZER
+        resizer = self.main.VS_OUTPUT_RESIZER
         resizer_kwargs = {
             'format'        : vs.COMPATBGR32,
-            'matrix_in_s'   : main.VS_OUTPUT_MATRIX,
-            'transfer_in_s' : main.VS_OUTPUT_TRANSFER,
-            'primaries_in_s': main.VS_OUTPUT_PRIMARIES,
-            'range_in_s'    : main.VS_OUTPUT_RANGE,
-            'chromaloc_in_s': main.VS_OUTPUT_CHROMALOC,
-            'prefer_props'  : main.VS_OUTPUT_PREFER_PROPS,
+            'matrix_in_s'   : self.main.VS_OUTPUT_MATRIX,
+            'transfer_in_s' : self.main.VS_OUTPUT_TRANSFER,
+            'primaries_in_s': self.main.VS_OUTPUT_PRIMARIES,
+            'range_in_s'    : self.main.VS_OUTPUT_RANGE,
+            'chromaloc_in_s': self.main.VS_OUTPUT_CHROMALOC,
+            'prefer_props'  : self.main.VS_OUTPUT_PREFER_PROPS,
         }
 
         if not alpha:
@@ -770,7 +770,7 @@ class Output(YAMLObject):
             resizer_kwargs['format'] = vs.GRAY8
 
         vs_output = resizer(vs_output, **resizer_kwargs,
-                            **main.VS_OUTPUT_RESIZER_KWARGS)
+                            **self.main.VS_OUTPUT_RESIZER_KWARGS)
 
         return vs_output
 
