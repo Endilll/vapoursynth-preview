@@ -681,7 +681,7 @@ class Output(YAMLObject):
         'format', 'total_frames', 'total_time', 'graphics_scene_item',
         'end_frame', 'end_time', 'fps', 'has_alpha', 'vs_alpha',
         'format_alpha', 'props', 'source_vs_output', 'source_vs_alpha',
-        'main'
+        'main', 'checkerboard',
     )
 
     def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
@@ -720,6 +720,9 @@ class Output(YAMLObject):
                                                   - FrameInterval(1))
         self.end_frame    = Frame(int(self.total_frames) - 1)
         self.end_time     = self.to_time(self.end_frame)
+
+        if self.has_alpha:
+            self.checkerboard = self._generate_checkerboard()
 
         # set by load_script() when it prepares graphics scene item
         # based on last showed frame
@@ -797,28 +800,51 @@ class Output(YAMLObject):
 
         if vs_frame_alpha is None:
             return frame_image
-        else:
-            alpha_data_pointer = ctypes.cast(
-                vs_frame_alpha.get_read_ptr(0),
-                ctypes.POINTER(ctypes.c_char * (
-                    vs_frame_alpha.format.bytes_per_sample
-                    * vs_frame_alpha.width * vs_frame_alpha.height))
-            )
-            alpha_image = Qt.QImage(
-                alpha_data_pointer.contents, vs_frame.width, vs_frame.height,
-                vs_frame_alpha.get_stride(0), Qt.QImage.Format_Alpha8)
 
-            result_image = Qt.QImage(vs_frame.width, vs_frame.height,
-                                     Qt.QImage.Format_ARGB32_Premultiplied)
-            painter = Qt.QPainter(result_image)
-            painter.setCompositionMode(Qt.QPainter.CompositionMode_Source)
-            painter.drawImage(0, 0, frame_image)
-            painter.setCompositionMode(
-                Qt.QPainter.CompositionMode_DestinationIn)
-            painter.drawImage(0, 0, alpha_image)
-            painter.end()
+        alpha_data_pointer = ctypes.cast(
+            vs_frame_alpha.get_read_ptr(0),
+            ctypes.POINTER(ctypes.c_char * (
+                vs_frame_alpha.format.bytes_per_sample
+                * vs_frame_alpha.width * vs_frame_alpha.height))
+        )
+        alpha_image = Qt.QImage(
+            alpha_data_pointer.contents, vs_frame.width, vs_frame.height,
+            vs_frame_alpha.get_stride(0), Qt.QImage.Format_Alpha8)
 
-            return result_image
+        result_image = Qt.QImage(vs_frame.width, vs_frame.height,
+                                 Qt.QImage.Format_ARGB32_Premultiplied)
+        painter = Qt.QPainter(result_image)
+        painter.setCompositionMode(Qt.QPainter.CompositionMode_Source)
+        painter.drawImage(0, 0, frame_image)
+        painter.setCompositionMode(
+            Qt.QPainter.CompositionMode_DestinationIn)
+        painter.drawImage(0, 0, alpha_image)
+        if self.main.CHECKERBOARD_ENABLED:
+            painter.setCompositionMode(Qt.QPainter.CompositionMode_DestinationOver)
+            painter.drawImage(0, 0, self.checkerboard)
+        painter.end()
+
+        return result_image
+
+    def _generate_checkerboard(self) -> Qt.QImage:
+        tile_size    = self.main.CHECKERBOARD_TILE_SIZE
+        tile_color_1 = self.main.CHECKERBOARD_TILE_COLOR_1
+        tile_color_2 = self.main.CHECKERBOARD_TILE_COLOR_2
+
+        macrotile_pixmap = Qt.QPixmap(tile_size * 2, tile_size * 2)
+        painter = Qt.QPainter(macrotile_pixmap)
+        painter.fillRect(macrotile_pixmap.rect(), tile_color_1)
+        painter.fillRect(tile_size, 0, tile_size, tile_size, tile_color_2)
+        painter.fillRect(0, tile_size, tile_size, tile_size, tile_color_2)
+        painter.end()
+
+        result_image = Qt.QImage(self.width, self.height,
+                                 Qt.QImage.Format_ARGB32_Premultiplied)
+        painter = Qt.QPainter(result_image)
+        painter.drawTiledPixmap(result_image.rect(), macrotile_pixmap)
+        painter.end()
+
+        return result_image
 
     def _calculate_frame(self, seconds: float) -> int:
         return round(seconds * self.fps)

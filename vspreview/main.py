@@ -297,6 +297,10 @@ class MainWindow(AbstractMainWindow):
     BASE_PPI                  =    96  # PPI
     BENCHMARK_CLEAR_CACHE     = False
     BENCHMARK_REFRESH_INTERVAL =  150  # ms
+    CHECKERBOARD_ENABLED      =  True
+    CHECKERBOARD_TILE_COLOR_1 = Qt.Qt.white
+    CHECKERBOARD_TILE_COLOR_2 = Qt.Qt.lightGray
+    CHECKERBOARD_TILE_SIZE    =     8  # px
     DARK_THEME                =  True
     FPS_AVERAGING_WINDOW_SIZE = FrameInterval(100)
     FPS_REFRESH_INTERVAL      =   150  # ms
