@@ -230,10 +230,10 @@ class PipetteToolbar(AbstractToolbar):
         self.update_labels(self.main.graphics_view.mapFromGlobal(
             self.main.cursor().pos()))
 
-    def on_toggle(self, enabled: bool) -> None:
-        super().on_toggle(enabled)
-        self.main.graphics_view.setMouseTracking(enabled)
-        if enabled:
+    def on_toggle(self, new_state: bool) -> None:
+        super().on_toggle(new_state)
+        self.main.graphics_view.setMouseTracking(new_state)
+        if new_state is True:
             self.main.graphics_view.setDragMode(Qt.QGraphicsView.NoDrag)
         else:
             self.main.graphics_view.setDragMode(
