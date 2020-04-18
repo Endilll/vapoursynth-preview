@@ -1,6 +1,6 @@
 import ctypes
 import logging
-from typing import Dict, List, TypeVar, Union
+from typing import cast, Dict, List, TypeVar, Union
 
 from PyQt5 import Qt
 import vapoursynth as vs
@@ -131,23 +131,31 @@ class PipetteToolbar(AbstractToolbar):
         if not self.src_label.isVisible():
             return
 
-        src_vals: List[Union[int, float]] = []
+        def extract_value(vs_frame: vs.VideoFrame, i: int, idx: int) \
+                -> Union[int, float]:
+            fmt = vs_frame.format
+            if fmt.sample_type == vs.FLOAT and fmt.bytes_per_sample == 2:
+                ptr = ctypes.cast(vs_frame.get_read_ptr(i), ctypes.POINTER(
+                    ctypes.c_char * (2 * vs_frame.width * vs_frame.height)))
+                val = unpack('e', ptr.contents[(idx * 2):(idx * 2 + 2)])[0]  # type: ignore
+                return cast(float, val)
+            else:
+                ptr = ctypes.cast(vs_frame.get_read_ptr(i), ctypes.POINTER(
+                    self.data_types[fmt.sample_type][fmt.bytes_per_sample] * (  # type:ignore
+                        vs_frame.width * vs_frame.height)))
+                return ptr.contents[idx]  # type: ignore
+
         vs_frame = self.outputs[self.main.current_output].get_frame(
             int(self.main.current_frame))
         fmt = vs_frame.format
         idx = point.y() * vs_frame.width + point.x()
 
-        for i in range(vs_frame.format.num_planes):
-            if fmt.sample_type == vs.FLOAT and fmt.bytes_per_sample == 2:
-                ptr = ctypes.cast(vs_frame.get_read_ptr(i), ctypes.POINTER(
-                    ctypes.c_char * (2 * vs_frame.width * vs_frame.height)))
-                val = unpack('e', ptr.contents[(idx * 2):(idx * 2 + 2)])[0]  # type: ignore
-                src_vals.append(val)
-            else:
-                ptr = ctypes.cast(vs_frame.get_read_ptr(i), ctypes.POINTER(
-                    self.data_types[fmt.sample_type][fmt.bytes_per_sample] * (  # type:ignore
-                        vs_frame.width * vs_frame.height)))
-                src_vals.append(ptr.contents[idx])  # type: ignore
+        src_vals = [extract_value(vs_frame, i, idx)
+                    for i in range(fmt.num_planes)]
+        if self.main.current_output.has_alpha:
+            vs_alpha = self.main.current_output.source_vs_alpha.get_frame(
+                int(self.main.current_frame))
+            src_vals.append(extract_value(vs_alpha, 0, idx))
 
         self.src_dec.setText(self.src_dec_fmt.format(*src_vals))
         if fmt.sample_type == vs.INTEGER:
@@ -156,7 +164,7 @@ class PipetteToolbar(AbstractToolbar):
                 *[src_val / self.src_max_val for src_val in src_vals]))
         elif fmt.sample_type == vs.FLOAT:
             self.src_norm.setText(self.src_norm_fmt.format(*[
-                self.clip(val, 0.0, 1.0) if i == 0 else
+                self.clip(val, 0.0, 1.0) if i in (0, 3) else
                 self.clip(val, -0.5, 0.5) + 0.5
                 for i, val in enumerate(src_vals)
             ]))
@@ -164,44 +172,28 @@ class PipetteToolbar(AbstractToolbar):
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         from math import ceil, log
 
-        def hide() -> None:
-            self.src_label.setVisible(False)
-            self.src_dec.setVisible(False)
-            self.src_hex.setVisible(False)
-            self.src_norm.setVisible(False)
-
-        def show_and_reset() -> None:
-            self.src_label.setVisible(True)
-            self.src_dec.setVisible(True)
-            self.src_hex.setVisible(True)
-            self.src_norm.setVisible(True)
-            self.src_label.setText('')
-            self.src_hex.setText('')
-            self.src_dec.setText('')
-            self.src_norm.setText('')
-
         super().on_current_output_changed(index, prev_index)
 
-        hide()
         fmt = self.main.current_output.format
+        src_label_text = ''
         if fmt.color_family == vs.RGB:
-            show_and_reset()
-            self.src_label.setText('Raw (RGB):')
+            src_label_text = 'Raw (RGB{}):'
         elif fmt.color_family == vs.YUV:
-            show_and_reset()
-            self.src_label.setText('Raw (YUV):')
+            src_label_text = 'Raw (YUV{}):'
         elif fmt.color_family == vs.GRAY:
-            show_and_reset()
-            self.src_label.setText('Raw (Gray):')
+            src_label_text = 'Raw (Gray{}):'
         elif fmt.color_family == vs.YCOCG:
-            show_and_reset()
-            self.src_label.setText('Raw (YCoCg):')
+            src_label_text = 'Raw (YCoCg{}):'
         elif fmt.id == vs.COMPATBGR32.value:
-            show_and_reset()
-            self.src_label.setText('Raw (RGB)')
+            src_label_text = 'Raw (RGB{}):'
         elif fmt.id == vs.COMPATYUY2.value:
-            show_and_reset()
-            self.src_label.setText('Raw (YUV)')
+            src_label_text = 'Raw (YUV{}):'
+
+        has_alpha = self.main.current_output.has_alpha
+        if not has_alpha:
+            self.src_label.setText(src_label_text.format(''))
+        else:
+            self.src_label.setText(src_label_text.format(' + Alpha'))
 
         self.pos_fmt = '{{:{}d}},{{:{}d}}'.format(
             ceil(log(self.main.current_output.width, 10)),
@@ -218,14 +210,15 @@ class PipetteToolbar(AbstractToolbar):
             self.src_hex.setVisible(False)
             self.src_max_val = 1.0
 
-        self.src_hex_fmt = ','.join(('{{:{w}X}}',) * src_fmt.num_planes) \
+        src_num_planes = src_fmt.num_planes + int(has_alpha)
+        self.src_hex_fmt = ','.join(('{{:{w}X}}',) * src_num_planes) \
                            .format(w=ceil(log(self.src_max_val, 16)))
         if src_fmt.sample_type == vs.INTEGER:
-            self.src_dec_fmt = ','.join(('{{:{w}d}}',) * src_fmt.num_planes) \
+            self.src_dec_fmt = ','.join(('{{:{w}d}}',) * src_num_planes) \
                                .format(w=ceil(log(self.src_max_val, 10)))
         elif src_fmt.sample_type == vs.FLOAT:
-            self.src_dec_fmt = ','.join(('{: 0.5f}',) * src_fmt.num_planes)
-        self.src_norm_fmt = ','.join(('{:0.5f}',) * src_fmt.num_planes)
+            self.src_dec_fmt = ','.join(('{: 0.5f}',) * src_num_planes)
+        self.src_norm_fmt = ','.join(('{:0.5f}',) * src_num_planes)
 
         self.update_labels(self.main.graphics_view.mapFromGlobal(
             self.main.cursor().pos()))
