@@ -155,11 +155,11 @@ class PipetteToolbar(AbstractToolbar):
             self.src_norm.setText(self.src_norm_fmt.format(
                 *[src_val / self.src_max_val for src_val in src_vals]))
         elif fmt.sample_type == vs.FLOAT:
-            self.src_norm.setText(self.src_norm_fmt.format(
-                self.clip(src_vals[0],  0.0, 1.0),
-                self.clip(src_vals[1], -0.5, 0.5) + 0.5,
-                self.clip(src_vals[2], -0.5, 0.5) + 0.5,
-            ))
+            self.src_norm.setText(self.src_norm_fmt.format(*[
+                self.clip(val, 0.0, 1.0) if i == 0 else
+                self.clip(val, -0.5, 0.5) + 0.5
+                for i, val in enumerate(src_vals)
+            ]))
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         from math import ceil, log
