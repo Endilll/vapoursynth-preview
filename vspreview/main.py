@@ -172,12 +172,17 @@ class MainToolbar(AbstractToolbar):
         self.copy_frame_button.setText('⎘')
         layout.addWidget(self.copy_frame_button)
 
+        font = self.copy_frame_button.font()
+        font.setPixelSize(19)
+        self.copy_frame_button.setFont(font)
+
         self.time_control = TimeEdit[Time](self)
         self.time_control.setKeyboardTracking(False)
         layout.addWidget(self.time_control)
 
         self.copy_timestamp_button = Qt.QToolButton(self)
         self.copy_timestamp_button.setText('⎘')
+        self.copy_timestamp_button.setFont(font)
         layout.addWidget(self.copy_timestamp_button)
 
         self.sync_outputs_checkbox = Qt.QCheckBox(self)
@@ -517,7 +522,9 @@ class MainWindow(AbstractMainWindow):
         self.script_error_dialog = ScriptErrorDialog(self)
 
     def patch_dark_stylesheet(self, stylesheet: str) -> str:
-        return stylesheet + 'QGraphicsView { border: 0px; padding: 0px; }'
+        return stylesheet \
+            + ' QGraphicsView { border: 0px; padding: 0px; }' \
+            + ' QToolButton { padding: 0px; }'
 
     def load_script(self, script_path: Path, external_args: str = '') -> None:
         from traceback import print_exc
