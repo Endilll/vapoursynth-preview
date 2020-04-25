@@ -488,7 +488,7 @@ class MainWindow(AbstractMainWindow):
             pass
 
         try:
-            exec(self.script_path.read_text(), {})  # pylint: disable=exec-used
+            exec(self.script_path.read_text(encoding='utf-8'), {})  # pylint: disable=exec-used
         except Exception:  # pylint: disable=broad-except
             self.script_exec_failed = True
             logging.error(
