@@ -22,8 +22,8 @@ class MiscToolbar(AbstractToolbar):
         'autosave_timer', 'reload_script_button',
         'save_button', 'autosave_checkbox',
         'keep_on_top_checkbox', 'save_template_lineedit',
-        'show_debug_checkbox',
-        'toggle_button',
+        'show_debug_checkbox', 'save_frame_as_button',
+        'toggle_button', 'save_file_types',
     ]
 
     def __init__(self, main: AbstractMainWindow) -> None:
@@ -36,14 +36,21 @@ class MiscToolbar(AbstractToolbar):
         self.autosave_timer = Qt.QTimer()
         self.autosave_timer.timeout.connect(self.save)
 
+        self.save_file_types = {
+            'Single Image (*.png)': self.save_as_png,
+        }
+
         self.reload_script_button.     clicked.connect(lambda: self.main.reload_script())  # pylint: disable=unnecessary-lambda
         self.         save_button.     clicked.connect(lambda: self.save(manually=True))
         self.   autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
         self.keep_on_top_checkbox.stateChanged.connect(        self.on_keep_on_top_changed)
+        self.save_frame_as_button.     clicked.connect(        self.on_save_frame_as_clicked)
         self. show_debug_checkbox.stateChanged.connect(        self.on_show_debug_changed)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_script_button.click)
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_S, self.         save_button.click)
+        add_shortcut(Qt.Qt.CTRL + Qt.Qt.SHIFT + Qt.Qt.Key_S,
+                     self.save_frame_as_button.click)
 
         set_qobject_names(self)
 
@@ -68,6 +75,10 @@ class MiscToolbar(AbstractToolbar):
         self.keep_on_top_checkbox.setText('Keep on Top')
         self.keep_on_top_checkbox.setEnabled(False)
         layout.addWidget(self.keep_on_top_checkbox)
+
+        self.save_frame_as_button = Qt.QPushButton(self)
+        self.save_frame_as_button.setText('Save Frame as')
+        layout.addWidget(self.save_frame_as_button)
 
         save_template_label = Qt.QLabel(self)
         save_template_label.setObjectName(
@@ -128,6 +139,29 @@ class MiscToolbar(AbstractToolbar):
         elif state == Qt.Qt.Unchecked:
             self.main.setWindowFlag(Qt.Qt.WindowStaysOnTopHint, False)
 
+    def on_save_frame_as_clicked(self, checked: Optional[bool] = None) -> None:
+        filter_str = ''.join(
+            [file_type + ';;' for file_type in self.save_file_types.keys()])
+        filter_str = filter_str[0:-2]
+
+        template = self.main.toolbars.misc.save_template_lineedit.text()
+        try:
+            suggested_path_str = template.format(
+                script_name=self.main.script_path.with_suffix(''),
+                frame=self.main.current_frame)
+        except ValueError:
+            suggested_path_str = self.main.SAVE_TEMPLATE.format(
+                script_name=self.main.script_path.with_suffix(''),
+                frame=self.main.current_frame)
+            self.main.show_message('Save name template is invalid')
+
+        save_path_str, file_type = Qt.QFileDialog.getSaveFileName(
+            self.main, 'Save as', suggested_path_str, filter_str)
+        try:
+            self.save_file_types[file_type](Path(save_path_str))
+        except KeyError:
+            pass
+
     def on_show_debug_changed(self, state: Qt.Qt.CheckState) -> None:
         if   state == Qt.Qt.Checked:
             self.main.toolbars.debug.toggle_button.setVisible(True)
@@ -135,6 +169,10 @@ class MiscToolbar(AbstractToolbar):
             if self.main.toolbars.debug.toggle_button.isChecked():
                 self.main.toolbars.debug.toggle_button.click()
             self.main.toolbars.debug.toggle_button.setVisible(False)
+
+    def save_as_png(self, path: Path) -> None:
+        image = self.main.current_output.graphics_scene_item.image()
+        image.save(str(path), 'PNG', self.main.PNG_COMPRESSION_LEVEL)
 
     def __getstate__(self) -> Mapping[str, Any]:
         state = {

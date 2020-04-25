@@ -98,9 +98,9 @@ class ScriptErrorDialog(Qt.QDialog):
 
 class MainToolbar(AbstractToolbar):
     __slots__ = (
-        'outputs', 'save_file_types', 'zoom_levels',
+        'outputs', 'zoom_levels',
         'outputs_combobox', 'frame_control', 'time_control',
-        'zoom_combobox', 'save_as_button', 'switch_timeline_mode_button',
+        'zoom_combobox', 'switch_timeline_mode_button',
     )
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
@@ -118,10 +118,6 @@ class MainToolbar(AbstractToolbar):
         self.zoom_combobox.setModel(self.zoom_levels)
         self.zoom_combobox.setCurrentIndex(3)
 
-        self.save_file_types = {
-            'Single Image (*.png)': self.save_as_png
-        }
-
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
         self.frame_control          .valueChanged.connect(self.main.switch_frame)
         self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
@@ -129,7 +125,6 @@ class MainToolbar(AbstractToolbar):
         self.time_control        .editingFinished.connect(self.time_control.clearFocus)  # type: ignore
         self.sync_outputs_checkbox  .stateChanged.connect(self.on_sync_outputs_changed)
         self.zoom_combobox    .currentTextChanged.connect(self.on_zoom_changed)
-        self.save_as_button              .clicked.connect(self.on_save_as_clicked)
         self.switch_timeline_mode_button .clicked.connect(self.on_switch_timeline_mode_clicked)
 
         add_shortcut(Qt.Qt.Key_1, lambda: self.main.switch_output(0))
@@ -143,8 +138,6 @@ class MainToolbar(AbstractToolbar):
         add_shortcut(Qt.Qt.Key_9, lambda: self.main.switch_output(8))
         add_shortcut(Qt.Qt.Key_0, lambda: self.main.switch_output(9))
         add_shortcut(Qt.Qt.Key_S,         self.sync_outputs_checkbox.click)
-        add_shortcut(Qt.Qt.CTRL + Qt.Qt.SHIFT + Qt.Qt.Key_S,
-                     self.save_as_button.click)
 
         set_qobject_names(self)
 
@@ -176,10 +169,6 @@ class MainToolbar(AbstractToolbar):
         self.zoom_combobox = ComboBox[float](self)
         self.zoom_combobox.setMinimumContentsLength(4)
         layout.addWidget(self.zoom_combobox)
-
-        self.save_as_button = Qt.QPushButton(self)
-        self.save_as_button.setText('Save Frame as')
-        layout.addWidget(self.save_as_button)
 
         self.switch_timeline_mode_button = Qt.QPushButton(self)
         self.switch_timeline_mode_button.setText('Switch Timeline Mode')
@@ -226,33 +215,6 @@ class MainToolbar(AbstractToolbar):
 
     def on_zoom_changed(self, text: Optional[str] = None) -> None:
         self.main.graphics_view.setZoom(self.zoom_combobox.currentData())
-
-    def on_save_as_clicked(self, checked: Optional[bool] = None) -> None:
-        filter_str = ''.join(
-            [file_type + ';;' for file_type in self.save_file_types.keys()])
-        filter_str = filter_str[0:-2]
-
-        template = self.main.toolbars.misc.save_template_lineedit.text()
-        try:
-            suggested_path_str = template.format(
-                script_name=self.main.script_path.with_suffix(''),
-                frame=self.main.current_frame)
-        except ValueError:
-            suggested_path_str = self.main.SAVE_TEMPLATE.format(
-                script_name=self.main.script_path.with_suffix(''),
-                frame=self.main.current_frame)
-            self.main.show_message('Save name template is invalid')
-
-        save_path_str, file_type = Qt.QFileDialog.getSaveFileName(
-            self.main, 'Save as', suggested_path_str, filter_str)
-        try:
-            self.save_file_types[file_type](Path(save_path_str))
-        except KeyError:
-            pass
-
-    def save_as_png(self, path: Path) -> None:
-        image = self.main.current_output.graphics_scene_item.image()
-        image.save(str(path), 'PNG', self.main.PNG_COMPRESSION_LEVEL)
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {
