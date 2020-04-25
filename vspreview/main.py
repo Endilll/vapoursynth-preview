@@ -99,8 +99,7 @@ class ScriptErrorDialog(Qt.QDialog):
 class MainToolbar(AbstractToolbar):
     __slots__ = (
         'outputs', 'save_file_types', 'zoom_levels',
-        'outputs_combobox', 'frame_control', 'copy_frame_button',
-        'time_control', 'copy_timestamp_button',
+        'outputs_combobox', 'frame_control', 'time_control',
         'zoom_combobox', 'save_as_button', 'switch_timeline_mode_button',
     )
 
@@ -128,8 +127,6 @@ class MainToolbar(AbstractToolbar):
         self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
         self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)  # type: ignore
         self.time_control        .editingFinished.connect(self.time_control.clearFocus)  # type: ignore
-        self.copy_frame_button           .clicked.connect(self.on_copy_frame_button_clicked)
-        self.copy_timestamp_button       .clicked.connect(self.on_copy_timestamp_button_clicked)
         self.sync_outputs_checkbox  .stateChanged.connect(self.on_sync_outputs_changed)
         self.zoom_combobox    .currentTextChanged.connect(self.on_zoom_changed)
         self.save_as_button              .clicked.connect(self.on_save_as_clicked)
@@ -168,22 +165,9 @@ class MainToolbar(AbstractToolbar):
         self.frame_control.setKeyboardTracking(False)
         layout.addWidget(self.frame_control)
 
-        self.copy_frame_button = Qt.QToolButton(self)
-        self.copy_frame_button.setText('⎘')
-        layout.addWidget(self.copy_frame_button)
-
-        font = self.copy_frame_button.font()
-        font.setPixelSize(19)
-        self.copy_frame_button.setFont(font)
-
         self.time_control = TimeEdit[Time](self)
         self.time_control.setKeyboardTracking(False)
         layout.addWidget(self.time_control)
-
-        self.copy_timestamp_button = Qt.QToolButton(self)
-        self.copy_timestamp_button.setText('⎘')
-        self.copy_timestamp_button.setFont(font)
-        layout.addWidget(self.copy_timestamp_button)
 
         self.sync_outputs_checkbox = Qt.QCheckBox(self)
         self.sync_outputs_checkbox.setText('Sync Outputs')
@@ -225,14 +209,6 @@ class MainToolbar(AbstractToolbar):
         self.outputs = Outputs()
         self.main.init_outputs()
         self.outputs_combobox.setModel(self.outputs)
-
-    def on_copy_frame_button_clicked(self, checked: Optional[bool] = None) -> None:
-        self.main.clipboard.setText(str(self.main.current_frame))
-        self.main.show_message('Current frame number copied to clipboard')
-
-    def on_copy_timestamp_button_clicked(self, checked: Optional[bool] = None) -> None:
-        self.main.clipboard.setText(self.time_control.text())
-        self.main.show_message('Current timestamp copied to clipboard')
 
     def on_sync_outputs_changed(self, state: Qt.Qt.CheckState) -> None:
         if state == Qt.Qt.Checked:
