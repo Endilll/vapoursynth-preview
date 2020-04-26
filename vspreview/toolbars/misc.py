@@ -23,7 +23,7 @@ class MiscToolbar(AbstractToolbar):
         'save_button', 'autosave_checkbox',
         'keep_on_top_checkbox', 'save_template_lineedit',
         'show_debug_checkbox', 'save_frame_as_button',
-        'toggle_button', 'save_file_types',
+        'toggle_button', 'save_file_types', 'copy_frame_button',
     ]
 
     def __init__(self, main: AbstractMainWindow) -> None:
@@ -44,11 +44,13 @@ class MiscToolbar(AbstractToolbar):
         self.         save_button.     clicked.connect(lambda: self.save(manually=True))
         self.   autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
         self.keep_on_top_checkbox.stateChanged.connect(        self.on_keep_on_top_changed)
+        self.   copy_frame_button.     clicked.connect(        self.copy_frame_to_clipboard)
         self.save_frame_as_button.     clicked.connect(        self.on_save_frame_as_clicked)
         self. show_debug_checkbox.stateChanged.connect(        self.on_show_debug_changed)
 
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_R, self.reload_script_button.click)
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.Key_S, self.         save_button.click)
+        add_shortcut(Qt.Qt.ALT  + Qt.Qt.Key_S, self.   copy_frame_button.click)
         add_shortcut(Qt.Qt.CTRL + Qt.Qt.SHIFT + Qt.Qt.Key_S,
                      self.save_frame_as_button.click)
 
@@ -76,6 +78,10 @@ class MiscToolbar(AbstractToolbar):
         self.keep_on_top_checkbox.setEnabled(False)
         layout.addWidget(self.keep_on_top_checkbox)
 
+        self.copy_frame_button = Qt.QPushButton(self)
+        self.copy_frame_button.setText('Copy Frame')
+        layout.addWidget(self.copy_frame_button)
+
         self.save_frame_as_button = Qt.QPushButton(self)
         self.save_frame_as_button.setText('Save Frame as')
         layout.addWidget(self.save_frame_as_button)
@@ -98,6 +104,10 @@ class MiscToolbar(AbstractToolbar):
         self.show_debug_checkbox.setText('Show Debug Toolbar')
         layout.addWidget(self.show_debug_checkbox)
 
+    def copy_frame_to_clipboard(self) -> None:
+        frame_image = self.main.current_output.graphics_scene_item.image()
+        self.main.clipboard.setImage(frame_image)
+        self.main.show_message('Current frame successfully copied to clipboard')
 
     @fire_and_forget
     @set_status_label(label='Saving')
