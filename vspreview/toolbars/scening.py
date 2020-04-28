@@ -175,8 +175,7 @@ class SceningListDialog(Qt.QDialog):
     def on_name_changed(self, text: str) -> None:
         i = self.main.toolbars.scening.lists.index_of(self.scening_list)
         index = self.main.toolbars.scening.lists.index(i)
-        self.main.toolbars.scening.lists.setData(index, text,
-                                                       Qt.Qt.UserRole)
+        self.main.toolbars.scening.lists.setData(index, text, Qt.Qt.UserRole)
 
     def on_start_frame_changed(self, value: Union[Frame, int]) -> None:
         frame = Frame(value)
@@ -647,7 +646,8 @@ class SceningToolbar(AbstractToolbar):
 
         if out_of_range_count > 0:
             logging.warning(
-                f'Scening import: {out_of_range_count} scenes were out of range of output, so they were dropped.')
+                f'Scening import: {out_of_range_count} scenes were'
+                ' out of range of output, so they were dropped.')
         if len(scening_list) == 0:
             logging.warning(
                 f'Scening import: nothing was imported from \'{path.name}\'.')
@@ -707,7 +707,8 @@ class SceningToolbar(AbstractToolbar):
             offset = offset_to_time(track.offset)
             if offset is None:
                 logging.warning(
-                    f'Scening import: INDEX timestamp \'{track.offset}\' format isn\'t suported.')
+                    f'Scening import: INDEX timestamp \'{track.offset}\''
+                    ' format isn\'t suported.')
                 continue
             start = Frame(offset)
 
@@ -781,7 +782,8 @@ class SceningToolbar(AbstractToolbar):
             root = ElementTree.parse(str(path)).getroot()
         except ElementTree.ParseError as exc:
             logging.warning(
-                f'Scening import: error occured while parsing \'{path.name}\':')
+                f'Scening import: error occured'
+                ' while parsing \'{path.name}\':')
             logging.warning(exc.msg)
             return
         for chapter in root.iter('ChapterAtom'):
@@ -857,6 +859,7 @@ class SceningToolbar(AbstractToolbar):
             try:
                 session = pickle.load(f)
             except pickle.UnpicklingError:
+                logging.warning('Scening import: failed to load .ses file.')
                 return
         if 'bookmarks' not in session:
             return
@@ -866,7 +869,8 @@ class SceningToolbar(AbstractToolbar):
 
     def import_matroska_timestamps_v1(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
-        Imports gaps between timestamps as scenes.
+        Imports listed scenes.
+        Uses FPS for scene label.
         '''
         pattern = re.compile(r'(\d+),(\d+),(\d+(?:\.\d+)?)')
 
@@ -882,7 +886,7 @@ class SceningToolbar(AbstractToolbar):
     def import_matroska_timestamps_v2(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
         Imports intervals of constant FPS as scenes.
-        Uses FPS as scene label.
+        Uses FPS for scene label.
         '''
         timestamps: List[Time] = []
         for line in path.read_text().splitlines():
@@ -893,7 +897,8 @@ class SceningToolbar(AbstractToolbar):
 
         if len(timestamps) < 2:
             logging.warning(
-                'Scening import: timestamps file contains less that 2 timestamps, so there\'s nothing to import.')
+                'Scening import: timestamps file contains less than'
+                ' 2 timestamps, so there\'s nothing to import.')
             return
 
         deltas = [
@@ -944,7 +949,8 @@ class SceningToolbar(AbstractToolbar):
         start_pos = log.find('OVR HELP INFORMATION')
         if start_pos == -1:
             logging.warning(
-                'Scening import: TFM log doesn\'t contain OVR Help Information.')
+                'Scening import: TFM log doesn\'t contain'
+                '"OVR Help Information" section.')
             return
         log = log[start_pos:]
 
@@ -1145,7 +1151,8 @@ class SceningToolbar(AbstractToolbar):
         try:
             self.current_list_index = state['current_list_index']
         except (KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse current list index.')
+            logging.warning('Storage loading: Scening: failed to parse current'
+                            ' list index.')
 
         try:
             self.export_template_lineedit.setText(
