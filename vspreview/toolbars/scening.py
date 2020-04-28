@@ -264,6 +264,7 @@ class SceningToolbar(AbstractToolbar):
             'L-SMASH Works Index (*.lwi)'   : self.import_lwi,
             'Matroska Timestamps v1 (*.txt)': self.import_matroska_timestamps_v1,
             'Matroska Timestamps v2 (*.txt)': self.import_matroska_timestamps_v2,
+            'Matroska Timestamps v3 (*.txt)': self.import_matroska_timestamps_v3,
             'Matroska XML Chapters (*.xml)' : self.import_matroska_xml_chapters,
             'OGM Chapters (*.txt)'          : self.import_ogm_chapters,
             'TFM Log (*.txt)'               : self.import_tfm,
@@ -930,6 +931,38 @@ class SceningToolbar(AbstractToolbar):
                     '{:.3f} fps'.format(1 / float(scene_delta)))
             except ValueError:
                 out_of_range_count += 1
+
+    def import_matroska_timestamps_v3(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
+        '''
+        Imports listed scenes, ignoring gaps.
+        Uses FPS for scene label.
+        '''
+        pattern = re.compile(
+            r'^((?:\d+(?:\.\d+)?)|gap)(?:,\s?(\d+(?:\.\d+)?))?',
+            re.RegexFlag.MULTILINE)
+
+        assume_pattern = re.compile(r'assume (\d+(?:\.\d+))')
+        if len(match := assume_pattern.findall(path.read_text())) > 0:
+            default_fps = float(match[0])
+        else:
+            logging.warning('Scening import: "assume" entry not found.')
+            return
+
+        pos = Time()
+        for match in pattern.finditer(path.read_text()):
+            if match[1] == 'gap':
+                pos += TimeInterval(seconds=float(match[2]))
+                continue
+
+            interval = TimeInterval(seconds=float(match[1]))
+            fps = float(match[2]) if match.lastindex >= 2 else default_fps
+
+            scening_list.add(
+                self.main.current_output.to_frame(pos),
+                self.main.current_output.to_frame(pos + interval),
+                '{:.3f} fps'.format(fps))
+
+            pos += interval
 
     def import_tfm(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
