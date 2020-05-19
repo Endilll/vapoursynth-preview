@@ -673,27 +673,27 @@ class MainWindow(AbstractMainWindow):
             output = self.current_output
 
         self.statusbar.total_frames_label.setText(
-            '{} frames '.format(output.total_frames))
+            '{} frames'.format(output.total_frames))
         self.statusbar.duration_label.setText(
             # Display duration without -1 offset to match other video tools
-            '{} '.format(self.current_output.to_time_interval(
+            '{}'.format(self.current_output.to_time_interval(
                 self.current_output.total_frames)))
         self.statusbar.resolution_label.setText(
-            '{}x{} '.format(output.width, output.height))
+            '{}x{}'.format(output.width, output.height))
         if not output.has_alpha:
             self.statusbar.pixel_format_label.setText(
-                '{} '.format(output.format.name))
+                '{}'.format(output.format.name))
         else:
             self.statusbar.pixel_format_label.setText(
-                'Clip: {}, Alpha: {} '.format(output.format.name,
-                                              output.format_alpha.name))
+                'Clip: {}, Alpha: {}'.format(output.format.name,
+                                             output.format_alpha.name))
         if output.fps_den != 0:
             self.statusbar.fps_label.setText(
-                '{}/{} = {:.3f} fps '.format(output.fps_num, output.fps_den,
-                                             output.fps_num / output.fps_den))
+                '{}/{} = {:.3f} fps'.format(output.fps_num, output.fps_den,
+                                            output.fps_num / output.fps_den))
         else:
             self.statusbar.fps_label.setText(
-                '{}/{} fps '.format(output.fps_num, output.fps_den))
+                '{}/{} fps'.format(output.fps_num, output.fps_den))
 
     def event(self, event: Qt.QEvent) -> bool:
         if event.type() == Qt.QEvent.LayoutRequest:
