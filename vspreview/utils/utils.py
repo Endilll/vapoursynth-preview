@@ -46,9 +46,9 @@ class DeltaTemplate(Template):
 def strfdelta(time: Union[TimeType], output_format: str) -> str:
     d: MutableMapping[str, str] = {}
     td = time.value
-    hours        = td.seconds      // 3600
-    minutes      = td.seconds      //   60
-    seconds      = td.seconds       %   60
+    hours, secs_rem = divmod(td.seconds, 3600)
+    minutes      = secs_rem // 60
+    seconds      = secs_rem  % 60
     milliseconds = td.microseconds // 1000
     d['D'] =   '{:d}'.format(td.days)
     d['H'] = '{:02d}'.format(hours)
