@@ -534,8 +534,12 @@ class MainWindow(AbstractMainWindow):
             except yaml.YAMLError as exc:
                 if isinstance(exc, yaml.MarkedYAMLError):
                     logging.warning(
-                        'Storage parsing failed at line {}:{}. Using defaults.'
-                        .format(exc.problem_mark.line + 1, exc.problem_mark.column + 1))  # pylint: disable=no-member
+                        'Storage parsing failed at line {}:{} ({} {}).'
+                        'Using defaults.'
+                        .format(exc.problem_mark.line + 1,
+                                exc.problem_mark.column + 1,
+                                exc.problem,
+                                exc.context))  # pylint: disable=no-member
                 else:
                     logging.warning('Storage parsing failed. Using defaults.')
         else:
@@ -736,7 +740,8 @@ class MainWindow(AbstractMainWindow):
                 raise TypeError
         except (KeyError, TypeError):
             logging.warning(
-                'Storage loading: failed to parse timeline mode. Using default.')
+                'Storage loading: failed to parse timeline mode.'
+                ' Using default.')
             timeline_mode = self.TIMELINE_MODE
         self.timeline.mode = timeline_mode
 
