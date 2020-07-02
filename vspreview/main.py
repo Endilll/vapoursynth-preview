@@ -726,7 +726,9 @@ class MainWindow(AbstractMainWindow):
             for attr_name in self.storable_attrs
         }
         state.update({
-            'timeline_mode': self.timeline.mode
+            'timeline_mode': self.timeline.mode,
+            'window_geometry': bytes(self.saveGeometry()),
+            'window_state': bytes(self.saveState()),
         })
         return state
 
@@ -745,6 +747,25 @@ class MainWindow(AbstractMainWindow):
             timeline_mode = self.TIMELINE_MODE
         self.timeline.mode = timeline_mode
 
+        try:
+            window_geometry = state['window_geometry']
+            if not isinstance(window_geometry, bytes):
+                raise TypeError
+            self.restoreGeometry(window_geometry)
+        except (KeyError, TypeError):
+            logging.warning(
+                'Storage loading: failed to parse window geometry.'
+                ' Using default.')
+
+        try:
+            window_state = state['window_state']
+            if not isinstance(window_state, bytes):
+                raise TypeError
+            self.restoreState(window_state)
+        except (KeyError, TypeError):
+            logging.warning(
+                'Storage loading: failed to parse window state.'
+                ' Using default.')
 
 def main() -> None:
     from argparse import ArgumentParser
