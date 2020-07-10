@@ -19,9 +19,10 @@ T = TypeVar('T')
 
 def to_qtime(time: Union[TimeType]) -> Qt.QTime:
     td = time.value
-    return Qt.QTime(td.seconds      // 3600,
-                    td.seconds      //   60,
-                    td.seconds       %   60,
+    hours, secs_rem = divmod(td.seconds, 3600)
+    return Qt.QTime(hours,
+                    secs_rem        //   60,
+                    secs_rem         %   60,
                     td.microseconds // 1000)
 
 
