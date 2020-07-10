@@ -166,7 +166,8 @@ class Timeline(Qt.QWidget):
             if self.mode == self.Mode.TIME:
                 notch_interval_t = self.calculate_notch_interval_t(
                     self.notch_interval_target_x)
-                label_format  = self.generate_label_format(notch_interval_t)
+                label_format  = self.generate_label_format(notch_interval_t,
+                                                           self.end_t)
                 label_notch_t = Time()
 
                 while (label_notch_x < self.rect_f.right()
@@ -334,16 +335,20 @@ class Timeline(Qt.QWidget):
         self.full_repaint()
 
     notch_intervals_t = (
-        TimeInterval(seconds=  1),
-        TimeInterval(seconds=  2),
-        TimeInterval(seconds=  5),
-        TimeInterval(seconds= 10),
-        TimeInterval(seconds= 15),
-        TimeInterval(seconds= 30),
-        TimeInterval(seconds= 60),
-        TimeInterval(seconds= 90),
-        TimeInterval(seconds=120),
-        TimeInterval(seconds=300)
+        TimeInterval(seconds=   1),
+        TimeInterval(seconds=   2),
+        TimeInterval(seconds=   5),
+        TimeInterval(seconds=  10),
+        TimeInterval(seconds=  15),
+        TimeInterval(seconds=  30),
+        TimeInterval(seconds=  60),
+        TimeInterval(seconds=  90),
+        TimeInterval(seconds= 120),
+        TimeInterval(seconds= 300),
+        TimeInterval(seconds= 600),
+        TimeInterval(seconds= 900),
+        TimeInterval(seconds=1200),
+        TimeInterval(seconds=1800),
     )
 
     def calculate_notch_interval_t(self, target_interval_x: int) -> TimeInterval:
@@ -389,9 +394,9 @@ class Timeline(Qt.QWidget):
                 return interval
         raise RuntimeError
 
-    def generate_label_format(self, notch_interval_t: TimeInterval) -> str:
-        if   notch_interval_t >= TimeInterval(hours=1):
-            return '%h:%M'
+    def generate_label_format(self, notch_interval_t: TimeInterval, end_time: TimeInterval) -> str:
+        if   end_time >= TimeInterval(hours=1):
+            return '%h:%M:00'
         elif notch_interval_t >= TimeInterval(minutes=1):
             return '%m:00'
         else:
