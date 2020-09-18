@@ -26,7 +26,7 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
 
         local_storage = local_storage if local_storage is not None else {}
 
-        if getattr(main_window(), 'ORDERED_OUTPUTS', False):
+        if main_window().ORDERED_OUTPUTS:
             outputs = {i: vs.get_outputs()[i] for i in sorted(vs.get_outputs())}
         else:
             outputs = vs.get_outputs()
