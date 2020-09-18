@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from   collections import OrderedDict
 import logging
-from   typing  import Any, cast, Iterator, List, Mapping, Optional
+from   typing      import Any, cast, Iterator, List, Mapping, Optional
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
@@ -27,7 +28,7 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         local_storage = local_storage if local_storage is not None else {}
 
         if main_window().ORDERED_OUTPUTS:
-            outputs = {i: vs.get_outputs()[i] for i in sorted(vs.get_outputs())}
+            outputs = OrderedDict(sorted(vs.get_outputs().items()))
         else:
             outputs = vs.get_outputs()
 
