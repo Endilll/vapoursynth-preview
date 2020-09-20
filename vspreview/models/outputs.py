@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+from   collections import OrderedDict
 import logging
-from   typing  import Any, cast, Iterator, List, Mapping, Optional
+from   typing      import Any, cast, Iterator, List, Mapping, Optional
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
 
 from vspreview.core  import Output, QYAMLObjectSingleton, QYAMLObject
-from vspreview.utils import debug
+from vspreview.utils import debug, main_window
 
 
 # TODO: support non-YUV outputs
@@ -25,7 +26,13 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         self.items: List[Output] = []
 
         local_storage = local_storage if local_storage is not None else {}
-        for i, vs_output in vs.get_outputs().items():
+
+        if main_window().ORDERED_OUTPUTS:
+            outputs = OrderedDict(sorted(vs.get_outputs().items()))
+        else:
+            outputs = vs.get_outputs()
+
+        for i, vs_output in outputs.items():
             try:
                 output = local_storage[str(i)]
                 output.__init__(vs_output, i)  # type: ignore

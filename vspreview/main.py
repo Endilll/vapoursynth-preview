@@ -308,6 +308,7 @@ class MainWindow(AbstractMainWindow):
     FPS_REFRESH_INTERVAL      =   150  # ms
     LOG_LEVEL         = logging.DEBUG
     OPENGL_RENDERING          = False
+    ORDERED_OUTPUTS           = False
     OUTPUT_INDEX              =     0
     PLAY_BUFFER_SIZE = FrameInterval(get_usable_cpus_count())
     PNG_COMPRESSION_LEVEL     =     0  # 0 - 100
