@@ -111,15 +111,15 @@ class PipetteToolbar(AbstractToolbar):
         from math import floor, trunc
         from struct import unpack
 
-        point_f = self.main.graphics_view.mapToScene(local_pos)
-        point = Qt.QPoint(floor(point_f.x()), floor(point_f.y()))
-        if not self.main.current_output.graphics_scene_item.contains(point_f):
+        pos_f = self.main.graphics_view.mapToScene(local_pos)
+        pos = Qt.QPoint(floor(pos_f.x()), floor(pos_f.y()))
+        if not self.main.current_output.graphics_scene_item.contains(pos_f):
             return
         color = self.main.current_output.graphics_scene_item.image() \
-                    .pixelColor(point)
+                    .pixelColor(pos)
         self.color_view.color = color
 
-        self.position.setText(self.pos_fmt.format(point.x(), point.y()))
+        self.position.setText(self.pos_fmt.format(pos.x(), pos.y()))
 
         self.rgb_hex.setText('{:2X},{:2X},{:2X}'.format(
             color.red(), color.green(), color.blue()))
@@ -131,31 +131,34 @@ class PipetteToolbar(AbstractToolbar):
         if not self.src_label.isVisible():
             return
 
-        def extract_value(vs_frame: vs.VideoFrame, i: int, idx: int) \
-                -> Union[int, float]:
+        def extract_value(vs_frame: vs.VideoFrame, plane: int,
+                          pos: Qt.QPoint) -> Union[int, float]:
             fmt = vs_frame.format
+            stride = vs_frame.get_stride(plane)
             if fmt.sample_type == vs.FLOAT and fmt.bytes_per_sample == 2:
-                ptr = ctypes.cast(vs_frame.get_read_ptr(i), ctypes.POINTER(
-                    ctypes.c_char * (2 * vs_frame.width * vs_frame.height)))
-                val = unpack('e', ptr.contents[(idx * 2):(idx * 2 + 2)])[0]  # type: ignore
+                ptr = ctypes.cast(vs_frame.get_read_ptr(plane), ctypes.POINTER(
+                    ctypes.c_char * (stride * vs_frame.height)))
+                offset = pos.y() * stride + pos.x() * 2
+                val = unpack('e', ptr.contents[offset:(offset + 2)])[0]  # type: ignore
                 return cast(float, val)
             else:
-                ptr = ctypes.cast(vs_frame.get_read_ptr(i), ctypes.POINTER(
+                ptr = ctypes.cast(vs_frame.get_read_ptr(plane), ctypes.POINTER(
                     self.data_types[fmt.sample_type][fmt.bytes_per_sample] * (  # type:ignore
-                        vs_frame.width * vs_frame.height)))
+                        stride * vs_frame.height)))
+                logical_stride = stride // fmt.bytes_per_sample
+                idx = pos.y() * logical_stride + pos.x()
                 return ptr.contents[idx]  # type: ignore
 
         vs_frame = self.outputs[self.main.current_output].get_frame(
             int(self.main.current_frame))
         fmt = vs_frame.format
-        idx = point.y() * vs_frame.width + point.x()
 
-        src_vals = [extract_value(vs_frame, i, idx)
+        src_vals = [extract_value(vs_frame, i, pos)
                     for i in range(fmt.num_planes)]
         if self.main.current_output.has_alpha:
             vs_alpha = self.main.current_output.source_vs_alpha.get_frame(
                 int(self.main.current_frame))
-            src_vals.append(extract_value(vs_alpha, 0, idx))
+            src_vals.append(extract_value(vs_alpha, 0, pos))
 
         self.src_dec.setText(self.src_dec_fmt.format(*src_vals))
         if fmt.sample_type == vs.INTEGER:
