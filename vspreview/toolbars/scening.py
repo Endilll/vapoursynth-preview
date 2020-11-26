@@ -73,19 +73,24 @@ class SceningListDialog(Qt.QDialog):
         layout.addLayout(scene_layout)
 
         self.start_frame_control = FrameEdit[Frame](self)
+        self.start_frame_control.setEnabled(False)
         scene_layout.addWidget(self.start_frame_control)
 
         self.end_frame_control = FrameEdit[Frame](self)
+        self.end_frame_control.setEnabled(False)
         scene_layout.addWidget(self.end_frame_control)
 
         self.start_time_control = TimeEdit[Time](self)
+        self.start_time_control.setEnabled(False)
         scene_layout.addWidget(self.start_time_control)
 
         self.end_time_control = TimeEdit[Time](self)
+        self.end_time_control.setEnabled(False)
         scene_layout.addWidget(self.end_time_control)
 
         self.label_lineedit = Qt.QLineEdit(self)
         self.label_lineedit.setPlaceholderText('Label')
+        self.label_lineedit.setEnabled(False)
         scene_layout.addWidget(self.label_lineedit)
 
         buttons_layout = Qt.QHBoxLayout()
@@ -145,9 +150,12 @@ class SceningListDialog(Qt.QDialog):
             self.scening_list.remove(model_index.row())
 
     def on_end_frame_changed(self, value: Union[Frame, int]) -> None:
-        frame = Frame(value)
-        index = self.tableview.selectionModel().selectedRows()[0]
-        if not index.isValid():
+        try:
+            frame = Frame(value)
+            index = self.tableview.selectionModel().selectedRows()[0]
+            if not index.isValid():
+                return
+        except IndexError:
             return
         index = index.siblingAtColumn(SceningList.END_FRAME_COLUMN)
         if not index.isValid():
@@ -155,8 +163,11 @@ class SceningListDialog(Qt.QDialog):
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
     def on_end_time_changed(self, time: Time) -> None:
-        index = self.tableview.selectionModel().selectedRows()[0]
-        if not index.isValid():
+        try:
+            index = self.tableview.selectionModel().selectedRows()[0]
+            if not index.isValid():
+                return
+        except IndexError:
             return
         index = index.siblingAtColumn(SceningList.END_TIME_COLUMN)
         if not index.isValid():
@@ -164,8 +175,11 @@ class SceningListDialog(Qt.QDialog):
         self.scening_list.setData(index, time, Qt.Qt.UserRole)
 
     def on_label_changed(self, text: str) -> None:
-        index = self.tableview.selectionModel().selectedRows()[0]
-        if not index.isValid():
+        try:
+            index = self.tableview.selectionModel().selectedRows()[0]
+            if not index.isValid():
+                return
+        except IndexError:
             return
         index = self.scening_list.index(index.row(), SceningList.LABEL_COLUMN)
         if not index.isValid():
@@ -175,12 +189,16 @@ class SceningListDialog(Qt.QDialog):
     def on_name_changed(self, text: str) -> None:
         i = self.main.toolbars.scening.lists.index_of(self.scening_list)
         index = self.main.toolbars.scening.lists.index(i)
-        self.main.toolbars.scening.lists.setData(index, text, Qt.Qt.UserRole)
+        self.main.toolbars.scening.lists.setData(index, text,
+                                                       Qt.Qt.UserRole)
 
     def on_start_frame_changed(self, value: Union[Frame, int]) -> None:
-        frame = Frame(value)
-        index = self.tableview.selectionModel().selectedRows()[0]
-        if not index.isValid():
+        try:
+            frame = Frame(value)
+            index = self.tableview.selectionModel().selectedRows()[0]
+            if not index.isValid():
+                return
+        except IndexError:
             return
         index = index.siblingAtColumn(SceningList.START_FRAME_COLUMN)
         if not index.isValid():
@@ -188,8 +206,11 @@ class SceningListDialog(Qt.QDialog):
         self.scening_list.setData(index, frame, Qt.Qt.UserRole)
 
     def on_start_time_changed(self, time: Time) -> None:
-        index = self.tableview.selectionModel().selectedRows()[0]
-        if not index.isValid():
+        try:
+            index = self.tableview.selectionModel().selectedRows()[0]
+            if not index.isValid():
+                return
+        except IndexError:
             return
         index = index.siblingAtColumn(SceningList.START_TIME_COLUMN)
         if not index.isValid():
@@ -210,15 +231,28 @@ class SceningListDialog(Qt.QDialog):
     def on_tableview_selection_changed(self, selected: Qt.QItemSelection, deselected: Qt.QItemSelection) -> None:
         if len(selected.indexes()) == 0:
             self.delete_button.setEnabled(False)
+            self.start_frame_control.setEnabled(False)
+            self.end_frame_control.setEnabled(False)
+            self.start_time_control.setEnabled(False)
+            self.end_time_control.setEnabled(False)
+            self.label_lineedit.setEnabled(False)
             return
-        index = selected.indexes()[0]
-        scene = self.scening_list[index.row()]
-        qt_silent_call(self.start_frame_control.setValue,     scene.start)
-        qt_silent_call(self.  end_frame_control.setValue,     scene.end)
-        qt_silent_call(self. start_time_control.setValue, Time(scene.start))
-        qt_silent_call(self.   end_time_control.setValue, Time(scene.end))
-        qt_silent_call(self.     label_lineedit.setText,      scene.label)
-        self.delete_button.setEnabled(True)
+        try:
+            index = selected.indexes()[0]
+            scene = self.scening_list[index.row()]
+            qt_silent_call(self.start_frame_control.setValue,     scene.start)
+            qt_silent_call(self.  end_frame_control.setValue,     scene.end)
+            qt_silent_call(self. start_time_control.setValue, Time(scene.start))
+            qt_silent_call(self.   end_time_control.setValue, Time(scene.end))
+            qt_silent_call(self.     label_lineedit.setText,      scene.label)
+            self.delete_button.setEnabled(True)
+            self.start_frame_control.setEnabled(True)
+            self.end_frame_control.setEnabled(True)
+            self.start_time_control.setEnabled(True)
+            self.end_time_control.setEnabled(True)
+            self.label_lineedit.setEnabled(True)
+        except IndexError:
+            return
 
 
 class SceningToolbar(AbstractToolbar):
