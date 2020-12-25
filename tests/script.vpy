@@ -44,3 +44,6 @@ core.std.BlankClip( format=vs.YUV444PS, color=(1, 0, 1.5)).set_output(37)
 
 # clip1 = core.raws.Source(r'YUV444P8 black.y4m')
 # clip1.set_output(31)
+core.std.LoadPlugin(r'c:\Program Files\VapourSynth\plugins64\BestAudioSource.dll')
+audio = core.bas.Source(r'Cocoro Palette.mp4', 1)
+audio.set_output(20)

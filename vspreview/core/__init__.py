@@ -10,5 +10,5 @@ from .bases import (
 from .types import (
     Frame, FrameInterval, FrameType,
     Time, TimeInterval, TimeType,
-    Scene, Output,
+    Scene, Output, AudioOutput,
 )

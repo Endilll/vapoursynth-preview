@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 import logging
-from typing import cast, Dict, Generic, Optional, Type, TYPE_CHECKING, TypeVar
+from typing import (
+    cast, Generic, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
+)
 
 from PyQt5 import Qt
 
-from vspreview.core import Output
+from vspreview.core import AudioOutput, Output
 from vspreview.models import SceningList
 
-T = TypeVar('T', Output, SceningList, float)
+T = TypeVar('T', Output, AudioOutput, SceningList, float)
 
 
 class ComboBox(Qt.QComboBox, Generic[T]):
     def __class_getitem__(cls, ty: Type[T]) -> Type:
-        type_specializations: Dict[Type, Type] = {
+        type_specializations: Mapping[Type, Type] = {
             Output     : _ComboBox_Output,
+            AudioOutput: _ComboBox_AudioOutput,
             SceningList: _ComboBox_SceningList,
             float      : _ComboBox_float,
         }
@@ -55,6 +58,15 @@ class ComboBox(Qt.QComboBox, Generic[T]):
 
 class _ComboBox_Output(ComboBox):
     ty = Output
+    T = Output
+    if TYPE_CHECKING:
+        valueChanged = Qt.pyqtSignal(ty, Optional[ty])
+    else:
+        valueChanged = Qt.pyqtSignal(ty, object)
+
+
+class _ComboBox_AudioOutput(ComboBox):
+    ty = AudioOutput
     if TYPE_CHECKING:
         valueChanged = Qt.pyqtSignal(ty, Optional[ty])
     else:

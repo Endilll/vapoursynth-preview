@@ -179,6 +179,26 @@ class VideoNode:
     def output(self, fileobj: BinaryIO, y4m: bool = False, prefetch: int = 0, progress_update: Optional[bool] = None) -> None: ...
 
 
+class AudioNode:
+    sample_type: SampleType
+    bits_per_sample: int
+    bytes_per_sample: int
+    channel_layout: int
+    num_channels: int
+    sample_rate: int
+    num_samples: int
+    num_frames: int
+    flags: int
+
+    def get_frame(self, n: int) -> VideoFrame: ...
+    def get_frame_async(self, n: int) -> Future: ...
+    @overload
+    def get_frame_async_raw(self, n: int, cb: Callable[[Union[VideoFrame, Error]], None]) -> None: ...
+    @overload
+    def get_frame_async_raw(self, n: int, cb: Future, wrapper: Optional[Callable] = None) -> None: ...
+    def set_output(self, i: int) -> None: ...
+
+
 class AlphaOutputTuple:
     clip: VideoNode
     alpha: VideoNode

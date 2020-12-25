@@ -109,7 +109,7 @@ class MainToolbar(AbstractToolbar):
         super().__init__(main_window, 'Main')
         self.setup_ui()
 
-        self.outputs = Outputs()
+        self.outputs = Outputs[Output]()
 
         self.outputs_combobox.setModel(self.outputs)
         self.zoom_levels = ZoomLevels([
@@ -197,7 +197,7 @@ class MainToolbar(AbstractToolbar):
 
 
     def rescan_outputs(self) -> None:
-        self.outputs = Outputs()
+        self.outputs = Outputs[Output]()
         self.main.init_outputs()
         self.outputs_combobox.setModel(self.outputs)
 
@@ -515,7 +515,7 @@ class MainWindow(AbstractMainWindow):
             return
 
         self.toolbars.main.rescan_outputs()
-        # self.init_outputs()
+        self.toolbars.playback.rescan_outputs()
         self.switch_output(self.OUTPUT_INDEX)
 
         self.load_storage()
@@ -654,8 +654,8 @@ class MainWindow(AbstractMainWindow):
         self.switch_frame(time=value)
 
     @property
-    def outputs(self) -> Outputs:  # type: ignore
-        return cast(Outputs, self.toolbars.main.outputs)
+    def outputs(self) -> Outputs[Output]:  # type: ignore
+        return cast(Outputs[Output], self.toolbars.main.outputs)
 
 
     def handle_script_error(self, message: str) -> None:
@@ -790,6 +790,7 @@ def main() -> None:
         sys.exit(1)
 
     os.chdir(script_path.parent)
+    # app = debug.Application(sys.argv)
     app = Qt.QApplication(sys.argv)
     main_window = MainWindow()
     main_window.load_script(script_path, external_args=args.external_args)
