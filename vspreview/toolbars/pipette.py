@@ -214,6 +214,8 @@ class PipetteToolbar(AbstractToolbar):
             src_label_text = 'Raw (RGB{}):'
         elif fmt.id == vs.COMPATYUY2.value:
             src_label_text = 'Raw (YUV{}):'
+        else:
+            raise RuntimeError("Unexpected color family")
 
         has_alpha = self.main.current_output.has_alpha
         if not has_alpha:
@@ -261,7 +263,7 @@ class PipetteToolbar(AbstractToolbar):
 
     @staticmethod
     def prepare_vs_output(vs_output: vs.VideoNode) -> vs.VideoNode:
-        def non_subsampled_format(fmt: vs.Format) -> vs.Format:
+        def non_subsampled_format(fmt: vs.VideoFormat) -> vs.VideoFormat:
             if fmt.id == vs.COMPATBGR32.value:
                 return vs.RGB24  # type: ignore
             elif fmt.id == vs.COMPATYUY2.value:

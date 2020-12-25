@@ -530,6 +530,7 @@ class Scene(YAMLObject):
 
 class Output(YAMLObject):
     yaml_tag = '!Output'
+    vs_type = vs.VideoNode
 
     class Resizer:
         Bilinear = vs.core.resize.Bilinear
@@ -705,7 +706,7 @@ class Output(YAMLObject):
             self.has_alpha = False
             self.source_vs_output = vs_output
 
-        self.index        = index
+        self.index = index
 
         self.vs_output    = self.prepare_vs_output(self.source_vs_output)
         self.width        = self.vs_output.width
@@ -913,3 +914,149 @@ class Output(YAMLObject):
         except (KeyError, TypeError):
             logging.warning(
                 f'Storage loading: Output: failed to parse frame to show.')
+
+
+class AudioOutput(YAMLObject):
+    yaml_tag = '!AudioOutput'
+    vs_type = vs.AudioNode
+
+    SAMPLES_PER_FRAME = 3000
+
+    storable_attrs = (
+        'name',
+    )
+    __slots__ = storable_attrs + (
+        'vs_output', 'index', 'fps_num', 'fps_den', 'format', 'total_frames',
+        'total_time', 'end_frame', 'end_time', 'fps', 'source_vs_output',
+        'main', 'qformat', 'qoutput', 'iodevice', 'flags',
+    )
+
+    def __init__(self, vs_output: vs.AudioNode, index: int) -> None:
+        from vspreview.utils import main_window
+
+        self.main = main_window()
+        self.index = index
+        self.source_vs_output = vs_output
+        self.vs_output = self.source_vs_output
+
+        class AudioFormat:
+            num_samples: int
+            sample_rate: int
+            samples_per_frame: int
+            bits_per_sample: int
+            bytes_per_sample: int
+            num_channels: int
+            channel_layout: int
+
+        self.format = AudioFormat()
+        self.format.num_samples = self.vs_output.num_samples
+        self.format.sample_rate = self.vs_output.sample_rate
+        self.format.samples_per_frame = self.SAMPLES_PER_FRAME
+        self.format.bits_per_sample = self.vs_output.bits_per_sample
+        self.format.bytes_per_sample = self.vs_output.bytes_per_sample
+        self.format.num_channels = self.vs_output.num_channels
+        self.format.sample_type = self.vs_output.sample_type
+        self.format.channel_layout = self.vs_output.channel_layout
+
+        if self.format.num_channels != 2:
+            raise RuntimeError('Non-2-channel audio is not supported')
+
+        self.qformat = Qt.QAudioFormat()
+        self.qformat.setChannelCount(self.format.num_channels)
+        self.qformat.setSampleRate(self.format.sample_rate)
+        self.qformat.setSampleType(Qt.QAudioFormat.Float)
+        self.qformat.setSampleSize(self.format.bits_per_sample)
+        self.qformat.setByteOrder(Qt.QAudioFormat.LittleEndian)
+        self.qformat.setCodec('audio/pcm')
+
+        if not Qt.QAudioDeviceInfo(Qt.QAudioDeviceInfo.defaultOutputDevice()).isFormatSupported(self.qformat):
+            raise RuntimeError('Audio format not supported')
+
+        self.qoutput = Qt.QAudioOutput(self.qformat, self.main)
+        self.qoutput.setBufferSize(self.format.bytes_per_sample
+                                   * self.format.samples_per_frame * 5)
+        self.iodevice = self.qoutput.start()
+
+        self.fps_num      = self.format.sample_rate
+        self.fps_den      = self.format.samples_per_frame
+        self.fps          = self.fps_num / self.fps_den
+        self.total_frames = FrameInterval(self.vs_output.num_frames)
+        self.total_time   = self.to_time_interval(self.total_frames
+                                                  - FrameInterval(1))
+        self.end_frame    = Frame(int(self.total_frames) - 1)
+        self.end_time     = self.to_time(self.end_frame)
+
+        self.flags        = self.vs_output.flags
+
+        if not hasattr(self, 'name'):
+            self.name = 'Audio Output ' + str(self.index)
+
+    def render_audio_frame(self, frame: Frame) -> None:
+        self.render_raw_audio_frame(self.vs_output.get_frame(frame))
+
+    def render_raw_audio_frame(self, vs_frame: vs.AudioFrame) -> None:
+        from array import array
+
+        size = self.format.samples_per_frame
+        ptr_type = ctypes.POINTER(ctypes.c_float * size)
+
+        frame_data_ptr_l = ctypes.cast(
+            vs_frame.get_read_ptr(0),
+            ptr_type
+        )
+
+        frame_data_ptr_r = ctypes.cast(
+            vs_frame.get_read_ptr(1),
+            ptr_type
+        )
+
+        barray_l = bytes(frame_data_ptr_l.contents)
+        barray_r = bytes(frame_data_ptr_r.contents)
+
+        array_l = array('f', barray_l)
+        array_r = array('f', barray_r)
+        array_lr = array('f', array_l + array_r)
+
+        array_lr[::2] = array_l
+        array_lr[1::2] = array_r
+
+        barray = bytes(array_lr.tobytes())
+        self.iodevice.write(barray)
+
+
+    def _calculate_frame(self, seconds: float) -> int:
+        from math import floor
+        return floor(seconds * self.fps)
+
+    def _calculate_seconds(self, frame_num: int) -> float:
+        return frame_num / self.fps
+
+    def to_frame(self, time: Time) -> Frame:
+        return Frame(self._calculate_frame(float(time)))
+
+    def to_time(self, frame: Frame) -> Time:
+        return Time(seconds=self._calculate_seconds(int(frame)))
+
+    def to_frame_interval(self, time_interval: TimeInterval) -> FrameInterval:
+        return FrameInterval(self._calculate_frame(float(time_interval)))
+
+    def to_time_interval(self, frame_interval: FrameInterval) -> TimeInterval:
+        return TimeInterval(
+            seconds=self._calculate_seconds(int(frame_interval)))
+
+
+    def __getstate__(self) -> Mapping[str, Any]:
+        return {
+            attr_name: getattr(self, attr_name)
+            for attr_name in self.storable_attrs
+        }
+
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
+        try:
+            name = state['name']
+            if not isinstance(name, str):
+                raise TypeError
+            self.name = name
+        except (KeyError, TypeError):
+            logging.warning(
+                f'Storage loading: output {self.index}: failed to parse name.')

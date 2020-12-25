@@ -1,29 +1,42 @@
 from __future__ import annotations
 
 from   collections import OrderedDict
+from   functools   import partial
 import logging
-from   typing      import Any, cast, Iterator, List, Mapping, Optional
+from   typing      import (
+    Any, cast, get_args, get_origin, Iterator, List, Mapping, Optional,
+    Type, TypeVar, Union
+)
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
+from   yaml        import YAMLObjectMetaclass
 
-from vspreview.core  import Output, QYAMLObjectSingleton, QYAMLObject
+from vspreview.core  import (
+    AudioOutput, Output, QYAMLObject
+)
 from vspreview.utils import debug, main_window
 
 
-# TODO: support non-YUV outputs
+T = TypeVar('T', Output, AudioOutput)
 
 
 class Outputs(Qt.QAbstractListModel, QYAMLObject):
     yaml_tag = '!Outputs'
 
     __slots__ = (
-        'items',
+        'items', 'T',
     )
 
-    def __init__(self, local_storage: Optional[Mapping[str, Output]] = None) -> None:
+    supported_types = {Output: 'video', AudioOutput: 'audio'}
+
+    def __class_getitem__(self, ty: Type[T]) -> partial[Outputs]:
+        return partial(Outputs, ty)
+
+    def __init__(self, ty: Type[T], local_storage: Optional[Mapping[str, T]] = None) -> None:
         super().__init__()
-        self.items: List[Output] = []
+        self.T: YAMLObjectMetaclass = ty
+        self.items: List[self.T] = []
 
         local_storage = local_storage if local_storage is not None else {}
 
@@ -33,27 +46,29 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
             outputs = vs.get_outputs()
 
         for i, vs_output in outputs.items():
+            if not isinstance(vs_output, self.T.vs_type):
+                continue
             try:
                 output = local_storage[str(i)]
-                output.__init__(vs_output, i)  # type: ignore
+                output.__init__(vs_output, i)
             except KeyError:
-                output = Output(vs_output, i)
+                output = self.T(vs_output, i)
 
             self.items.append(output)
 
-    def __getitem__(self, i: int) -> Output:
+    def __getitem__(self, i: int) -> T:
         return self.items[i]
 
     def __len__(self) -> int:
         return len(self.items)
 
-    def index_of(self, item: Output) -> int:
+    def index_of(self, item: T) -> int:
         return self.items.index(item)
 
-    def __getiter__(self) -> Iterator[Output]:
+    def __getiter__(self) -> Iterator[T]:
         return iter(self.items)
 
-    def append(self, item: Output) -> int:
+    def append(self, item: T) -> int:
         index = len(self.items)
         self.beginInsertRows(Qt.QModelIndex(), index, index)
         self.items.append(item)
@@ -104,18 +119,35 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         return True
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return dict(zip([
+        state = dict(zip([
             str(output.index) for output in self.items],
             [   output        for output in self.items]
         ))
+        state['type'] = self.supported_types[self.T]
+        return state
 
-    def __setstate__(self, state: Mapping[str, Output]) -> None:
+    def __setstate__(self, state: Mapping[str, Union[Output, str]]) -> None:
+        try:
+            type_string = state['type']
+            if not isinstance(type_string, str):
+                raise TypeError(
+                    'Storage loading: Outputs: value of key "type" is not a string')
+            if type_string not in self.supported_types.values():
+                raise ValueError(
+                    'Storage loading: Outputs: unsupported type of items')
+        except KeyError:
+            raise KeyError('Storage loading: Outputs: key "type" is missing') from KeyError
+        ty = dict(zip(self.supported_types.values(),
+                        self.supported_types.keys()))[type_string]
+
         for key, value in state.items():
+            if key == 'type':
+                continue
             if not isinstance(key, str):
                 raise TypeError(
                     f'Storage loading: Outputs: key {key} is not a string')
-            if not isinstance(value, Output):
+            if not isinstance(value, ty):
                 raise TypeError(
                     f'Storage loading: Outputs: value of key {key} is not an Output')
 
-        self.__init__(state)  # type: ignore
+        self.__init__(ty, state)  # type: ignore
