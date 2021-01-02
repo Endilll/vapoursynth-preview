@@ -458,7 +458,7 @@ class SceningToolbar(AbstractToolbar):
         self.export_template_lineedit.setToolTip(
             r'Use {start} and {end} as placeholders. '
             r'Both are valid for single frame scenes. '
-            r'{label} is available, too.'
+            r'{label} and {script_name} are available, too.'
         )
         self.export_template_lineedit.setText(r'({start},{end}),')
         layout_line_2.addWidget(self.export_template_lineedit)
@@ -1085,7 +1085,8 @@ class SceningToolbar(AbstractToolbar):
         try:
             for scene in self.current_list:
                 export_str += template.format(
-                    start=scene.start, end=scene.end, label=scene.label
+                    start=scene.start, end=scene.end, label=scene.label,
+                    script_name=self.main.script_path.stem
                 ) + '\n'
         except KeyError:
             logging.warning(
@@ -1107,7 +1108,8 @@ class SceningToolbar(AbstractToolbar):
         try:
             for scene in self.current_list:
                 export_str += template.format(
-                    start=scene.start, end=scene.end, label=scene.label)
+                    start=scene.start, end=scene.end, label=scene.label,
+                    script_name=self.main.script_path.stem)
         except KeyError:
             logging.warning(
                 'Scening: export template contains invalid placeholders.')
