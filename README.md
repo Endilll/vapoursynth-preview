@@ -16,6 +16,10 @@ You can use the following command to install pip modules:
 
 `python run.py script.vpy` where `script.vpy` is path to VapourSynth script.
 
+# Example Installation
+
+* [VSCode](docs/vscode_install.md)
+
 # Note
 
 WIP, so there're some debug stuff among the logic, but not much.

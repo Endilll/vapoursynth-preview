@@ -59,7 +59,7 @@ To properly map your `.vpy` Vapoursynth files to not just the Python executable 
         ]
     }
     ```
-    * If you installed VS-Preview in another directory, change the `program` path accodringly.
+    * If you installed VS-Preview in another directory, change the `program` path accordingly.
 1. Save your `launch.json`.
 
 ## Setting Up Your Project Environment
