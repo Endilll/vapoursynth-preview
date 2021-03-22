@@ -486,7 +486,7 @@ class MainWindow(AbstractMainWindow):
             self.external_args = shlex.split(external_args)
         try:
             argv_orig = sys.argv
-            sys.argv = [sys.argv[1]] + self.external_args
+            sys.argv = [script_path.name] + self.external_args
         except AttributeError:
             pass
 
