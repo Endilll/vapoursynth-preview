@@ -14,9 +14,9 @@ You can use the following command to install pip modules:
 
 # Usage
 
-Assume `script.vpy` is your VapourSynth script, there are two ways to run vspreview:
+Assuming `script.vpy` is your VapourSynth script, there are two ways to run vspreview:
  * `python run.py script.vpy`
- * Add this directory to your *PYTHONPATH*, and `python -m vspreview script.vpy`
+ * Add this directory (repository root) to your *PYTHONPATH*, and `python -m vspreview script.vpy`
 
 # Note
 
