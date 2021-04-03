@@ -71,6 +71,7 @@ class MiscToolbar(AbstractToolbar):
 
         self.autosave_checkbox = Qt.QCheckBox(self)
         self.autosave_checkbox.setText('Autosave')
+        self.autosave_checkbox.setChecked(self.main.AUTOSAVE_ENABLED)
         layout.addWidget(self.autosave_checkbox)
 
         self.keep_on_top_checkbox = Qt.QCheckBox(self)
@@ -204,6 +205,7 @@ class MiscToolbar(AbstractToolbar):
             logging.warning('Storage loading: failed to parse autosave flag.')
             autosave_enabled = self.main.AUTOSAVE_ENABLED
 
+        self.autosave_enabled = autosave_enabled
         self.autosave_checkbox.setChecked(autosave_enabled)
 
         try:
