@@ -110,8 +110,8 @@ class MainToolbar(AbstractToolbar):
         self.setup_ui()
 
         self.outputs = Outputs()
-
         self.outputs_combobox.setModel(self.outputs)
+
         self.zoom_levels = ZoomLevels([
             0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0, 16.0
         ])
@@ -221,7 +221,8 @@ class MainToolbar(AbstractToolbar):
     def __getstate__(self) -> Mapping[str, Any]:
         return {
             'current_output_index': self.outputs_combobox.currentIndex(),
-            'outputs'             : self.outputs
+            'outputs'             : self.outputs,
+            'sync_outputs'        : self.sync_outputs_checkbox.isChecked()
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
@@ -245,6 +246,16 @@ class MainToolbar(AbstractToolbar):
             logging.warning(
                 'Storage loading: Main toolbar: stored output index is not valid.')
             self.main.switch_output(self.main.OUTPUT_INDEX)
+
+        try:
+            sync_outputs = state['sync_outputs']
+            if not isinstance(sync_outputs, bool):
+                raise TypeError
+            if sync_outputs:
+                self.sync_outputs_checkbox.click()
+        except (KeyError, TypeError):
+            logging.warning(
+                'Storage loading: Main toolbar: failed to parse sync outputs.')
 
 
 class Toolbars(AbstractToolbars):
