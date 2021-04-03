@@ -1165,7 +1165,7 @@ class SceningToolbar(AbstractToolbar):
                                   .format(first_frame_text, second_frame_text))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {
+        state = {
             'current_list_index': self.current_list_index,
             'first_frame' : self.first_frame,
             'second_frame': self.second_frame,
@@ -1173,6 +1173,8 @@ class SceningToolbar(AbstractToolbar):
             'lists'       : self.lists,
             'scening_export_template': self.export_template_lineedit.text(),
         }
+        state.update(super().__getstate__())
+        return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
@@ -1226,3 +1228,5 @@ class SceningToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning(
                 'Storage loading: Scening: failed to parse export template.')
+
+        super().__setstate__(state)

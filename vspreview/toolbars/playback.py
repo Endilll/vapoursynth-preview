@@ -371,9 +371,11 @@ class PlaybackToolbar(AbstractToolbar):
                             / (elapsed_total / len(self.fps_history)))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {
+        state = {
             'seek_interval_frame': self.seek_frame_control.value()
         }
+        state.update(super().__getstate__())
+        return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
@@ -384,3 +386,5 @@ class PlaybackToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning(
                 'Storage loading: PlaybackToolbar: failed to parse seek_interval_frame')
+
+        super().__setstate__(state)
