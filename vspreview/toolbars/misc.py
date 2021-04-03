@@ -205,6 +205,7 @@ class MiscToolbar(AbstractToolbar):
             logging.warning('Storage loading: failed to parse autosave flag.')
             autosave_enabled = self.main.AUTOSAVE_ENABLED
 
+        self.autosave_enabled = autosave_enabled
         self.autosave_checkbox.setChecked(autosave_enabled)
 
         try:
