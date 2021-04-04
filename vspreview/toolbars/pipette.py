@@ -37,6 +37,8 @@ class PipetteToolbar(AbstractToolbar):
 
         self.setup_ui()
         self.main.graphics_view.mouseMoved.connect(self.mouse_moved)
+        self.main.graphics_view.mouseRightPress.connect(self.mouse_right_press)
+        self.main.graphics_view.mouseRightRelease.connect(self.mouse_right_release)
 
         self.pos_fmt = '{},{}'
         self.src_hex_fmt = '{:2X}'
@@ -106,6 +108,20 @@ class PipetteToolbar(AbstractToolbar):
     def mouse_moved(self, event: Qt.QMouseEvent) -> None:
         if not event.buttons() & Qt.Qt.LeftButton:
             self.update_labels(event.pos())
+
+    def mouse_right_press(self, event: Qt.QMouseEvent) -> None:
+        if self.toggle_button.isChecked():
+            self.main.graphics_view.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
+        left_event = Qt.QMouseEvent(
+            Qt.QEvent.MouseButtonPress, event.pos(), Qt.Qt.LeftButton, Qt.Qt.LeftButton, Qt.Qt.NoModifier)
+        self.main.graphics_view.mousePressEvent(left_event)
+
+    def mouse_right_release(self, event: Qt.QMouseEvent) -> None:
+        if self.toggle_button.isChecked():
+            self.main.graphics_view.setDragMode(Qt.QGraphicsView.NoDrag)
+        left_event = Qt.QMouseEvent(
+            Qt.QEvent.MouseButtonRelease, event.pos(), Qt.Qt.LeftButton, Qt.Qt.LeftButton, Qt.Qt.NoModifier)
+        self.main.graphics_view.mouseReleaseEvent(left_event)
 
     def update_labels(self, local_pos: Qt.QPoint) -> None:
         from math import floor, trunc
