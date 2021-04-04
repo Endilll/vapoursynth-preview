@@ -15,7 +15,7 @@ Number = TypeVar('Number', int, float)
 
 class PipetteToolbar(AbstractToolbar):
     __slots__ = (
-        'color_view', 'outputs', 'position', 'pos_fmt',
+        'color_view', 'outputs', 'position', 'pos_fmt', 'tracking',
         'rgb_dec', 'rgb_hex', 'rgb_label',
         'src_dec', 'src_dec_fmt', 'src_hex', 'src_hex_fmt', 'src_label',
     )
@@ -36,7 +36,9 @@ class PipetteToolbar(AbstractToolbar):
         super().__init__(main, 'Pipette')
 
         self.setup_ui()
-        self.main.graphics_view.mouseMoved.connect(self.mouse_moved)
+        self.main.graphics_view.mouseMoved   .connect(self.mouse_moved)
+        self.main.graphics_view.mousePressed .connect(self.mouse_pressed)
+        self.main.graphics_view.mouseReleased.connect(self.mouse_released)
 
         self.pos_fmt = '{},{}'
         self.src_hex_fmt = '{:2X}'
@@ -44,6 +46,7 @@ class PipetteToolbar(AbstractToolbar):
         self.src_dec_fmt = '{:3d}'
         self.src_norm_fmt = '{:0.5f}'
         self.outputs: Dict[Output, vs.VideoNode] = {}
+        self.tracking = False
 
         set_qobject_names(self)
 
@@ -104,8 +107,17 @@ class PipetteToolbar(AbstractToolbar):
         layout.addStretch()
 
     def mouse_moved(self, event: Qt.QMouseEvent) -> None:
-        if not event.buttons() & Qt.Qt.LeftButton:
+        if self.tracking and not event.buttons():
             self.update_labels(event.pos())
+
+    def mouse_pressed(self, event: Qt.QMouseEvent) -> None:
+        if event.buttons() == Qt.Qt.RightButton:
+            self.tracking = False
+
+    def mouse_released(self, event: Qt.QMouseEvent) -> None:
+        if event.buttons() == Qt.Qt.RightButton:
+            self.tracking = True
+        self.update_labels(event.pos())
 
     def update_labels(self, local_pos: Qt.QPoint) -> None:
         from math import floor, trunc
@@ -234,6 +246,7 @@ class PipetteToolbar(AbstractToolbar):
         else:
             self.main.graphics_view.setDragMode(
                 Qt.QGraphicsView.ScrollHandDrag)
+        self.tracking = new_state
 
     @staticmethod
     def prepare_vs_output(vs_output: vs.VideoNode) -> vs.VideoNode:
