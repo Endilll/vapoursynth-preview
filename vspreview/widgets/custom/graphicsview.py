@@ -61,6 +61,17 @@ class GraphicsView(Qt.QGraphicsView):
         if self.hasMouseTracking():
             self.mouseMoved.emit(event)
 
+    def mousePressEvent(self, event: Qt.QMouseEvent) -> None:
+        if event.button() == Qt.Qt.LeftButton:
+            self.drag_mode = self.dragMode()
+            self.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: Qt.QMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+        if event.button() == Qt.Qt.LeftButton:
+            self.setDragMode(self.drag_mode)
+
 
 class GraphicsImageItem:
     __slots__ = (
