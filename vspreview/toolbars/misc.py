@@ -194,6 +194,7 @@ class MiscToolbar(AbstractToolbar):
             'save_file_name_template': self.save_template_lineedit.text(),
             'show_debug'             : self.show_debug_checkbox.isChecked()
         })
+        state.update(super().__getstate__())
         return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
@@ -225,3 +226,5 @@ class MiscToolbar(AbstractToolbar):
             show_debug = self.main.DEBUG_TOOLBAR
 
         self.show_debug_checkbox.setChecked(show_debug)
+
+        super().__setstate__(state)
