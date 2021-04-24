@@ -305,6 +305,7 @@ class Toolbars(AbstractToolbars):
 
 class MainWindow(AbstractMainWindow):
     # those are defaults that can be overriden at runtime or used as fallbacks
+    ALWAYS_SHOW_SCENE_MARKS   = False
     AUTOSAVE_ENABLED          =  True
     AUTOSAVE_INTERVAL         =    60 * 1000  # s
     BASE_PPI                  =    96  # PPI
@@ -330,7 +331,7 @@ class MainWindow(AbstractMainWindow):
     # it's allowed to stretch target interval betweewn notches by N% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE             = 'frame'
-    TOGGLE_TOOLEBAR           = False
+    TOGGLE_TOOLBAR           = False
     VSP_DIR_NAME              = '.vspreview'
     # used for formats with subsampling
     VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
