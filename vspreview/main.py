@@ -330,7 +330,7 @@ class MainWindow(AbstractMainWindow):
     # it's allowed to stretch target interval betweewn notches by N% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE             = 'frame'
-    TOGGLE_TOOLEBAR           = False
+    TOGGLE_TOOLBAR           = False
     VSP_DIR_NAME              = '.vspreview'
     # used for formats with subsampling
     VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic

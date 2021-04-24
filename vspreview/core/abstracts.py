@@ -140,7 +140,7 @@ class AbstractToolbar(Qt.QWidget, QABC):
         except (KeyError, TypeError):
             logging.warning(
                 'Storage loading: Toolbar: failed to parse toggle')
-            toggle = self.main.TOGGLE_TOOLEBAR
+            toggle = self.main.TOGGLE_TOOLBAR
 
         if toggle:
             self.toggle_button.click()
