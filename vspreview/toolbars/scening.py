@@ -1243,7 +1243,8 @@ class SceningToolbar(AbstractToolbar):
             if not isinstance(always_show_scene_marks, bool):
                 raise TypeError
         except(KeyError, TypeError):
-            logging.warning('Storage loading: Scening: failed to parse export template.')
+            logging.warning(
+                'Storage loading: Scening: failed to parse always show scene marks.')
             always_show_scene_marks = self.main.ALWAYS_SHOW_SCENE_MARKS
 
         self.always_show_scene_marks_checkbox.setChecked(always_show_scene_marks)
