@@ -305,9 +305,9 @@ class Toolbars(AbstractToolbars):
 
 class MainWindow(AbstractMainWindow):
     # those are defaults that can be overriden at runtime or used as fallbacks
+    ALWAYS_SHOW_SCENE_MARKS   = False
     AUTOSAVE_ENABLED          =  True
     AUTOSAVE_INTERVAL         =    60 * 1000  # s
-    ALWAYS_SHOW_SCENE_MARKS   = False
     BASE_PPI                  =    96  # PPI
     BENCHMARK_CLEAR_CACHE     = False
     BENCHMARK_REFRESH_INTERVAL =  150  # ms
