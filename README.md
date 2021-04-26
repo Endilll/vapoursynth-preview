@@ -18,6 +18,10 @@ Assuming `script.vpy` is your VapourSynth script, there are two ways to run vspr
  * `python run.py script.vpy`
  * Add this directory (repository root) to your *PYTHONPATH*, and `python -m vspreview script.vpy`
 
+# Example Installation
+
+* [VSCode](docs/vscode_install.md)
+
 # Note
 
 WIP, so there're some debug stuff among the logic, but not much.
