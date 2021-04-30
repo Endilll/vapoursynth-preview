@@ -166,6 +166,7 @@ class MainToolbar(AbstractToolbar):
 
         self.sync_outputs_checkbox = Qt.QCheckBox(self)
         self.sync_outputs_checkbox.setText('Sync Outputs')
+        self.sync_outputs_checkbox.setChecked(self.main.SYNC_OUTPUTS)
         layout.addWidget(self.sync_outputs_checkbox)
 
         self.zoom_combobox = ComboBox[float](self)
