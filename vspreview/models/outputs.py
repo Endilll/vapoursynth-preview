@@ -32,6 +32,8 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
         else:
             outputs = vs.get_outputs()
 
+        main_window().reload_signal.connect(self.clear_outputs)
+
         for i, vs_output in outputs.items():
             try:
                 output = local_storage[str(i)]
@@ -40,6 +42,10 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
                 output = Output(vs_output, i)
 
             self.items.append(output)
+
+    def clear_outputs(self):
+        for o in self.items:
+            o.clear()
 
     def __getitem__(self, i: int) -> Output:
         return self.items[i]

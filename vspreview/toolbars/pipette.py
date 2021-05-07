@@ -48,7 +48,12 @@ class PipetteToolbar(AbstractToolbar):
         self.outputs: Dict[Output, vs.VideoNode] = {}
         self.tracking = False
 
+        main.reload_signal.connect(self.clear_outputs)
+
         set_qobject_names(self)
+
+    def clear_outputs(self):
+        self.outputs.clear()
 
     def setup_ui(self) -> None:
         layout = Qt.QHBoxLayout(self)

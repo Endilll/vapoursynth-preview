@@ -362,6 +362,9 @@ class MainWindow(AbstractMainWindow):
         'script_exec_failed'
     ]
 
+    # emit when about to reload a script: clear all existing references to existing clips.
+    reload_signal = Qt.pyqtSignal()
+
     def __init__(self) -> None:
         from qdarkstyle import load_stylesheet_pyqt5
 
@@ -577,7 +580,10 @@ class MainWindow(AbstractMainWindow):
     def reload_script(self) -> None:
         if self.toolbars.misc.autosave_enabled and not self.script_exec_failed:
             self.toolbars.misc.save()
+
+        self.reload_signal.emit()
         vs.clear_outputs()
+
         self.graphics_scene.clear()
         self.load_script(self.script_path)
 

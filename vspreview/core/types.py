@@ -684,6 +684,13 @@ class Output(YAMLObject):
         'main', 'checkerboard',
     )
 
+    def clear(self):
+        self.source_vs_output = None
+        self.source_vs_alpha  = None
+        self.vs_alpha = None
+        self.vs_output = None
+        self.format    = None
+        self.props     = None
     def __init__(self, vs_output: Union[vs.VideoNode, vs.AlphaOutputTuple], index: int) -> None:
         from vspreview.models  import SceningLists
         from vspreview.utils   import main_window
