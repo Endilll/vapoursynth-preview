@@ -142,9 +142,8 @@ class AbstractToolbar(Qt.QWidget, QABC):
                 'Storage loading: Toolbar: failed to parse toggle')
             toggle = self.main.TOGGLE_TOOLBAR
 
-        if not self.toggle_button.isChecked():
-            if toggle:
-                self.toggle_button.click()
+        if self.toggle_button.isChecked() != toggle:
+            self.toggle_button.click()
 
 
 class AbstractToolbars(AbstractYAMLObjectSingleton):
