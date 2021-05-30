@@ -166,8 +166,8 @@ class Timeline(Qt.QWidget):
             if self.mode == self.Mode.TIME:
                 notch_interval_t = self.calculate_notch_interval_t(
                     self.notch_interval_target_x)
-                label_format  = self.generate_label_format(notch_interval_t,
-                                                           self.end_t)
+                label_format  = self.generate_label_format(
+                    notch_interval_t, TimeInterval(self.end_t.value))
                 label_notch_t = Time()
 
                 while (label_notch_x < self.rect_f.right()
@@ -287,8 +287,12 @@ class Timeline(Qt.QWidget):
         pos = Qt.QPoint(event.pos())
         if self.scroll_rect.contains(pos):
             self.set_position(pos.x())
-            self.clicked.emit(self.x_to_f(self.cursor_x, Frame),
-                              self.x_to_t(self.cursor_x, Time))
+            if not self.main.current_output.vfr:
+                self.clicked.emit(self.x_to_f(self.cursor_x, Frame),
+                                  self.x_to_t(self.cursor_x, Time))
+            else:
+                self.clicked.emit(self.x_to_f(self.cursor_x, Frame),
+                                  Time())
 
     def mouseMoveEvent(self, event: Qt.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
@@ -412,7 +416,8 @@ class Timeline(Qt.QWidget):
 
     def set_end_frame(self, end_f: Frame) -> None:
         self.end_f = end_f
-        self.end_t = Time(end_f)
+        if not self.main.current_output.vfr:
+            self.end_t = Time(end_f)
         self.full_repaint()
 
     def set_position(self, pos: Union[Frame, Time, int]) -> None:
@@ -453,3 +458,14 @@ class Timeline(Qt.QWidget):
         width = self.rect_f.width()
         value = round(x / width * int(self.end_f))
         return ty(value)
+
+    @property
+    def end_t(self) -> Time:
+        if self.main.current_output.vfr:
+            raise RuntimeError(
+                'timeline: end_t read while current output is VFR')
+        return self._end_t
+
+    @end_t.setter
+    def end_t(self, value: Time) -> None:
+        self._end_t = value

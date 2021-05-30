@@ -101,6 +101,7 @@ class MainToolbar(AbstractToolbar):
         'outputs', 'zoom_levels',
         'outputs_combobox', 'frame_control', 'time_control',
         'zoom_combobox', 'switch_timeline_mode_button',
+        'non_vfr_timeline_mode'
     )
 
     def __init__(self, main_window: AbstractMainWindow) -> None:
@@ -117,8 +118,9 @@ class MainToolbar(AbstractToolbar):
         ])
         self.zoom_combobox.setModel(self.zoom_levels)
         self.zoom_combobox.setCurrentIndex(3)
+        self.non_vfr_timeline_mode : Optional[self.main.timeline.Mode] = None
 
-        self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
+        self.outputs_combobox       .indexChanged.connect(self.main.switch_output)
         self.frame_control          .valueChanged.connect(self.main.switch_frame)
         self.time_control           .valueChanged.connect(self.main.switch_frame)
         self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)  # type: ignore
@@ -183,19 +185,40 @@ class MainToolbar(AbstractToolbar):
 
     def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
         qt_silent_call(self.frame_control.setValue, frame)
-        qt_silent_call(self. time_control.setValue,  time)
+        if not self.main.current_output.vfr:
+            qt_silent_call(self.time_control.setValue, time)
 
         if self.sync_outputs_checkbox.isChecked():
             for output in self.main.outputs:
                 output.frame_to_show = frame
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
-        qt_silent_call(self.outputs_combobox.setCurrentIndex, index)
+        self.outputs_combobox.setCurrentIndexSilent(index)
         qt_silent_call(self.frame_control.setMaximum,
                        self.main.current_output.end_frame)
-        qt_silent_call(self. time_control.setMaximum,
-                       self.main.current_output.end_time)
 
+        if self.main.timeline.mode == self.main.timeline.Mode.TIME \
+           and self.main.current_output.vfr \
+           and (prev_index == -1 or not self.main.outputs[prev_index].vfr):
+            self.non_vfr_timeline_mode = self.main.timeline.mode
+            self.on_switch_timeline_mode_clicked()
+        elif self.non_vfr_timeline_mode == self.main.timeline.Mode.TIME \
+             and self.main.timeline.mode == self.main.timeline.Mode.FRAME \
+             and not self.main.current_output.vfr \
+             and (prev_index == -1 or self.main.outputs[prev_index].vfr):
+            self.non_vfr_timeline_mode = None
+            self.on_switch_timeline_mode_clicked()
+
+        if not self.main.current_output.vfr:
+            self.time_control.setEnabled(True)
+            qt_silent_call(self.time_control.setMaximum,
+                           self.main.current_output.end_time)
+            self.switch_timeline_mode_button.setEnabled(True)
+        else:
+            self.time_control.setEnabled(False)
+            if self.main.timeline.mode == self.main.timeline.Mode.TIME:
+                self.on_switch_timeline_mode_clicked()
+            self.switch_timeline_mode_button.setEnabled(False)
 
     def rescan_outputs(self) -> None:
         self.outputs = Outputs()
@@ -621,10 +644,17 @@ class MainWindow(AbstractMainWindow):
     def switch_frame(self, pos: Union[Frame, Time], *, render_frame: bool = True) -> None:
         if isinstance(pos, Frame):
             frame = pos
-            time = Time(frame)
+            if not self.current_output.vfr:
+                time = Time(frame)
+            else:
+                time = Time()
         elif isinstance(pos, Time):
-            frame = Frame(pos)
-            time = pos
+            if not self.current_output.vfr:
+                frame = Frame(pos)
+                time = pos
+            else:
+                raise RuntimeError(
+                    'switch_frame: called with Time position for VFR output')
         else:
             logging.debug('switch_frame(): position is neither Frame nor Time')
             return
@@ -641,7 +671,7 @@ class MainWindow(AbstractMainWindow):
         if render_frame:
             self.current_output.graphics_scene_item.setImage(self.render_frame(frame))
 
-    def switch_output(self, value: Union[int, Output]) -> None:
+    def switch_output(self, value: Union[int, Output], prev_index: int = -2) -> None:
         if len(self.outputs) == 0:
             return
         if isinstance(value, Output):
@@ -652,7 +682,8 @@ class MainWindow(AbstractMainWindow):
         if index < 0 or index >= len(self.outputs):
             return
 
-        prev_index = self.toolbars.main.outputs_combobox.currentIndex()
+        if prev_index == -2:
+            prev_index = self.toolbars.main.outputs_combobox.currentIndex()
 
         self.toolbars.playback.stop()
 
@@ -729,9 +760,12 @@ class MainWindow(AbstractMainWindow):
 
         self.statusbar.total_frames_label.setText(
             '{} frames'.format(output.total_frames))
-        self.statusbar.duration_label.setText(
-            # Display duration without -1 offset to match other video tools
-            '{}'.format(TimeInterval(self.current_output.total_frames)))
+        if not output.vfr:
+            self.statusbar.duration_label.setText(
+                # Display duration without -1 offset to match other video tools
+                '{}'.format(TimeInterval(self.current_output.total_frames)))
+        else:
+            self.statusbar.duration_label.setText('?:??:??:??')
         self.statusbar.resolution_label.setText(
             '{}x{}'.format(output.width, output.height))
         if not output.has_alpha:
@@ -741,7 +775,9 @@ class MainWindow(AbstractMainWindow):
             self.statusbar.pixel_format_label.setText(
                 'Clip: {}, Alpha: {}'.format(output.format.name,
                                              output.format_alpha.name))
-        if output.fps_den != 0:
+        if output.vfr:
+            self.statusbar.fps_label.setText('Variable fps')                                            
+        elif output.fps_den != 0:
             self.statusbar.fps_label.setText(
                 '{}/{} = {:.3f} fps'.format(output.fps_num, output.fps_den,
                                             output.fps_num / output.fps_den))
@@ -791,7 +827,8 @@ class MainWindow(AbstractMainWindow):
                 'Storage loading: failed to parse timeline mode.'
                 ' Using default.')
             timeline_mode = self.TIMELINE_MODE
-        self.timeline.mode = timeline_mode
+        if timeline_mode != self.timeline.mode:
+            self.toolbars.main.switch_timeline_mode_button.click()
 
         try:
             window_geometry = state['window_geometry']

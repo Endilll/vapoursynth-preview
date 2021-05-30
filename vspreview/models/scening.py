@@ -30,10 +30,10 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
     LABEL_COLUMN       = 4
     COLUMN_COUNT       = 5
 
-    def __init__(self, name: str = '', items: Optional[List[Scene]] = None) -> None:
+    def __init__(self, name: str = '', items: Optional[List[Scene]] = None, vfr: bool = False) -> None:
         super().__init__()
-        self.name      = name
-        self.items     =     items if     items is not None else []
+        self.name  = name
+        self.items = items if items is not None else []
 
         self.main = main_window()
 
@@ -82,9 +82,13 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 else:
                     return ''
             if column == self.START_TIME_COLUMN:
-                return str(Time(self.items[row].start))
+                if not self.main.current_output.vfr:
+                    return str(Time(self.items[row].start))
+                else:
+                    return ''
             if column == self.END_TIME_COLUMN:
-                if self.items[row].end != self.items[row].start:
+                if self.items[row].end != self.items[row].start \
+                   and not self.main.current_output.vfr:
                     return str(Time(self.items[row].end))
                 else:
                     return ''
@@ -97,9 +101,15 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             if column == self.END_FRAME_COLUMN:
                 return self.items[row].end
             if column == self.START_TIME_COLUMN:
-                return Time(self.items[row].start)
+                if not self.main.current_output.vfr:
+                    return Time(self.items[row].start)
+                else:
+                    return Time()
             if column == self.END_TIME_COLUMN:
-                return Time(self.items[row].end)
+                if not self.main.current_output.vfr:
+                    return Time(self.items[row].end)
+                else:
+                    return Time()
             if column == self.LABEL_COLUMN:
                 return self.items[row].label
 
@@ -141,6 +151,8 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 scene.end   = value
             proper_update = True
         elif column == self.START_TIME_COLUMN:
+            if self.main.current_output.vfr:
+                raise RuntimeError('start time column is set while current output is VFR')
             if not isinstance(value, Time):
                 raise TypeError
             frame = Frame(value)
@@ -153,6 +165,8 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 scene.end   = frame
             proper_update = True
         elif column == self.END_TIME_COLUMN:
+            if self.main.current_output.vfr:
+                raise RuntimeError('end time column is set while current output is VFR')
             if not isinstance(value, Time):
                 raise TypeError
             frame = Frame(value)
@@ -187,6 +201,23 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             self.items[index.row()] = scene
             self.dataChanged.emit(index, index)
         return True
+
+    def flags(self, index: Qt.QModelIndex) -> Qt.Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.Qt.NoItemFlags
+        row = index.row()
+        if row >= len(self.items):
+            return Qt.Qt.NoItemFlags
+        column = index.column()
+        if column >= self.COLUMN_COUNT:
+            return Qt.Qt.NoItemFlags
+
+        if self.main.current_output.vfr \
+           and column in (self.START_TIME_COLUMN, self.END_TIME_COLUMN):
+            return Qt.Qt.NoItemFlags   
+
+        return cast(Qt.Qt.ItemFlags,
+                    super().flags(index) | Qt.Qt.ItemIsSelectable | Qt.Qt.ItemIsEditable)
 
     def __len__(self) -> int:
         return len(self.items)
@@ -268,6 +299,19 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
                 result_delta = initial - scene.end
 
         return result
+
+    def on_current_output_changed(self, index: int, prev_index: int) -> None:
+        def refresh_time_columns() -> None:
+            self.dataChanged.emit(
+                self.createIndex(0, self.START_TIME_COLUMN),
+                self.createIndex(self.rowCount() - 1, self.END_TIME_COLUMN))
+
+        if self.main.current_output.vfr \
+           and (prev_index == -1 or not self.main.outputs[prev_index].vfr):
+            refresh_time_columns()
+        elif not self.main.current_output.vfr \
+             and (prev_index == -1 or self.main.outputs[prev_index].vfr):
+            refresh_time_columns()
 
     def __getstate__(self) -> Mapping[str, Any]:
         return {name: getattr(self, name)

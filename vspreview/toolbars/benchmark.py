@@ -139,13 +139,21 @@ class BenchmarkToolbar(AbstractToolbar):
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         self. start_frame_control.setMaximum(self.main.current_output.end_frame)
-        self.  start_time_control.setMaximum(self.main.current_output.end_time)
         self.   end_frame_control.setMaximum(self.main.current_output.end_frame)
-        self.    end_time_control.setMaximum(self.main.current_output.end_time)
         self.total_frames_control.setMaximum(self.main.current_output.total_frames)
-        self.  total_time_control.setMaximum(self.main.current_output.total_time)
-        self.  total_time_control.setMaximum(TimeInterval(FrameInterval(1)))
 
+        if not self.main.current_output.vfr:
+            self.start_time_control.setEnabled(True)
+            self.  end_time_control.setEnabled(True)
+            self.total_time_control.setEnabled(True)
+            self.start_time_control.setMaximum(self.main.current_output.end_time)
+            self.  end_time_control.setMaximum(self.main.current_output.end_time)
+            self.total_time_control.setMaximum(self.main.current_output.total_time)
+            self.total_time_control.setMaximum(TimeInterval(FrameInterval(1)))
+        else:
+            self.start_time_control.setEnabled(False)
+            self.  end_time_control.setEnabled(False)
+            self.total_time_control.setEnabled(False)
 
     def run(self) -> None:
         from copy import deepcopy
@@ -246,13 +254,15 @@ class BenchmarkToolbar(AbstractToolbar):
 
     def set_ui_editable(self, new_state: bool) -> None:
         self. start_frame_control.setEnabled(new_state)
-        self.  start_time_control.setEnabled(new_state)
         self.   end_frame_control.setEnabled(new_state)
-        self.    end_time_control.setEnabled(new_state)
         self.total_frames_control.setEnabled(new_state)
-        self.  total_time_control.setEnabled(new_state)
         self.   prefetch_checkbox.setEnabled(new_state)
-        self. unsequenced_checkbox.setEnabled(new_state)
+        self.unsequenced_checkbox.setEnabled(new_state)
+
+        if not self.main.current_output.vfr:
+            self.start_time_control.setEnabled(new_state)
+            self.  end_time_control.setEnabled(new_state)
+            self.total_time_control.setEnabled(new_state)
 
     def update_controls(self, start: Optional[Frame] = None, end: Optional[Frame] = None, total: Optional[FrameInterval] = None) -> None:
         if start is not None:
@@ -285,11 +295,12 @@ class BenchmarkToolbar(AbstractToolbar):
             return
 
         qt_silent_call(self. start_frame_control.setValue, start)
-        qt_silent_call(self.  start_time_control.setValue, Time(start))
         qt_silent_call(self.   end_frame_control.setValue, end)
-        qt_silent_call(self.    end_time_control.setValue, Time(end))
         qt_silent_call(self.total_frames_control.setValue, total)
-        qt_silent_call(self.  total_time_control.setValue, TimeInterval(total))
+        if not self.main.current_output.vfr:
+            qt_silent_call(self.start_time_control.setValue, Time(start))
+            qt_silent_call(self.  end_time_control.setValue, Time(end))
+            qt_silent_call(self.total_time_control.setValue, TimeInterval(total))
 
     def update_info(self) -> None:
         run_time = TimeInterval(seconds=(perf_counter() - self.run_start_time))

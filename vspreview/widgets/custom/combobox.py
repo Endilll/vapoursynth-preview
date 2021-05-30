@@ -7,6 +7,7 @@ from PyQt5 import Qt
 
 from vspreview.core import Output
 from vspreview.models import SceningList
+from vspreview.utils import qt_silent_call
 
 T = TypeVar('T', Output, SceningList, float)
 
@@ -52,6 +53,11 @@ class ComboBox(Qt.QComboBox, Generic[T]):
         i = self.model().index_of(newValue)
         self.setCurrentIndex(i)
 
+    def setCurrentIndexSilent(self, newIndex: int) -> None:
+        if newIndex != self.oldIndex:
+            self.oldValue = self.model()[newIndex] if newIndex == -1 else None
+            self.oldIndex = newIndex
+        qt_silent_call(super().setCurrentIndex, newIndex)
 
 class _ComboBox_Output(ComboBox):
     ty = Output

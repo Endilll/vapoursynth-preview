@@ -144,10 +144,14 @@ class PlaybackToolbar(AbstractToolbar):
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         qt_silent_call(self.seek_frame_control.setMaximum, self.main.current_output.total_frames)
-        qt_silent_call(self. seek_time_control.setMaximum, self.main.current_output.total_time)
-        qt_silent_call(self. seek_time_control.setMinimum, TimeInterval(FrameInterval(1)))
         qt_silent_call(self.       fps_spinbox.setValue  , self.main.current_output.play_fps)
 
+        if not self.main.current_output.vfr:
+            self.seek_time_control.setVisible(True)
+            qt_silent_call(self.seek_time_control.setMaximum, self.main.current_output.total_time)
+            qt_silent_call(self.seek_time_control.setMinimum, TimeInterval(FrameInterval(1)))
+        else:
+            self.seek_time_control.setVisible(False)
 
     def play(self) -> None:
         if self.main.current_frame == self.main.current_output.end_frame:
@@ -308,7 +312,8 @@ class PlaybackToolbar(AbstractToolbar):
         self.main.current_frame = new_pos
 
     def on_seek_frame_changed(self, frame: FrameInterval) -> None:
-        qt_silent_call(self.seek_time_control.setValue, TimeInterval(frame))
+        if not self.main.current_output.vfr:
+            qt_silent_call(self.seek_time_control.setValue, TimeInterval(frame))
 
     def on_seek_time_changed(self, time: TimeInterval) -> None:
         qt_silent_call(self.seek_frame_control.setValue, FrameInterval(time))
@@ -329,8 +334,11 @@ class PlaybackToolbar(AbstractToolbar):
             self.play()
 
     def reset_fps(self, checked: Optional[bool] = None) -> None:
-        self.fps_spinbox.setValue(self.main.current_output.fps_num
-                                  / self.main.current_output.fps_den)
+        if not self.main.current_output.vfr:
+            self.fps_spinbox.setValue(self.main.current_output.fps_num
+                                      / self.main.current_output.fps_den)
+        else:
+            self.fps_spinbox.setValue(24000 / 1001)
 
     def on_fps_unlimited_changed(self, state: int) -> None:
         if state == Qt.Qt.Checked:

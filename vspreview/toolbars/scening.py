@@ -142,8 +142,9 @@ class SceningListDialog(Qt.QDialog):
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         self.start_frame_control.setMaximum(self.main.current_output.end_frame)
         self.  end_frame_control.setMaximum(self.main.current_output.end_frame)
-        self. start_time_control.setMaximum(self.main.current_output.end_time)
-        self.   end_time_control.setMaximum(self.main.current_output.end_time)
+        if not self.main.current_output.vfr:
+            self.start_time_control.setMaximum(self.main.current_output.end_time)
+            self.  end_time_control.setMaximum(self.main.current_output.end_time)
 
     def on_delete_clicked(self, checked: Optional[bool] = None) -> None:
         for model_index in self.tableview.selectionModel().selectedRows():
@@ -230,26 +231,28 @@ class SceningListDialog(Qt.QDialog):
 
     def on_tableview_selection_changed(self, selected: Qt.QItemSelection, deselected: Qt.QItemSelection) -> None:
         if len(selected.indexes()) == 0:
-            self.delete_button.setEnabled(False)
+            self.      delete_button.setEnabled(False)
             self.start_frame_control.setEnabled(False)
-            self.end_frame_control.setEnabled(False)
-            self.start_time_control.setEnabled(False)
-            self.end_time_control.setEnabled(False)
-            self.label_lineedit.setEnabled(False)
+            self.  end_frame_control.setEnabled(False)
+            self.     label_lineedit.setEnabled(False)
+            self. start_time_control.setEnabled(False)
+            self.   end_time_control.setEnabled(False)
             return
         index = selected.indexes()[0]
         scene = self.scening_list[index.row()]
-        qt_silent_call(self.start_frame_control.setValue,     scene.start)
-        qt_silent_call(self.  end_frame_control.setValue,     scene.end)
-        qt_silent_call(self. start_time_control.setValue, Time(scene.start))
-        qt_silent_call(self.   end_time_control.setValue, Time(scene.end))
-        qt_silent_call(self.     label_lineedit.setText,      scene.label)
-        self.delete_button.setEnabled(True)
+        qt_silent_call(self.start_frame_control.setValue, scene.start)
+        qt_silent_call(self.  end_frame_control.setValue, scene.end)
+        qt_silent_call(self.     label_lineedit.setText,  scene.label)
+        self.      delete_button.setEnabled(True)
         self.start_frame_control.setEnabled(True)
-        self.end_frame_control.setEnabled(True)
-        self.start_time_control.setEnabled(True)
-        self.end_time_control.setEnabled(True)
-        self.label_lineedit.setEnabled(True)
+        self.  end_frame_control.setEnabled(True)
+        self.     label_lineedit.setEnabled(True)
+
+        if not self.main.current_output.vfr:
+            qt_silent_call(self. start_time_control.setValue, Time(scene.start))
+            qt_silent_call(self.   end_time_control.setValue, Time(scene.end))
+            self.start_time_control.setEnabled(True)
+            self.  end_time_control.setEnabled(True)
 
 
 class SceningToolbar(AbstractToolbar):
@@ -267,7 +270,7 @@ class SceningToolbar(AbstractToolbar):
         'status_label', 'import_file_button', 'items_combobox',
         'remove_at_current_frame_button',
         'seek_to_next_button', 'seek_to_prev_button',
-        'toggle_button',
+        'toggle_button', 'vfr_incompatible_file_types'
     )
 
     def __init__(self, main: AbstractMainWindow) -> None:
@@ -304,6 +307,13 @@ class SceningToolbar(AbstractToolbar):
             'x264/x265 QP File (*.qp *.txt)': self.import_qp,
             'XviD Log (*.txt)'              : self.import_xvid,
         }
+
+        self.vfr_incompatible_file_types = frozenset((
+            'Aegisub Project (*.ass)',
+            'CUE Sheet (*.cue)',
+            'Matroska XML Chapters (*.xml)',
+            'OGM Chapters (*.txt)',
+        ))
 
         self.add_list_button               .clicked.connect(self.on_add_list_clicked)
         self.add_single_frame_button       .clicked.connect(self.on_add_single_frame_clicked)
@@ -490,6 +500,8 @@ class SceningToolbar(AbstractToolbar):
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         self.scening_list_dialog.on_current_output_changed(index, prev_index)
+        if self.current_list:
+            self.current_list.on_current_output_changed(index, prev_index)
 
     def on_current_frame_changed(self, frame: Frame, time: Time) -> None:
         self.check_remove_export_possibility()
@@ -660,7 +672,15 @@ class SceningToolbar(AbstractToolbar):
     # import
 
     def on_import_file_clicked(self, checked: Optional[bool] = None) -> None:
-        filter_str = ';;'.join(self.supported_file_types.keys())
+        if not self.main.current_output.vfr:
+            filter_str = ';;'.join(self.supported_file_types.keys())
+            filter_str = ';;'.join(sorted(
+                self.supported_file_types.keys()
+                - self.vfr_incompatible_file_types))
+        else:
+            filter_str = ';;'.join(sorted(
+                self.supported_file_types.keys()
+                - self.vfr_incompatible_file_types))
         path_strs, file_type = Qt.QFileDialog.getOpenFileNames(
             self.main, caption='Open chapters file', filter=filter_str)
 
