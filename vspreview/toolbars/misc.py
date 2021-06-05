@@ -88,7 +88,8 @@ class MiscToolbar(AbstractToolbar):
         self.save_template_lineedit = Qt.QLineEdit(self)
         self.save_template_lineedit.setToolTip(
             r'Available placeholders: {format}, {fps_den}, {fps_num}, {frame},'
-            r' {height}, {index}, {script_name}, {total_frames}, {width}.')
+            r' {height}, {index}, {script_name}, {total_frames}, {width}.'
+            r' Other frameprops are accessible through {prop:Name} as in VS.')
         layout.addWidget(self.save_template_lineedit)
 
         layout.addStretch()
