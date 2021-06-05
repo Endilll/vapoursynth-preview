@@ -150,7 +150,7 @@ class MiscToolbar(AbstractToolbar):
         filter_str = filter_str[0:-2]
 
         template = self.main.toolbars.misc.save_template_lineedit.text()
-        substitutions = {
+        builtin_substitutions = {
             'format'       : self.main.current_output.format.name,
             'fps_den'      : self.main.current_output.fps_den,
             'fps_num'      : self.main.current_output.fps_num,
@@ -161,11 +161,13 @@ class MiscToolbar(AbstractToolbar):
             'total_frames' : self.main.current_output.total_frames,
             'width'        : self.main.current_output.width,
         }
+        substitutions = dict(self.main.current_output.vs_output.get_frame(
+                                 self.main.current_frame).props)
+        substitutions.update(builtin_substitutions)
         try:
             suggested_path_str = template.format(**substitutions)
         except ValueError:
-            suggested_path_str = self.main.SAVE_TEMPLATE.format(**substitutions,
-                                            **self.main.current_output.props)
+            suggested_path_str = self.main.SAVE_TEMPLATE.format(**substitutions)
             self.main.show_message('Save name template is invalid')
 
         save_path_str, file_type = Qt.QFileDialog.getSaveFileName(
