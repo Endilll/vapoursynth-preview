@@ -164,7 +164,8 @@ class MiscToolbar(AbstractToolbar):
         try:
             suggested_path_str = template.format(**substitutions)
         except ValueError:
-            suggested_path_str = self.main.SAVE_TEMPLATE.format(**substitutions)
+            suggested_path_str = self.main.SAVE_TEMPLATE.format(**substitutions,
+                                            **self.main.current_output.props)
             self.main.show_message('Save name template is invalid')
 
         save_path_str, file_type = Qt.QFileDialog.getSaveFileName(
