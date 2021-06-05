@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from   pathlib  import Path
 from   typing   import Any, Mapping, Optional
-import re
 
 from PyQt5 import Qt
 
@@ -89,7 +88,7 @@ class MiscToolbar(AbstractToolbar):
         self.save_template_lineedit.setToolTip(
             r'Available placeholders: {format}, {fps_den}, {fps_num}, {frame},'
             r' {height}, {index}, {script_name}, {total_frames}, {width}.'
-            r' Other frameprops are accessible through {prop:Name} as in VS.')
+            r' Other placeholders will be treated as frameprops, same as in VS')
         layout.addWidget(self.save_template_lineedit)
 
         layout.addStretch()
@@ -164,7 +163,6 @@ class MiscToolbar(AbstractToolbar):
         }
         try:
             suggested_path_str = template.format(**substitutions)
-            suggested_path_str = self.format_props(suggested_path_str)
         except ValueError:
             suggested_path_str = self.main.SAVE_TEMPLATE.format(**substitutions)
             self.main.show_message('Save name template is invalid')
@@ -175,19 +173,6 @@ class MiscToolbar(AbstractToolbar):
             self.save_file_types[file_type](Path(save_path_str))
         except KeyError:
             pass
-
-    def format_props(self, template) -> str:
-        # A clean fix to allow for `prop:` to be used as prefix for grabbing
-        # arbitrary frameprops, since `:` is not allowed in kwarg names (format)
-        template = template.replace("prop:", "prop_")
-        prop_pattern = r"(\{prop_\w+?\})"
-        substitutions = {}
-        for match in re.findall(prop_pattern, template):
-            format_name = match.replace("{", "").replace("}", "")
-            propname = format_name.replace("prop_", "")
-            substitutions[format_name] = self.main.current_output.get_prop(propname,
-                                                            f"no_{propname}")
-        return template.format(**substitutions)
 
     def on_show_debug_changed(self, state: Qt.Qt.CheckState) -> None:
         if   state == Qt.Qt.Checked:
