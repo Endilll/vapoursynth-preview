@@ -865,6 +865,9 @@ class Output(YAMLObject):
         return TimeInterval(
             seconds=self._calculate_seconds(int(frame_interval)))
 
+    def get_prop(self, propname: str, default: Optional[Any]=None):
+        return self.props.get(propname, default)
+
     def __getstate__(self) -> Mapping[str, Any]:
         return {
             attr_name: getattr(self, attr_name)
