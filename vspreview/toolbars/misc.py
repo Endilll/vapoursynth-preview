@@ -7,7 +7,7 @@ from   typing   import Any, Mapping, Optional
 from PyQt5 import Qt
 
 from vspreview.core  import (
-    AbstractMainWindow, AbstractToolbar, Frame,
+    AbstractMainWindow, AbstractToolbar, Frame, Output,
 )
 from vspreview.utils import (
     add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label,
@@ -15,12 +15,10 @@ from vspreview.utils import (
 
 
 class MiscToolbar(AbstractToolbar):
-    storable_attrs = [
-        'autosave_enabled',
-    ]
+    storable_attrs : Sequence[str] = []
     __slots__ = storable_attrs + [
         'autosave_timer', 'reload_script_button',
-        'save_button', 'autosave_checkbox',
+        'save_button',
         'keep_on_top_checkbox', 'save_template_lineedit',
         'show_debug_checkbox', 'save_frame_as_button',
         'toggle_button', 'save_file_types', 'copy_frame_button',
@@ -32,7 +30,6 @@ class MiscToolbar(AbstractToolbar):
 
         self.save_template_lineedit.setText(self.main.SAVE_TEMPLATE)
 
-        self.autosave_enabled: bool = self.main.AUTOSAVE_ENABLED
         self.autosave_timer = Qt.QTimer()
         self.autosave_timer.timeout.connect(self.save)
 
@@ -42,7 +39,6 @@ class MiscToolbar(AbstractToolbar):
 
         self.reload_script_button.     clicked.connect(lambda: self.main.reload_script())  # pylint: disable=unnecessary-lambda
         self.         save_button.     clicked.connect(lambda: self.save(manually=True))
-        self.   autosave_checkbox.stateChanged.connect(        self.on_autosave_changed)
         self.keep_on_top_checkbox.stateChanged.connect(        self.on_keep_on_top_changed)
         self.   copy_frame_button.     clicked.connect(        self.copy_frame_to_clipboard)
         self.save_frame_as_button.     clicked.connect(        self.on_save_frame_as_clicked)
@@ -69,10 +65,6 @@ class MiscToolbar(AbstractToolbar):
         self.save_button.setText('Save')
         layout.addWidget(self.save_button)
 
-        self.autosave_checkbox = Qt.QCheckBox(self)
-        self.autosave_checkbox.setText('Autosave')
-        layout.addWidget(self.autosave_checkbox)
-
         self.keep_on_top_checkbox = Qt.QCheckBox(self)
         self.keep_on_top_checkbox.setText('Keep on Top')
         self.keep_on_top_checkbox.setEnabled(False)
@@ -94,7 +86,10 @@ class MiscToolbar(AbstractToolbar):
 
         self.save_template_lineedit = Qt.QLineEdit(self)
         self.save_template_lineedit.setToolTip(
-            r'Use {script_name} and {frame} as placeholders.')
+            r'Available placeholders: {format}, {fps_den}, {fps_num}, {frame},'
+            r' {height}, {index}, {matrix}, {primaries}, {range},'
+            r' {script_name}, {total_frames}, {transfer}, {width}.'
+            r' Frame props can be accessed as well using their names.')
         layout.addWidget(self.save_template_lineedit)
 
         layout.addStretch()
@@ -104,6 +99,12 @@ class MiscToolbar(AbstractToolbar):
         self.show_debug_checkbox.setText('Show Debug Toolbar')
         layout.addWidget(self.show_debug_checkbox)
 
+    def on_script_unloaded(self) -> None:
+        self.autosave_timer.stop()
+
+    def on_script_loaded(self) -> None:
+        self.autosave_timer.start(self.main.AUTOSAVE_INTERVAL)
+
     def copy_frame_to_clipboard(self) -> None:
         frame_image = self.main.current_output.graphics_scene_item.image()
         self.main.clipboard.setImage(frame_image)
@@ -111,7 +112,10 @@ class MiscToolbar(AbstractToolbar):
 
     @fire_and_forget
     @set_status_label(label='Saving')
-    def save(self, path: Optional[Path] = None, manually: bool = False) -> None:
+    def save(self, path: Optional[Path] = None) -> None:
+        self.save_sync(path)
+
+    def save_sync(self, path: Optional[Path] = None) -> None:
         import yaml
 
         yaml.Dumper.ignore_aliases = lambda *args: True
@@ -133,14 +137,6 @@ class MiscToolbar(AbstractToolbar):
             f.write(f'# VSPreview storage for {self.main.script_path}\n')
             yaml.dump(self.main, f, indent=4, default_flow_style=False)
 
-    def on_autosave_changed(self, state: Qt.Qt.CheckState) -> None:
-        if   state == Qt.Qt.Checked:
-            self.autosave_enabled = True
-            self.autosave_timer.start(self.main.AUTOSAVE_INTERVAL)
-        elif state == Qt.Qt.Unchecked:
-            self.autosave_enabled = False
-            self.autosave_timer.stop()
-
     def on_keep_on_top_changed(self, state: Qt.Qt.CheckState) -> None:
         if   state == Qt.Qt.Checked:
             pass
@@ -155,14 +151,29 @@ class MiscToolbar(AbstractToolbar):
         filter_str = filter_str[0:-2]
 
         template = self.main.toolbars.misc.save_template_lineedit.text()
+        frame_props = self.main.current_output.vs_output.get_frame(
+                          self.main.current_frame).props
+        builtin_substitutions = {
+            'format'       : self.main.current_output.format.name,
+            'fps_den'      : self.main.current_output.fps_den,
+            'fps_num'      : self.main.current_output.fps_num,
+            'frame'        : self.main.current_frame,
+            'height'       : self.main.current_output.height,
+            'index'        : self.main.current_output.index,
+            'matrix'       : Output.Matrix.values[frame_props['_Matrix']],
+            'primaries'    : Output.Primaries.values[frame_props['_Primaries']],
+            'range'        : Output.Range.values[frame_props['_ColorRange']],
+            'script_name'  : self.main.script_path.stem,
+            'total_frames' : self.main.current_output.total_frames,
+            'transfer'     : Output.Transfer.values[frame_props['_Transfer']],
+            'width'        : self.main.current_output.width,
+        }
+        substitutions = dict(frame_props)
+        substitutions.update(builtin_substitutions)
         try:
-            suggested_path_str = template.format(
-                script_name=self.main.script_path.with_suffix(''),
-                frame=self.main.current_frame)
+            suggested_path_str = template.format(**substitutions)
         except ValueError:
-            suggested_path_str = self.main.SAVE_TEMPLATE.format(
-                script_name=self.main.script_path.with_suffix(''),
-                frame=self.main.current_frame)
+            suggested_path_str = self.main.SAVE_TEMPLATE.format(**substitutions)
             self.main.show_message('Save name template is invalid')
 
         save_path_str, file_type = Qt.QFileDialog.getSaveFileName(
@@ -193,19 +204,10 @@ class MiscToolbar(AbstractToolbar):
             'save_file_name_template': self.save_template_lineedit.text(),
             'show_debug'             : self.show_debug_checkbox.isChecked()
         })
+        state.update(super().__getstate__())
         return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        try:
-            autosave_enabled = state['autosave_enabled']
-            if not isinstance(autosave_enabled, bool):
-                raise TypeError
-        except (KeyError, TypeError):
-            logging.warning('Storage loading: failed to parse autosave flag.')
-            autosave_enabled = self.main.AUTOSAVE_ENABLED
-
-        self.autosave_checkbox.setChecked(autosave_enabled)
-
         try:
             self.save_template_lineedit.setText(
                 state['save_file_name_template'])
@@ -223,3 +225,5 @@ class MiscToolbar(AbstractToolbar):
             show_debug = self.main.DEBUG_TOOLBAR
 
         self.show_debug_checkbox.setChecked(show_debug)
+
+        super().__setstate__(state)

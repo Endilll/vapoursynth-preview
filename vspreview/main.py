@@ -110,8 +110,8 @@ class MainToolbar(AbstractToolbar):
         self.setup_ui()
 
         self.outputs = Outputs()
-
         self.outputs_combobox.setModel(self.outputs)
+
         self.zoom_levels = ZoomLevels([
             0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, 8.0, 16.0
         ])
@@ -120,7 +120,7 @@ class MainToolbar(AbstractToolbar):
 
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
         self.frame_control          .valueChanged.connect(self.main.switch_frame)
-        self.time_control           .valueChanged.connect(lambda t: self.main.switch_frame(time=t))
+        self.time_control           .valueChanged.connect(self.main.switch_frame)
         self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)  # type: ignore
         self.time_control        .editingFinished.connect(self.time_control.clearFocus)  # type: ignore
         self.sync_outputs_checkbox  .stateChanged.connect(self.on_sync_outputs_changed)
@@ -166,6 +166,7 @@ class MainToolbar(AbstractToolbar):
 
         self.sync_outputs_checkbox = Qt.QCheckBox(self)
         self.sync_outputs_checkbox.setText('Sync Outputs')
+        self.sync_outputs_checkbox.setChecked(self.main.SYNC_OUTPUTS)
         layout.addWidget(self.sync_outputs_checkbox)
 
         self.zoom_combobox = ComboBox[float](self)
@@ -173,7 +174,7 @@ class MainToolbar(AbstractToolbar):
         layout.addWidget(self.zoom_combobox)
 
         self.switch_timeline_mode_button = Qt.QPushButton(self)
-        self.switch_timeline_mode_button.setText('Switch Timeline Mode')
+        self.switch_timeline_mode_button.setText('Timeline: Time')
         layout.addWidget(self.switch_timeline_mode_button)
 
         layout.addStretch()
@@ -212,8 +213,10 @@ class MainToolbar(AbstractToolbar):
     def on_switch_timeline_mode_clicked(self, checked: Optional[bool] = None) -> None:
         if self.main.timeline.mode == self.main.timeline.Mode.TIME:
             self.main.timeline.mode = self.main.timeline.Mode.FRAME
+            self.switch_timeline_mode_button.setText('Timeline: Frame')
         elif self.main.timeline.mode == self.main.timeline.Mode.FRAME:
             self.main.timeline.mode = self.main.timeline.Mode.TIME
+            self.switch_timeline_mode_button.setText('Timeline: Time')
 
     def on_zoom_changed(self, text: Optional[str] = None) -> None:
         self.main.graphics_view.setZoom(self.zoom_combobox.currentData())
@@ -221,7 +224,8 @@ class MainToolbar(AbstractToolbar):
     def __getstate__(self) -> Mapping[str, Any]:
         return {
             'current_output_index': self.outputs_combobox.currentIndex(),
-            'outputs'             : self.outputs
+            'outputs'             : self.outputs,
+            'sync_outputs'        : self.sync_outputs_checkbox.isChecked()
         }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
@@ -245,6 +249,17 @@ class MainToolbar(AbstractToolbar):
             logging.warning(
                 'Storage loading: Main toolbar: stored output index is not valid.')
             self.main.switch_output(self.main.OUTPUT_INDEX)
+
+        try:
+            sync_outputs = state['sync_outputs']
+            if not isinstance(sync_outputs, bool):
+                raise TypeError
+        except (KeyError, TypeError):
+            logging.warning(
+                'Storage loading: Main toolbar: failed to parse sync outputs.')
+            sync_outputs = self.main.SYNC_OUTPUTS
+
+        self.sync_outputs_checkbox.setChecked(sync_outputs)
 
 
 class Toolbars(AbstractToolbars):
@@ -294,7 +309,7 @@ class Toolbars(AbstractToolbars):
 
 class MainWindow(AbstractMainWindow):
     # those are defaults that can be overriden at runtime or used as fallbacks
-    AUTOSAVE_ENABLED          =  True
+    ALWAYS_SHOW_SCENE_MARKS   = False
     AUTOSAVE_INTERVAL         =    60 * 1000  # s
     BASE_PPI                  =    96  # PPI
     BENCHMARK_CLEAR_CACHE     = False
@@ -316,9 +331,11 @@ class MainWindow(AbstractMainWindow):
     SEEK_STEP                 =     1  # frames
     STATUSBAR_MESSAGE_TIMEOUT =     3 * 1000  # s
     STORAGE_BACKUPS_COUNT     =     2
+    SYNC_OUTPUTS              = False
     # it's allowed to stretch target interval betweewn notches by N% at most
     TIMELINE_LABEL_NOTCHES_MARGIN = 20  # %
     TIMELINE_MODE             = 'frame'
+    TOGGLE_TOOLBAR           = False
     VSP_DIR_NAME              = '.vspreview'
     # used for formats with subsampling
     VS_OUTPUT_RESIZER         = Output.Resizer.Bicubic
@@ -355,10 +372,6 @@ class MainWindow(AbstractMainWindow):
         super().__init__()
 
         # logging
-
-        logging.basicConfig(format='{asctime}: {levelname}: {message}',
-                            style='{', level=self.LOG_LEVEL)
-        logging.Formatter.default_msec_format = '%s.%03d'
 
         # ???
 
@@ -471,9 +484,9 @@ class MainWindow(AbstractMainWindow):
             + ' QGraphicsView { border: 0px; padding: 0px; }' \
             + ' QToolButton { padding: 0px; }'
 
-    def load_script(self, script_path: Path, external_args: str = '') -> None:
-        from traceback import print_exc
+    def load_script(self, script_path: Path, external_args: str = '', reloading = False) -> None:
         import shlex
+        from traceback import FrameSummary, TracebackException
 
         self.toolbars.playback.stop()
 
@@ -486,7 +499,7 @@ class MainWindow(AbstractMainWindow):
             self.external_args = shlex.split(external_args)
         try:
             argv_orig = sys.argv
-            sys.argv = [sys.argv[1]] + self.external_args
+            sys.argv = [script_path.name] + self.external_args
         except AttributeError:
             pass
 
@@ -495,13 +508,29 @@ class MainWindow(AbstractMainWindow):
             exec(self.script_path.read_text(encoding='utf-8'), {
                 '__file__': sys.argv[0]
             })
-        except Exception:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             self.script_exec_failed = True
-            logging.error(
-                'Script contains error(s). Check following lines for details.')
+            logging.error(e)
+
+            te = TracebackException.from_exception(e)
+            # remove the first stack frame, which contains our exec() invocation
+            del te.stack[0]
+
+            # replace <string> with script path only for the first stack frames
+            # in order to keep intact exec() invocations down the stack
+            # that we're not concerned with
+            for i, frame in enumerate(te.stack):
+                if frame.filename == '<string>':
+                    te.stack[i] = FrameSummary(str(self.script_path),
+                                               frame.lineno, frame.name)
+                else:
+                    break
+            print(''.join(te.format()))
+
             self.handle_script_error(
-                'Script contains error(s). See console output for details.')
-            print_exc()
+                f'''An error occured while evaluating script:
+                \n{str(e)}
+                \nSee console output for details.''')
             return
         finally:
             sys.argv = argv_orig
@@ -514,11 +543,17 @@ class MainWindow(AbstractMainWindow):
             self.handle_script_error('Script has no outputs set.')
             return
 
-        self.toolbars.main.rescan_outputs()
-        # self.init_outputs()
-        self.switch_output(self.OUTPUT_INDEX)
+        if not reloading :
+            self.toolbars.main.rescan_outputs()
+            for toolbar in self.toolbars:
+                toolbar.on_script_loaded()
+            self.switch_output(self.OUTPUT_INDEX)
 
-        self.load_storage()
+            self.load_storage()
+        else:
+            self.load_storage()
+            for toolbar in self.toolbars:
+                toolbar.on_script_loaded()
 
     def load_storage(self) -> None:
         import yaml
@@ -562,24 +597,35 @@ class MainWindow(AbstractMainWindow):
             output.graphics_scene_item = frame_item
 
     def reload_script(self) -> None:
-        if self.toolbars.misc.autosave_enabled and not self.script_exec_failed:
-            self.toolbars.misc.save()
+        import gc
+
+        if not self.script_exec_failed:
+            self.toolbars.misc.save_sync()
+        for toolbar in self.toolbars:
+            toolbar.on_script_unloaded()
+            
         vs.clear_outputs()
         self.graphics_scene.clear()
-        self.load_script(self.script_path)
+        self.outputs.clear()
+        # make sure old filter graph is freed
+        gc.collect()
+
+        self.load_script(self.script_path, reloading=True)
 
         self.show_message('Reloaded successfully')
 
     def render_frame(self, frame: Frame, output: Optional[Output] = None) -> Qt.QImage:
         return self.current_output.render_frame(frame)
 
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
-        if frame is not None:
+    def switch_frame(self, pos: Union[Frame, Time], *, render_frame: bool = True) -> None:
+        if isinstance(pos, Frame):
+            frame = pos
             time = Time(frame)
-        elif time is not None:
-            frame = Frame(time)
+        elif isinstance(pos, Time):
+            frame = Frame(pos)
+            time = pos
         else:
-            logging.debug('switch_frame(): both frame and time is None')
+            logging.debug('switch_frame(): position is neither Frame nor Time')
             return
         if frame > self.current_output.end_frame:
             return
@@ -651,7 +697,7 @@ class MainWindow(AbstractMainWindow):
 
     @current_time.setter
     def current_time(self, value: Time) -> None:
-        self.switch_frame(time=value)
+        self.switch_frame(value)
 
     @property
     def outputs(self) -> Outputs:  # type: ignore
@@ -684,8 +730,7 @@ class MainWindow(AbstractMainWindow):
             '{} frames'.format(output.total_frames))
         self.statusbar.duration_label.setText(
             # Display duration without -1 offset to match other video tools
-            '{}'.format(self.current_output.to_time_interval(
-                self.current_output.total_frames)))
+            '{}'.format(TimeInterval(self.current_output.total_frames)))
         self.statusbar.resolution_label.setText(
             '{}x{}'.format(output.width, output.height))
         if not output.has_alpha:
@@ -717,8 +762,7 @@ class MainWindow(AbstractMainWindow):
             Qt.QSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding))
 
     def closeEvent(self, event: Qt.QCloseEvent) -> None:
-        if (self.toolbars.misc.autosave_enabled
-                and self.save_on_exit):
+        if self.save_on_exit:
             self.toolbars.misc.save()
 
     def __getstate__(self) -> Mapping[str, Any]:
@@ -771,6 +815,10 @@ class MainWindow(AbstractMainWindow):
 def main() -> None:
     from argparse import ArgumentParser
 
+    logging.basicConfig(format='{asctime}: {levelname}: {message}',
+                        style='{', level=MainWindow.LOG_LEVEL)
+    logging.Formatter.default_msec_format = '%s.%03d'
+
     check_versions()
 
     parser = ArgumentParser()
@@ -807,19 +855,19 @@ def check_versions() -> bool:
 
     failed = False
 
-    if sys.version_info < (3, 8, 0, 'final', 0):
-        print('VSPreview is not tested on Python versions prior to 3.8, but you have {} {}. Use at your own risk.'
-              .format(python_version(), sys.version_info.releaselevel))
+    if sys.version_info < (3, 9, 0, 'final', 0):
+        logging.warning('VSPreview is not tested on Python versions prior to 3.9, but you have {} {}. Use at your own risk.'
+                        .format(python_version(), sys.version_info.releaselevel))
         failed = True
 
-    if get_distribution('PyQt5').version < '5.14':
-        print('VSPreview is not tested on PyQt5 versions prior to 5.14, but you have {}. Use at your own risk.'
-              .format(get_distribution('PyQt5').version))
+    if get_distribution('PyQt5').version < '5.15':
+        logging.warning('VSPreview is not tested on PyQt5 versions prior to 5.15, but you have {}. Use at your own risk.'
+                        .format(get_distribution('PyQt5').version))
         failed = True
 
-    if vs.core.version_number() < 49:
-        print('VSPreview is not tested on VapourSynth versions prior to 49, but you have {}. Use at your own risk.'
-              .format(vs.core.version_number()))
+    if vs.core.version_number() < 53:
+        logging.warning('VSPreview is not tested on VapourSynth versions prior to 53, but you have {}. Use at your own risk.'
+                        .format(vs.core.version_number()))
         failed = True
 
     return not failed

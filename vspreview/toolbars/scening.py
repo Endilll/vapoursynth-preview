@@ -263,7 +263,7 @@ class SceningToolbar(AbstractToolbar):
         'add_single_frame_button',
         'add_to_list_button', 'remove_last_from_list_button',
         'export_single_line_button', 'export_template_lineedit',
-        'export_multiline_button',
+        'export_multiline_button', 'always_show_scene_marks_checkbox',
         'status_label', 'import_file_button', 'items_combobox',
         'remove_at_current_frame_button',
         'seek_to_next_button', 'seek_to_prev_button',
@@ -384,15 +384,15 @@ class SceningToolbar(AbstractToolbar):
         self.seek_to_prev_button.setEnabled(False)
         layout_line_1.addWidget(self.seek_to_prev_button)
 
-        font = self.seek_to_prev_button.font()
-        font.setPixelSize(19)
-        self.seek_to_prev_button.setFont(font)
-
         self.seek_to_next_button = Qt.QToolButton(self)
         self.seek_to_next_button.setText('⏩')
-        self.seek_to_next_button.setFont(font)
         self.seek_to_next_button.setEnabled(False)
         layout_line_1.addWidget(self.seek_to_next_button)
+
+        self.always_show_scene_marks_checkbox = Qt.QCheckBox(self)
+        self.always_show_scene_marks_checkbox.setText('Always show scene marks in the timeline')
+        self.always_show_scene_marks_checkbox.setChecked(False)
+        layout_line_1.addWidget(self.always_show_scene_marks_checkbox)
 
         layout_line_1.addStretch()
 
@@ -404,14 +404,12 @@ class SceningToolbar(AbstractToolbar):
         self.add_single_frame_button = Qt.QToolButton(self)
         # self.add_single_frame_button.setText('Add Single Frame')
         self.add_single_frame_button.setText('🆎')
-        self.add_single_frame_button.setFont(font)
         self.add_single_frame_button.setToolTip('Add Single Frame Scene')
         layout_line_2.addWidget(self.add_single_frame_button)
 
         self.toggle_first_frame_button = Qt.QToolButton(self)
         # self.toggle_first_frame_button.setText('Frame 1')
         self.toggle_first_frame_button.setText('🅰️')
-        self.toggle_first_frame_button.setFont(font)
         self.toggle_first_frame_button.setToolTip('Toggle Start of New Scene')
         self.toggle_first_frame_button.setCheckable(True)
         layout_line_2.addWidget(self.toggle_first_frame_button)
@@ -419,7 +417,6 @@ class SceningToolbar(AbstractToolbar):
         self.toggle_second_frame_button = Qt.QToolButton(self)
         # self.toggle_second_frame_button.setText('Frame 2')
         self.toggle_second_frame_button.setText('🅱️')
-        self.toggle_second_frame_button.setFont(font)
         self.toggle_second_frame_button.setToolTip('Toggle End of New Scene')
         self.toggle_second_frame_button.setCheckable(True)
         layout_line_2.addWidget(self.toggle_second_frame_button)
@@ -488,7 +485,7 @@ class SceningToolbar(AbstractToolbar):
         #     self.check_add_to_list_possibility()
         #     self.check_remove_export_possibility()
 
-        self.status_label.setVisible(new_state)
+        self.status_label.setVisible(self.is_notches_visible())
         super().on_toggle(new_state)
 
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
@@ -505,6 +502,9 @@ class SceningToolbar(AbstractToolbar):
         for scene in self.current_list:
             marks.add(scene, cast(Qt.QColor, Qt.Qt.green))
         return marks
+
+    def is_notches_visible(self) -> bool:
+        return self.always_show_scene_marks_checkbox.isChecked() or self.toggle_button.isChecked()
 
     @property
     def current_list(self) -> Optional[SceningList]:
@@ -709,7 +709,10 @@ class SceningToolbar(AbstractToolbar):
         '''
 
         for line in path.read_text().splitlines():
-            scening_list.add(Frame(int(line)))
+            try:
+                scening_list.add(Frame(int(line)))
+            except ValueError:
+                out_of_range_count += 1
 
     def import_cue(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
@@ -897,7 +900,10 @@ class SceningToolbar(AbstractToolbar):
             return
 
         for bookmark in session['bookmarks']:
-            scening_list.add(Frame(bookmark[0]))
+            try:
+                scening_list.add(Frame(bookmark[0]))
+            except ValueError:
+                out_of_range_count += 1
 
     def import_matroska_timestamps_v1(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
@@ -988,10 +994,11 @@ class SceningToolbar(AbstractToolbar):
             interval = TimeInterval(seconds=float(match[1]))
             fps = float(match[2]) if match.lastindex >= 2 else default_fps
 
-            scening_list.add(
-                self.main.current_output.to_frame(pos),
-                self.main.current_output.to_frame(pos + interval),
-                '{:.3f} fps'.format(fps))
+            try:
+                scening_list.add(Frame(pos), Frame(pos + interval),
+                                 '{:.3f} fps'.format(fps))
+            except ValueError:
+                out_of_range_count += 1
 
             pos += interval
 
@@ -1048,7 +1055,10 @@ class SceningToolbar(AbstractToolbar):
         '''
 
         for bookmark in path.read_text().split(', '):
-            scening_list.add(Frame(int(bookmark)))
+            try:
+                scening_list.add(Frame(int(bookmark)))
+            except ValueError:
+                out_of_range_count += 1
 
     def import_x264_2pass_log(self, path: Path, scening_list: SceningList, out_of_range_count: int) -> None:
         '''
@@ -1165,14 +1175,17 @@ class SceningToolbar(AbstractToolbar):
                                   .format(first_frame_text, second_frame_text))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {
+        state = {
             'current_list_index': self.current_list_index,
             'first_frame' : self.first_frame,
             'second_frame': self.second_frame,
             'label'       : self.label_lineedit.text(),
             'lists'       : self.lists,
             'scening_export_template': self.export_template_lineedit.text(),
+            'always_show_scene_marks': self.always_show_scene_marks_checkbox.isChecked(),
         }
+        state.update(super().__getstate__())
+        return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
@@ -1226,3 +1239,17 @@ class SceningToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning(
                 'Storage loading: Scening: failed to parse export template.')
+
+        try:
+            always_show_scene_marks = state['always_show_scene_marks']
+            if not isinstance(always_show_scene_marks, bool):
+                raise TypeError
+        except(KeyError, TypeError):
+            logging.warning(
+                'Storage loading: Scening: failed to parse always show scene marks.')
+            always_show_scene_marks = self.main.ALWAYS_SHOW_SCENE_MARKS
+
+        self.always_show_scene_marks_checkbox.setChecked(always_show_scene_marks)
+        self.status_label.setVisible(always_show_scene_marks)
+
+        super().__setstate__(state)

@@ -24,7 +24,7 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
     __slots__ = ()
 
     @abstractmethod
-    def load_script(self, script_path: Path, external_args: str = "") -> None:
+    def load_script(self, script_path: Path, external_args: str = '', reloading = False) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -40,7 +40,7 @@ class AbstractMainWindow(Qt.QMainWindow, QAbstractYAMLObjectSingleton):
         raise NotImplementedError()
 
     @abstractmethod
-    def switch_frame(self, frame: Optional[Frame] = None, time: Optional[Time] = None, *, render_frame: bool = True) -> None:
+    def switch_frame(self, pos: Union[Frame, Time], *, render_frame: bool = True) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -103,6 +103,11 @@ class AbstractToolbar(Qt.QWidget, QABC):
     def on_current_output_changed(self, index: int, prev_index: int) -> None:
         pass
 
+    def on_script_unloaded(self) -> None:
+        pass
+
+    def on_script_loaded(self) -> None:
+        pass
 
     def get_notches(self) -> Notches:
         from vspreview.widgets import Notches
@@ -128,10 +133,22 @@ class AbstractToolbar(Qt.QWidget, QABC):
             self.main.timeline.full_repaint()
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {}
+        return {
+            'toggle': self.toggle_button.isChecked()
+        }
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        pass
+        try:
+            toggle = state['toggle']
+            if not isinstance(toggle, bool):
+                raise TypeError
+        except (KeyError, TypeError):
+            logging.warning(
+                'Storage loading: Toolbar: failed to parse toggle')
+            toggle = self.main.TOGGLE_TOOLBAR
+
+        if self.toggle_button.isChecked() != toggle:
+            self.toggle_button.click()
 
 
 class AbstractToolbars(AbstractYAMLObjectSingleton):

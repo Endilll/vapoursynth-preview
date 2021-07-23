@@ -14,6 +14,8 @@ class GraphicsView(Qt.QGraphicsView):
     )
 
     mouseMoved = Qt.pyqtSignal(Qt.QMouseEvent)
+    mousePressed = Qt.pyqtSignal(Qt.QMouseEvent)
+    mouseReleased = Qt.pyqtSignal(Qt.QMouseEvent)
     wheelScrolled = Qt.pyqtSignal(int)
 
     def __init__(self, parent: Optional[Qt.QWidget] = None) -> None:
@@ -60,6 +62,19 @@ class GraphicsView(Qt.QGraphicsView):
         super().mouseMoveEvent(event)
         if self.hasMouseTracking():
             self.mouseMoved.emit(event)
+
+    def mousePressEvent(self, event: Qt.QMouseEvent) -> None:
+        if event.button() == Qt.Qt.LeftButton:
+            self.drag_mode = self.dragMode()
+            self.setDragMode(Qt.QGraphicsView.ScrollHandDrag)
+        super().mousePressEvent(event)
+        self.mousePressed.emit(event)
+
+    def mouseReleaseEvent(self, event: Qt.QMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+        if event.button() == Qt.Qt.LeftButton:
+            self.setDragMode(self.drag_mode)
+        self.mouseReleased.emit(event)
 
 
 class GraphicsImageItem:

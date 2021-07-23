@@ -1,6 +1,7 @@
 import ctypes
 import logging
 from typing import cast, Dict, List, TypeVar, Union
+from weakref import WeakKeyDictionary
 
 from PyQt5 import Qt
 import vapoursynth as vs
@@ -15,7 +16,7 @@ Number = TypeVar('Number', int, float)
 
 class PipetteToolbar(AbstractToolbar):
     __slots__ = (
-        'color_view', 'outputs', 'position', 'pos_fmt',
+        'color_view', 'outputs', 'position', 'pos_fmt', 'tracking',
         'rgb_dec', 'rgb_hex', 'rgb_label',
         'src_dec', 'src_dec_fmt', 'src_hex', 'src_hex_fmt', 'src_label',
     )
@@ -36,14 +37,14 @@ class PipetteToolbar(AbstractToolbar):
         super().__init__(main, 'Pipette')
 
         self.setup_ui()
-        self.main.graphics_view.mouseMoved.connect(self.mouse_moved)
 
         self.pos_fmt = '{},{}'
         self.src_hex_fmt = '{:2X}'
         self.src_max_val: Union[int, float] = 2**8 - 1
         self.src_dec_fmt = '{:3d}'
         self.src_norm_fmt = '{:0.5f}'
-        self.outputs: Dict[Output, vs.VideoNode] = {}
+        self.outputs = WeakKeyDictionary[Output, vs.VideoNode]()
+        self.tracking = False
 
         set_qobject_names(self)
 
@@ -103,9 +104,31 @@ class PipetteToolbar(AbstractToolbar):
 
         layout.addStretch()
 
+    def subscribe_on_mouse_events(self) -> None:
+        self.main.graphics_view.mouseMoved   .connect(self.mouse_moved)
+        self.main.graphics_view.mousePressed .connect(self.mouse_pressed)
+        self.main.graphics_view.mouseReleased.connect(self.mouse_released)
+
+    def unsubscribe_from_mouse_events(self) -> None:
+        self.main.graphics_view.mouseMoved   .disconnect(self.mouse_moved)
+        self.main.graphics_view.mousePressed .disconnect(self.mouse_pressed)
+        self.main.graphics_view.mouseReleased.disconnect(self.mouse_released)
+
+    def on_script_unloaded(self) -> None:
+        self.outputs.clear()
+
     def mouse_moved(self, event: Qt.QMouseEvent) -> None:
-        if not event.buttons() & Qt.Qt.LeftButton:
+        if self.tracking and not event.buttons():
             self.update_labels(event.pos())
+
+    def mouse_pressed(self, event: Qt.QMouseEvent) -> None:
+        if event.buttons() == Qt.Qt.RightButton:
+            self.tracking = False
+
+    def mouse_released(self, event: Qt.QMouseEvent) -> None:
+        if event.buttons() == Qt.Qt.RightButton:
+            self.tracking = True
+        self.update_labels(event.pos())
 
     def update_labels(self, local_pos: Qt.QPoint) -> None:
         from math import floor, trunc
@@ -198,9 +221,7 @@ class PipetteToolbar(AbstractToolbar):
         else:
             self.src_label.setText(src_label_text.format(' + Alpha'))
 
-        self.pos_fmt = '{{:{}d}},{{:{}d}}'.format(
-            ceil(log(self.main.current_output.width, 10)),
-            ceil(log(self.main.current_output.height, 10)))
+        self.pos_fmt = '{:4d},{:4d}'
 
         if self.main.current_output not in self.outputs:
             self.outputs[self.main.current_output] = self.prepare_vs_output(
@@ -230,10 +251,13 @@ class PipetteToolbar(AbstractToolbar):
         super().on_toggle(new_state)
         self.main.graphics_view.setMouseTracking(new_state)
         if new_state is True:
+            self.subscribe_on_mouse_events()
             self.main.graphics_view.setDragMode(Qt.QGraphicsView.NoDrag)
         else:
+            self.unsubscribe_from_mouse_events()
             self.main.graphics_view.setDragMode(
                 Qt.QGraphicsView.ScrollHandDrag)
+        self.tracking = new_state
 
     @staticmethod
     def prepare_vs_output(vs_output: vs.VideoNode) -> vs.VideoNode:

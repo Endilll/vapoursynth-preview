@@ -87,44 +87,34 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_to_start_button.setToolTip('Seek to First Frame')
         layout.addWidget(self.seek_to_start_button)
 
-        font = self.seek_to_start_button.font()
-        font.setPixelSize(19)
-        self.seek_to_start_button.setFont(font)
-
         self.seek_n_frames_b_button = Qt.QToolButton(self)
         self.seek_n_frames_b_button.setText('⏪')
-        self.seek_n_frames_b_button.setFont(font)
         self.seek_n_frames_b_button.setToolTip('Seek N Frames Backwards')
         layout.addWidget(self.seek_n_frames_b_button)
 
         self.seek_to_prev_button = Qt.QToolButton(self)
         self.seek_to_prev_button.setText('◂')
-        self.seek_to_prev_button.setFont(font)
         self.seek_to_prev_button.setToolTip('Seek 1 Frame Backwards')
         layout.addWidget(self.seek_to_prev_button)
 
         self.play_pause_button = Qt.QToolButton(self)
         self.play_pause_button.setText('⏯')
-        self.play_pause_button.setFont(font)
         self.play_pause_button.setToolTip('Play/Pause')
         self.play_pause_button.setCheckable(True)
         layout.addWidget(self.play_pause_button)
 
         self.seek_to_next_button = Qt.QToolButton(self)
         self.seek_to_next_button.setText('▸')
-        self.seek_to_next_button.setFont(font)
         self.seek_to_next_button.setToolTip('Seek 1 Frame Forward')
         layout.addWidget(self.seek_to_next_button)
 
         self.seek_n_frames_f_button = Qt.QToolButton(self)
         self.seek_n_frames_f_button.setText('⏩')
-        self.seek_n_frames_f_button.setFont(font)
         self.seek_n_frames_f_button.setToolTip('Seek N Frames Forward')
         layout.addWidget(self.seek_n_frames_f_button)
 
         self.seek_to_end_button = Qt.QToolButton(self)
         self.seek_to_end_button.setText('⏭')
-        self.seek_to_end_button.setFont(font)
         self.seek_to_end_button.setToolTip('Seek to Last Frame')
         layout.addWidget(self.seek_to_end_button)
 
@@ -371,9 +361,11 @@ class PlaybackToolbar(AbstractToolbar):
                             / (elapsed_total / len(self.fps_history)))
 
     def __getstate__(self) -> Mapping[str, Any]:
-        return {
+        state = {
             'seek_interval_frame': self.seek_frame_control.value()
         }
+        state.update(super().__getstate__())
+        return state
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         try:
@@ -384,3 +376,5 @@ class PlaybackToolbar(AbstractToolbar):
         except (KeyError, TypeError):
             logging.warning(
                 'Storage loading: PlaybackToolbar: failed to parse seek_interval_frame')
+
+        super().__setstate__(state)
