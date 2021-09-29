@@ -120,3 +120,5 @@ tests/*
 !tests/monte_01_tc_v2.txt
 !tests/monte_01_tc.txt
 !tests/timestamps v2.txt
+
+.vspreview

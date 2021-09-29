@@ -555,8 +555,47 @@ class MainWindow(AbstractMainWindow):
             for toolbar in self.toolbars:
                 toolbar.on_script_loaded()
 
+    def load_config(self) -> None:
+        import yaml
+
+        config_dir = self.toolbars.misc.get_config_dir()
+        config_path = config_dir / "config.yml"
+
+        if not config_dir.exists():
+            os.mkdir(config_dir)
+
+        if config_path.exists():
+            try:
+                with config_path.open() as config_file:
+                    config = yaml.load(config_file, Loader=yaml.FullLoader)
+                    # These are global attributes that can be carried
+                    # across multiple files, to keep the user's setup consistent
+                    self.toolbars.benchmark.__setstate__(config['toolbars']['benchmark'])
+                    self.toolbars.debug.__setstate__(config['toolbars']['debug'])
+                    self.toolbars.misc.__setstate__(config['toolbars']['misc'])
+                    self.toolbars.pipette.__setstate__(config['toolbars']['pipette'])
+                    self.toolbars.playback.__setstate__(config['toolbars']['playback'])
+                    scening = config['toolbars']['scening']
+                    self.toolbars.scening.__setstate__({key: scening[key] for key in scening.keys() & {'always_show_scene_marks', 'toggle'}})
+                    self.__setstate__(config['main'])
+            except yaml.YAMLError as exc:
+                if isinstance(exc, yaml.MarkedYAMLError):
+                    logging.warning(
+                        'Config parsing failed at line {}:{} ({} {}).'
+                        'Using defaults.'
+                        .format(exc.problem_mark.line + 1,
+                                exc.problem_mark.column + 1,
+                                exc.problem,
+                                exc.context))  # pylint: disable=no-member
+                else:
+                    logging.warning('Config parsing failed. Using defaults.')
+        else:
+            logging.info('No config found. Using defaults.')
+
     def load_storage(self) -> None:
         import yaml
+
+        self.load_config()
 
         vsp_dir = self.script_path.parent / self.VSP_DIR_NAME
         storage_path = vsp_dir / (self.script_path.stem + '.yml')
@@ -566,8 +605,12 @@ class MainWindow(AbstractMainWindow):
 
         if storage_path.exists():
             try:
-                with storage_path.open() as storage_file: 
-                    yaml.load(storage_file, Loader=yaml.Loader)
+                with storage_path.open() as storage_file:
+                    storage = yaml.load(storage_file, Loader=yaml.FullLoader)
+                    # These values are specific to this file, so they get loaded here
+                    if len(storage['toolbars']['main']['outputs']) > 0:
+                        self.toolbars.main.__setstate__(storage['toolbars']['main'])
+                    self.toolbars.scening.__setstate__(storage['toolbars']['scening'])
             except yaml.YAMLError as exc:
                 if isinstance(exc, yaml.MarkedYAMLError):
                     logging.warning(

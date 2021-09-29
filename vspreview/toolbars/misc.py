@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from   pathlib  import Path
 from   typing   import Any, Mapping, Optional
 
@@ -135,7 +136,59 @@ class MiscToolbar(AbstractToolbar):
 
         with path.open(mode='w', newline='\n') as f:
             f.write(f'# VSPreview storage for {self.main.script_path}\n')
-            yaml.dump(self.main, f, indent=4, default_flow_style=False)
+            scening = self.main.toolbars.scening.__getstate__()
+            yaml.dump({
+                'toolbars': {
+                    'scening': {key: scening[key] for key in scening.keys() & {'current_list_index', 'first_frame', 'label', 'lists', 'scening_export_template', 'second_frame'}},
+                    'main': self.main.toolbars.main.__getstate__()
+                }
+            }, f, indent=4, default_flow_style=False)
+            logging.info('Wrote storage file')
+
+        self.save_config()
+
+    def get_config_dir(self) -> Path:
+        from sys import platform
+        if platform == "win32":
+            return Path(os.path.expandvars('%APPDATA%\\vspreview'))
+        else:
+            return Path(os.path.expanduser('~/.config/vspreview'))
+
+    def save_config(self) -> None:
+        import yaml
+
+        yaml.Dumper.ignore_aliases = lambda *args: True
+
+        config_dir = self.get_config_dir()
+        path = config_dir / "config.yml"
+
+        if not config_dir.exists():
+            os.mkdir(config_dir)
+
+        backup_paths = [
+            path.with_suffix(f'.old{i}.yml')
+            for i in range(self.main.STORAGE_BACKUPS_COUNT, 0, -1)
+        ] + [path]
+        for dest_path, src_path in zip(backup_paths[:-1], backup_paths[1:]):
+            if src_path.exists():
+                src_path.replace(dest_path)
+
+        with path.open(mode='w', newline='\n') as f:
+            f.write('# VSPreview global config\n')
+            main = self.main.__getstate__()
+            yaml.dump({
+                'main': {key: main[key] for key in main.keys() & {'timeline_mode', 'window_geometry', 'window_state'}},
+                'toolbars': {
+                    'benchmark': self.main.toolbars.benchmark.__getstate__(),
+                    'debug': self.main.toolbars.debug.__getstate__(),
+                    'main': self.main.toolbars.main.__getstate__(),
+                    'misc': self.main.toolbars.misc.__getstate__(),
+                    'pipette': self.main.toolbars.pipette.__getstate__(),
+                    'playback': self.main.toolbars.playback.__getstate__(),
+                    'scening': self.main.toolbars.scening.__getstate__(),
+                }
+            }, f, indent=4, default_flow_style=False)
+            logging.info('Wrote config file')
 
     def on_keep_on_top_changed(self, state: Qt.Qt.CheckState) -> None:
         if   state == Qt.Qt.Checked:
