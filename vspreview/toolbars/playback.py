@@ -121,6 +121,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_frame_control = FrameEdit[FrameInterval](self)
         self.seek_frame_control.setMinimum(FrameInterval(1))
         self.seek_frame_control.setToolTip('Seek N Frames Step')
+        self.seek_frame_control.setValue(FrameInterval(self.main.SEEK_STEP))
         layout.addWidget(self.seek_frame_control)
 
         self.seek_time_control = TimeEdit[TimeInterval](self)
