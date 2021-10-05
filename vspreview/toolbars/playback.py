@@ -147,6 +147,7 @@ class PlaybackToolbar(AbstractToolbar):
         qt_silent_call(self.seek_frame_control.setMaximum, self.main.current_output.total_frames)
         qt_silent_call(self. seek_time_control.setMaximum, self.main.current_output.total_time)
         qt_silent_call(self. seek_time_control.setMinimum, TimeInterval(FrameInterval(1)))
+        qt_silent_call(self. seek_time_control.setValue,   TimeInterval(self.seek_frame_control.value()))
         qt_silent_call(self.       fps_spinbox.setValue  , self.main.current_output.play_fps)
 
 
