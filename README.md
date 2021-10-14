@@ -4,8 +4,8 @@ Feel free to contact me in [Telegram chat](https://t.me/vspreview_chat). Any fee
 
 # Prerequisites
 
-* Python 3.8
-* Vapoursynth R49
+* Python 3.9
+* Vapoursynth R53
 * pip modules in `requirements.txt`
 
 You can use the following command to install pip modules:
