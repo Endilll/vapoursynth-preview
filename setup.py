@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 with open("README.md", "r", encoding="UTF-8") as rdm:
     long_desc = rdm.read()
@@ -14,10 +14,10 @@ setup(
     long_description=long_desc,
     long_description_content_type="text/markdown",
     url="https://github.com/Endilll/vapoursynth-preview",
-    packages=["vspreview"],
+    packages=find_packages(),
     install_requires=req,
-    python_requires=">=3.7",  # Untested below 3.9, but VS supports 3.8+
-    zip_safe=False,
+    python_requires=">=3.9",
+    zip_safe=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
