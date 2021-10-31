@@ -121,6 +121,7 @@ class PlaybackToolbar(AbstractToolbar):
         self.seek_frame_control = FrameEdit[FrameInterval](self)
         self.seek_frame_control.setMinimum(FrameInterval(1))
         self.seek_frame_control.setToolTip('Seek N Frames Step')
+        self.seek_frame_control.setValue(FrameInterval(self.main.SEEK_STEP))
         layout.addWidget(self.seek_frame_control)
 
         self.seek_time_control = TimeEdit[TimeInterval](self)
@@ -146,6 +147,7 @@ class PlaybackToolbar(AbstractToolbar):
         qt_silent_call(self.seek_frame_control.setMaximum, self.main.current_output.total_frames)
         qt_silent_call(self. seek_time_control.setMaximum, self.main.current_output.total_time)
         qt_silent_call(self. seek_time_control.setMinimum, TimeInterval(FrameInterval(1)))
+        qt_silent_call(self. seek_time_control.setValue,   TimeInterval(self.seek_frame_control.value()))
         qt_silent_call(self.       fps_spinbox.setValue  , self.main.current_output.play_fps)
 
 

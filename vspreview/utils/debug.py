@@ -22,7 +22,10 @@ def print_var(var: Any) -> None:
     if current_frame is None:
         logging.debug('print_var(): current_frame is None')
         return
+
     frame = current_frame.f_back
+    if current_frame.f_back is None:
+        logging.debug('print_var(): f_back is None')
 
     context = inspect.getframeinfo(frame).code_context
     if context is None:
@@ -134,7 +137,7 @@ def profile_cpu(func: Callable[..., T]) -> Callable[..., T]:
     @wraps(func)
     def decorator(*args: Any, **kwargs: Any) -> T:
         from cProfile import Profile
-        from pstats   import Stats, SortKey  # type: ignore
+        from pstats   import Stats, SortKey
 
         p = Profile(perf_counter_ns, 0.000_000_001, True, False)
         ret = p.runcall(func, *args, **kwargs)
@@ -158,7 +161,7 @@ def print_vs_output_colorspace_info(vs_output: vs.VideoNode) -> None:
     ))
 
 
-class DebugMeta(sip.wrappertype):  # type: ignore
+class DebugMeta(sip.wrappertype):
     def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> DebugMeta:
         from functools import partialmethod
 
@@ -175,7 +178,7 @@ class DebugMeta(sip.wrappertype):  # type: ignore
         return method(self, *args, **kwargs)
 
 
-class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # pylint: disable=invalid-metaclass
+class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # type: ignore
     def event(self, event: Qt.QEvent) -> bool:
         t0 = perf_counter_ns()
         ret = super().event(event)

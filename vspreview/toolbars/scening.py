@@ -119,7 +119,7 @@ class SceningListDialog(Qt.QDialog):
                 selection.select(index, index)
         self.tableview.selectionModel().select(
             selection,
-            Qt.QItemSelectionModel.SelectionFlags(  # type: ignore
+            Qt.QItemSelectionModel.SelectionFlags(
                 Qt.QItemSelectionModel.Rows + Qt.QItemSelectionModel.ClearAndSelect))
 
     def on_current_list_changed(self, scening_list: Optional[SceningList] = None) -> None:
