@@ -14,7 +14,7 @@ setup(
     long_description=long_desc,
     long_description_content_type="text/markdown",
     url="https://github.com/Endilll/vapoursynth-preview",
-    packages=find_packages(exclude=["stubs"]),
+    packages=find_packages(exclude=("stubs", "tests")),
     install_requires=req,
     python_requires=">=3.9",
     zip_safe=False,
