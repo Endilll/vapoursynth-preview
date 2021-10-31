@@ -14,10 +14,10 @@ setup(
     long_description=long_desc,
     long_description_content_type="text/markdown",
     url="https://github.com/Endilll/vapoursynth-preview",
-    packages=find_packages(),
+    packages=find_packages(exclude=["stubs"]),
     install_requires=req,
     python_requires=">=3.9",
-    zip_safe=True,
+    zip_safe=False,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
