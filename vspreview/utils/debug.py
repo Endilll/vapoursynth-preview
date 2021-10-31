@@ -22,7 +22,10 @@ def print_var(var: Any) -> None:
     if current_frame is None:
         logging.debug('print_var(): current_frame is None')
         return
+
     frame = current_frame.f_back
+    if current_frame.f_back is None:
+        logging.debug('print_var(): f_back is None')
 
     context = inspect.getframeinfo(frame).code_context
     if context is None:
@@ -175,7 +178,7 @@ class DebugMeta(sip.wrappertype):
         return method(self, *args, **kwargs)
 
 
-class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # pylint: disable=invalid-metaclass
+class GraphicsScene(Qt.QGraphicsScene, metaclass=DebugMeta):  # type: ignore
     def event(self, event: Qt.QEvent) -> bool:
         t0 = perf_counter_ns()
         ret = super().event(event)

@@ -64,9 +64,9 @@ class QSingletonMeta(SingletonMeta, sip.wrappertype):
 class QSingleton(Singleton, metaclass=QSingletonMeta):
     pass
 
-class QAbstractSingletonMeta(QSingletonMeta, QABCMeta):
+class QAbstractSingletonMeta(QSingletonMeta, QABCMeta): # type: ignore
     pass
-class QAbstractSingleton(Singleton, metaclass=QAbstractSingletonMeta):
+class QAbstractSingleton(Singleton, metaclass=QAbstractSingletonMeta):  # type: ignore
     pass
 
 class QYAMLObjectMeta(YAMLObjectMetaclass, sip.wrappertype):
@@ -84,7 +84,7 @@ class QYAMLObjectSingletonMeta(QSingletonMeta, QYAMLObjectMeta):
 class QYAMLObjectSingleton(QYAMLObject, Singleton, metaclass=QYAMLObjectSingletonMeta):
     pass
 
-class QAbstractYAMLObjectSingletonMeta(QYAMLObjectSingletonMeta, QABCMeta):
+class QAbstractYAMLObjectSingletonMeta(QYAMLObjectSingletonMeta, QABCMeta): # type: ignore
     pass
-class QAbstractYAMLObjectSingleton(QYAMLObjectSingleton, metaclass=QAbstractYAMLObjectSingletonMeta):
+class QAbstractYAMLObjectSingleton(QYAMLObjectSingleton, metaclass=QAbstractYAMLObjectSingletonMeta): # type: ignore
     pass

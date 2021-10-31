@@ -23,7 +23,7 @@ class ZoomLevels(Qt.QAbstractListModel):
     def __len__(self) -> int:
         return len(self.levels)
 
-    def __getiter__(self) -> Iterator[float]:
+    def __iter__(self) -> Iterator[float]:
         return iter(self.levels)
 
     def index_of(self, item: float) -> int:

@@ -213,7 +213,7 @@ class SceningList(Qt.QAbstractTableModel, QYAMLObject):
             return False
         raise TypeError
 
-    def __getiter__(self) -> Iterator[Scene]:
+    def __iter__(self) -> Iterator[Scene]:
         return iter(self.items)
 
     def add(self, start: Frame, end: Optional[Frame] = None, label: str = '') -> Scene:
@@ -314,7 +314,7 @@ class SceningLists(Qt.QAbstractListModel, QYAMLObject):
     def __len__(self) -> int:
         return len(self.items)
 
-    def __getiter__(self) -> Iterator[SceningList]:
+    def __iter__(self) -> Iterator[SceningList]:
         return iter(self.items)
 
     def index_of(self, item: SceningList, start_i: int = 0, end_i: int = 0) -> int:
