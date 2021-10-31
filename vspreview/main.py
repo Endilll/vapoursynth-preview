@@ -484,7 +484,7 @@ class MainWindow(AbstractMainWindow):
             + ' QGraphicsView { border: 0px; padding: 0px; }' \
             + ' QToolButton { padding: 0px; }'
 
-    def load_script(self, script_path: Path, external_args: str = '', reloading = False) -> None:
+    def load_script(self, script_path: Path, external_args: str = '', reloading: bool = False) -> None:
         import shlex
         from traceback import FrameSummary, TracebackException
 
