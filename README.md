@@ -12,11 +12,26 @@ You can use the following command to install pip modules:
 
 `pip install -r requirements.txt`
 
-# Usage
+# Installation and usage
+There are two ways to install this package using Python's `pip` module. The first is using editable mode
+for development purposes, the second is using the git protocol with `pip`.
 
-Assuming `script.vpy` is your VapourSynth script, there are two ways to run vspreview:
- * `python run.py script.vpy`
- * Add this directory (repository root) to your *PYTHONPATH*, and `python -m vspreview script.vpy`
+Editable mode allows any changes made locally to take effect when the module gets reloaded.
+```bash
+# For development versions, clone the repository and install it in editable mode:
+git clone https://github.com/Endilll/vapoursynth-preview.git
+cd vapoursynth-preview
+python -m pip install -e ./
+
+# Install the latest from git master:
+python -m pip install -U git+https://github.com/Endilll/vapoursynth-preview.git
+```
+
+You can also download and add this directory (repository root) to your *PYTHONPATH* manually.
+Using the above ways to install vspreview, it can be used by running `python -m vspreview script.vpy`.
+
+Alternatively, download this repository anywhere else and use it by running `python run.py script.vpy`.
+
 
 # Note
 
