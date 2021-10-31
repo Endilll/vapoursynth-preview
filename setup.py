@@ -1,9 +1,9 @@
 from setuptools import setup
 
-with open("README.md", "r") as rdm:
+with open("README.md", "r", encoding="UTF-8") as rdm:
     long_desc = rdm.read()
 
-with open("requirements.txt", "r") as rq:
+with open("requirements.txt", "r", encoding="UTF-8") as rq:
     req = rq.read()
 
 setup(
