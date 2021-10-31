@@ -51,18 +51,6 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
 # Sphinx documentation
 docs/_build/
 
@@ -74,12 +62,6 @@ target/
 
 # pyenv
 .python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
 
 # Environments
 .env
@@ -105,18 +87,4 @@ venv.bak/
 
 misc/
 
-tests/*
-!tests/script.vpy
-
-!tests/candy_boy_05_tfm.txt
-!tests/chapters.txt
-!tests/EP01.qp
-!tests/test.ass
-!tests/[Beatrice-Raws] Re：Creators 01 [BDRip 1920x1080 x264 FLAC]_chapters.cue
-!tests/[Beatrice-Raws] Re：Creators 01 [BDRip 1920x1080 x264 FLAC]_chapters.ogm.txt
-!tests/[Beatrice-Raws] Re：Creators 01 [BDRip 1920x1080 x264 FLAC]_chapters.xml
-!tests/jintai_01.scxvid.txt
-!tests/koizumi_tc.txt
-!tests/monte_01_tc_v2.txt
-!tests/monte_01_tc.txt
-!tests/timestamps v2.txt
+/tests/
