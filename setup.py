@@ -16,7 +16,7 @@ setup(
     url="https://github.com/Endilll/vapoursynth-preview",
     packages=["vspreview"],
     install_requires=req,
-    python_requires=">=3.8",  # Untested below 3.9, but VS supports 3.8+
+    python_requires=">=3.7",  # Untested below 3.9, but VS supports 3.8+
     zip_safe=False,
     classifiers=[
         "Programming Language :: Python :: 3",
