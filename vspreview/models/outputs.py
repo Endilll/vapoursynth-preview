@@ -50,7 +50,7 @@ class Outputs(Qt.QAbstractListModel, QYAMLObject):
     def index_of(self, item: Output) -> int:
         return self.items.index(item)
 
-    def __getiter__(self) -> Iterator[Output]:
+    def __iter__(self) -> Iterator[Output]:
         return iter(self.items)
 
     def append(self, item: Output) -> int:
