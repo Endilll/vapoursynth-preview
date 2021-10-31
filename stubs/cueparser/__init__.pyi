@@ -3,10 +3,12 @@ from typing   import List, Optional
 
 # pylint: skip-file
 
+
 class CueTrack:
     duration: Optional[timedelta]
     offset: Optional[str]
     title: Optional[str]
+
 
 class CueSheet:
     tracks: List[CueTrack]
