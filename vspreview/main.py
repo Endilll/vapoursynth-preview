@@ -121,8 +121,8 @@ class MainToolbar(AbstractToolbar):
         self.outputs_combobox.currentIndexChanged.connect(self.main.switch_output)
         self.frame_control          .valueChanged.connect(self.main.switch_frame)
         self.time_control           .valueChanged.connect(self.main.switch_frame)
-        self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)  # type: ignore
-        self.time_control        .editingFinished.connect(self.time_control.clearFocus)  # type: ignore
+        self.frame_control       .editingFinished.connect(self.frame_control.clearFocus)
+        self.time_control        .editingFinished.connect(self.time_control.clearFocus)
         self.sync_outputs_checkbox  .stateChanged.connect(self.on_sync_outputs_changed)
         self.zoom_combobox    .currentTextChanged.connect(self.on_zoom_changed)
         self.switch_timeline_mode_button .clicked.connect(self.on_switch_timeline_mode_clicked)

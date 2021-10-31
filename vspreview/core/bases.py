@@ -54,12 +54,12 @@ class AbstractYAMLObjectSingletonMeta(SingletonMeta, AbstractYAMLObjectMeta):
 class AbstractYAMLObjectSingleton(AbstractYAMLObject, Singleton, metaclass=AbstractYAMLObjectSingletonMeta):
     pass
 
-class QABCMeta(sip.wrappertype, ABCMeta):  # type: ignore
+class QABCMeta(sip.wrappertype, ABCMeta):
     pass
 class QABC(metaclass=QABCMeta):
     pass
 
-class QSingletonMeta(SingletonMeta, sip.wrappertype):  # type: ignore
+class QSingletonMeta(SingletonMeta, sip.wrappertype):
     pass
 class QSingleton(Singleton, metaclass=QSingletonMeta):
     pass
@@ -69,7 +69,7 @@ class QAbstractSingletonMeta(QSingletonMeta, QABCMeta):
 class QAbstractSingleton(Singleton, metaclass=QAbstractSingletonMeta):
     pass
 
-class QYAMLObjectMeta(YAMLObjectMetaclass, sip.wrappertype):  # type: ignore
+class QYAMLObjectMeta(YAMLObjectMetaclass, sip.wrappertype):
     pass
 class QYAMLObject(YAMLObject, metaclass=QYAMLObjectMeta):
     pass

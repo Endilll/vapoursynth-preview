@@ -86,7 +86,7 @@ def main_window() -> AbstractMainWindow:
 def add_shortcut(key: int, handler: Callable[[], None], widget: Optional[Qt.QWidget] = None) -> None:
     if widget is None:
         widget = main_window()
-    Qt.QShortcut(Qt.QKeySequence(key), widget).activated.connect(handler)  # type: ignore
+    Qt.QShortcut(Qt.QKeySequence(key), widget).activated.connect(handler)
 
 
 def fire_and_forget(f: Callable[..., T]) -> Callable[..., T]:

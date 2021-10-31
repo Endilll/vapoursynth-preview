@@ -134,7 +134,7 @@ def profile_cpu(func: Callable[..., T]) -> Callable[..., T]:
     @wraps(func)
     def decorator(*args: Any, **kwargs: Any) -> T:
         from cProfile import Profile
-        from pstats   import Stats, SortKey  # type: ignore
+        from pstats   import Stats, SortKey
 
         p = Profile(perf_counter_ns, 0.000_000_001, True, False)
         ret = p.runcall(func, *args, **kwargs)
@@ -158,7 +158,7 @@ def print_vs_output_colorspace_info(vs_output: vs.VideoNode) -> None:
     ))
 
 
-class DebugMeta(sip.wrappertype):  # type: ignore
+class DebugMeta(sip.wrappertype):
     def __new__(cls: Type[type], name: str, bases: Tuple[type, ...], dct: Dict[str, Any]) -> DebugMeta:
         from functools import partialmethod
 
