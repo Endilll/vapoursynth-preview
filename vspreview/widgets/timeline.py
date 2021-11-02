@@ -167,7 +167,7 @@ class Timeline(Qt.QWidget):
                 notch_interval_t = self.calculate_notch_interval_t(
                     self.notch_interval_target_x)
                 label_format  = self.generate_label_format(notch_interval_t,
-                                                           TimeInterval(self.end_t))
+                                                           TimeInterval(self.end_t.value))
                 label_notch_t = Time()
 
                 while (label_notch_x < self.rect_f.right()
