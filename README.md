@@ -33,6 +33,10 @@ Using the above ways to install vspreview, it can be used by running `python -m 
 Alternatively, download this repository anywhere else and use it by running `python run.py script.vpy`.
 
 
+# Example Installation
+
+* [VSCode](docs/vscode_install.md)
+
 # Note
 
 WIP, so there're some debug stuff among the logic, but not much.
