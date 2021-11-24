@@ -1,5 +1,5 @@
 from vapoursynth import EnvironmentPolicy, EnvironmentPolicyAPI, register_policy
-from vapoursynth EnvironmentData, Environment
+from vapoursynth import EnvironmentData, Environment
 
 
 __all__ = ("create_and_register_policy",)
@@ -14,7 +14,7 @@ class VSPreviewEnvironmentPolicy(object):
         new_environment = self._api.create_environment()
         old_environment = self._current_environment
         self._current_environment = new_environment
-        self._api.destroy_environment(old)
+        self._api.destroy_environment(old_environment)
 
     def on_policy_registered(self, special_api: EnvironmentPolicyAPI):
         self._current_environment = special_api.create_environment()
