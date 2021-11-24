@@ -617,7 +617,7 @@ class MainWindow(AbstractMainWindow):
         vs.clear_outputs()
         self.graphics_scene.clear()
         self.outputs.clear()
-        policy.reload()
+        policy.reload_core()
         
         # make sure old filter graph is freed
         gc.collect()
