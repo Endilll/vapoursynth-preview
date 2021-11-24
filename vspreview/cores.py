@@ -11,9 +11,8 @@ class VSPreviewEnvironmentPolicy(object):
     _api: EnvironmentPolicyAPI
         
     def reload_core(self):
-        new_environment = self._api.create_environment()
         old_environment = self._current_environment
-        self._current_environment = new_environment
+        self._current_environment = self._api.create_environment()
         self._api.destroy_environment(old_environment)
 
     def on_policy_registered(self, special_api: EnvironmentPolicyAPI):
