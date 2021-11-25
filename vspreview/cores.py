@@ -5,8 +5,7 @@ from vapoursynth import EnvironmentData
 __all__ = ("create_and_register_policy",)
 
 
-class VSPreviewEnvironmentPolicy(object):
-    __slots__ = ("_current_environment", "_api")
+class VSPreviewEnvironmentPolicy:
     _current_environment: EnvironmentData
     _api: EnvironmentPolicyAPI
         
