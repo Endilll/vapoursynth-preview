@@ -25,7 +25,7 @@ class VSPreviewEnvironmentPolicy(object):
     def get_current_environment(self) -> EnvironmentData:
         return self._current_environment
 
-    def set_environment(self, environment -> EnvironmentData):
+    def set_environment(self, environment) -> EnvironmentData:
         if environment != self._current_environment:
             raise ValueError("The passed environment is not valid.")
         
