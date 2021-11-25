@@ -1,5 +1,5 @@
-from vapoursynth import EnvironmentPolicy, EnvironmentPolicyAPI, register_policy
-from vapoursynth import EnvironmentData, Environment
+from vapoursynth import EnvironmentPolicyAPI, register_policy
+from vapoursynth import EnvironmentData
 
 
 __all__ = ("create_and_register_policy",)
