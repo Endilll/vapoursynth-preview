@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+# import vspreview.cores as early as possible:
+# This is so other modules cannot accidentally
+# use and lock us into a different policy.
+from vspreview.cores import create_and_register_policy
+policy = create_and_register_policy()
+
+# And now back to our regular programing:
+
 import logging
 import os
 from   pathlib  import Path
@@ -8,6 +16,7 @@ from   typing   import Any, cast, List, Mapping, Optional, Union
 
 from   PyQt5       import Qt
 import vapoursynth as     vs
+
 
 from vspreview.core import (
     AbstractMainWindow, AbstractToolbar, AbstractToolbars,
@@ -608,6 +617,8 @@ class MainWindow(AbstractMainWindow):
         vs.clear_outputs()
         self.graphics_scene.clear()
         self.outputs.clear()
+        policy.reload_core()
+        
         # make sure old filter graph is freed
         gc.collect()
 
