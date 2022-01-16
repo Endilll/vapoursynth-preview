@@ -1,6 +1,7 @@
 import ctypes
 import logging
-from typing import cast, Dict, List, TypeVar, Union
+import sys
+from typing import cast, Dict, List, TypeVar, Union, TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
 from PyQt5 import Qt
@@ -12,6 +13,21 @@ from vspreview.widgets import ColorView
 
 
 Number = TypeVar('Number', int, float)
+
+
+if TYPE_CHECKING:
+    BaseWeakKeyDictionary = WeakKeyDictionary
+else:
+    if sys.version_info < (3, 9):
+        class _WeakKeyDictionary(WeakKeyDictionary):
+            def __getitem__(self, key):
+                print(key)
+                if isinstance(key, Output):
+                    return super().__getitem__(key)
+                return self.__class__
+        BaseWeakKeyDictionary = _WeakKeyDictionary()
+    else:
+        BaseWeakKeyDictionary = WeakKeyDictionary
 
 
 class PipetteToolbar(AbstractToolbar):
@@ -43,7 +59,7 @@ class PipetteToolbar(AbstractToolbar):
         self.src_max_val: Union[int, float] = 2**8 - 1
         self.src_dec_fmt = '{:3d}'
         self.src_norm_fmt = '{:0.5f}'
-        self.outputs = WeakKeyDictionary[Output, vs.VideoNode]()
+        self.outputs = BaseWeakKeyDictionary[Output, vs.VideoNode]()
         self.tracking = False
 
         set_qobject_names(self)
